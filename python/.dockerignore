@@ -1,0 +1,30 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebooks & Checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# Version Control
+.git/
+.gitignore
+
+# Local Build Artifacts / IDE
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+.vscode/
+.idea/

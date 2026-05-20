@@ -1,0 +1,64 @@
+name: word-complex-project
+
+services:
+  express:
+    build: ./server
+    container_name: express-server
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+    restart: unless-stopped
+    networks:
+      - word-complex
+
+  python-app:
+    build: ./python
+    container_name: python-services
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./python:/app
+    restart: unless-stopped
+    networks:
+      - word-complex
+
+  notebook:
+    build: ./python
+    container_name: ml_notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./python:/app
+    command: >
+      jupyter notebook
+      --ip=0.0.0.0
+      --port=8888
+      --no-browser
+      --allow-root
+      --NotebookApp.token=my-token
+    restart: unless-stopped
+    networks:
+      - word-complex
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    networks:
+      - word-complex
+
+volumes:
+  mongo_data:
+
+networks:
+  word-complex:
+    driver: bridge

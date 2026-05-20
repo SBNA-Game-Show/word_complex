@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    container_name: python-services
+    ports:
+      - "5001:5001"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    networks:
+      - word-complex
+
+  notebook:
+    build: .
+    container_name: ml_notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+    command: >
+      jupyter notebook
+      --ip=0.0.0.0
+      --port=8888
+      --no-browser
+      --allow-root
+      --NotebookApp.token=my-token
+    restart: unless-stopped
+    networks:
+      - word-complex
+
+networks:
+  word-complex:
