@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 // Routes
 const userRouter = require("./user/routes/userroutes");
@@ -24,5 +25,9 @@ app.use("/api/v1/fillInBlanks", fillInBlanks);
 app.use("/api/v1/matchWords", matchWords);
 app.use("/api/v1/passageReconstruct", passageReconstruction);
 app.use("/api/v1/wordHunt", wordHunt);
+
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(__dirname, "./views/404.html"));
+});
 
 module.exports = app;
