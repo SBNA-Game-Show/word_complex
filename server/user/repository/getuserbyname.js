@@ -1,8 +1,8 @@
 const User = require("../models/User");
 
-const getUserByName = async (username) => {
+const getUserByName = async (userName) => {
   try {
-    const user = await User.findOne({ userName: username });
+    const user = await User.findOne({ userName: userName });
 
     return user;
   } catch (error) {
