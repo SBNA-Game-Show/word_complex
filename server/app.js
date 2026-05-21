@@ -1,0 +1,28 @@
+const express = require("express");
+const cors = require("cors");
+
+// Routes
+const userRouter = require("./user/routes/userroutes");
+const fillInBlanks = require("./fillinblanks/routes/fillinblanksroutes");
+const matchWords = require("./matchwords/routes/matchwordsroutes");
+const passageReconstruction = require("./passagereconstruction/routes/passagereconstructionroutes");
+const wordHunt = require("./wordhunt/routes/wordhuntroutes");
+
+const app = express();
+
+app.use(express.json());
+app.use(cors());
+
+// ROOT
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
+// Routes
+app.use("/api/v1/user", userRouter);
+app.use("/api/v1/fillInBlanks", fillInBlanks);
+app.use("/api/v1/matchWords", matchWords);
+app.use("/api/v1/passageReconstruct", passageReconstruction);
+app.use("/api/v1/wordHunt", wordHunt);
+
+module.exports = app;
