@@ -1,0 +1,39 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "title": "Check Running Containers",
+      "command": "docker ps"
+    },
+    {
+      "step": 2,
+      "title": "Open MongoDB Shell Inside Container. using CMD",
+      "command": "docker exec -it mongodb mongosh"
+    },
+    {
+      "step": 3,
+      "title": "View All Databases",
+      "command": "show dbs"
+    },
+    {
+      "step": 4,
+      "title": "Select Project Database",
+      "command": "use wordcomplex"
+    },
+    {
+      "step": 5,
+      "title": "View Collections",
+      "command": "show collections"
+    },
+    {
+      "step": 6,
+      "title": "View Collection Data",
+      "command": "db.<collection-name>.find().pretty()"
+    },
+    {
+      "step": 7,
+      "title": "Exit Mongo Shell",
+      "command": "exit"
+    }
+  ]
+}

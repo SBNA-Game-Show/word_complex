@@ -1,0 +1,89 @@
+{
+  "features": [
+    {
+      "feature": 1,
+      "title": "Node.js Backend with Express",
+      "description": "REST API backend built using Node.js and Express.js"
+    },
+    {
+      "feature": 2,
+      "title": "MongoDB Database Integration",
+      "description": "MongoDB database integration using Mongoose ODM"
+    },
+    {
+      "feature": 3,
+      "title": "Dockerized Application",
+      "description": "Complete Docker and Docker Compose setup for backend and database services"
+    },
+    {
+      "feature": 4,
+      "title": "Authentication System.(Not Implemented Yet)",
+      "description": "User authentication and authorization system with ADMIN and USER roles"
+    },
+    {
+      "feature": 5,
+      "title": "Role-Based Route Protection.(Temporary Middle ware Implementation)",
+      "description": "Protected routes using middleware for admin-only access"
+    },
+    {
+      "feature": 6,
+      "title": "Password Encryption",
+      "description": "Secure password hashing using bcrypt"
+    },
+    {
+      "feature": 7,
+      "title": "Input Validation System",
+      "description": "DTO-based request validation for backend data integrity"
+    },
+    {
+      "feature": 8,
+      "title": "MongoDB Atlas Compatibility",
+      "description": "Supports both local MongoDB Docker containers and MongoDB Atlas"
+    },
+    {
+      "feature": 9,
+      "title": "Jest Testing Framework",
+      "description": "Unit and integration testing using Jest and Supertest"
+    },
+    {
+      "feature": 10,
+      "title": "In-Memory MongoDB Testing",
+      "description": "MongoMemoryServer integration for isolated backend testing"
+    },
+    {
+      "feature": 11,
+      "title": "RESTful API Architecture",
+      "description": "Structured REST API endpoints following backend best practices"
+    },
+    {
+      "feature": 12,
+      "title": "Environment Configuration",
+      "description": "Centralized environment variable management using dotenv"
+    },
+    {
+      "feature": 13,
+      "title": "Error Handling System",
+      "description": "Centralized backend error handling and validation responses"
+    },
+    {
+      "feature": 14,
+      "title": "Custom HTML Error Pages",
+      "description": "HTML-based 401, 403, and 404 error page rendering"
+    },
+    {
+      "feature": 15,
+      "title": "API Configuration",
+      "description": "Game-based API configuration settings and management"
+    },
+    {
+      "feature": 16,
+      "title": "CORS Support",
+      "description": "Cross-Origin Resource Sharing support for frontend integration"
+    },
+    {
+      "feature": 17,
+      "title": "API Documentation Ready. (Not Implemented yet)",
+      "description": "Backend structured for Swagger/OpenAPI documentation integration"
+    }
+  ]
+}
