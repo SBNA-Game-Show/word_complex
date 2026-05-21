@@ -1,4 +1,6 @@
 const DBManager = require("../config/testdbconfig");
+const app = require("../app");
+const request = require("supertest");
 
 const User = require("./models/User");
 const RegistrationRequest = require("./DTO/RegistrationRequest");
@@ -15,14 +17,8 @@ const registerUser = require("./controller/registeruser");
 
 const db = new DBManager();
 
-let userRequest;
-let adminRequest;
-
 beforeAll(async () => {
   await db.start();
-
-  userRequest = new RegistrationRequest("testUser");
-  adminRequest = new RegistrationRequest("admin", "helloworld", "ADMIN");
 });
 
 afterEach(async () => {
@@ -71,6 +67,7 @@ describe("User Tests", () => {
   describe("User Repository Layer tests", () => {
     describe("Create User Tests", () => {
       it("Should create a new user", async () => {
+        const userRequest = new RegistrationRequest("testUser");
         const user = await createUser(userRequest);
 
         expect(user).toBeDefined();
@@ -79,6 +76,11 @@ describe("User Tests", () => {
       });
 
       it("Should create a new admin", async () => {
+        const adminRequest = new RegistrationRequest(
+          "admin",
+          "helloworld",
+          "ADMIN",
+        );
         const user = await createUser(adminRequest);
 
         expect(user).toBeDefined();
@@ -87,6 +89,7 @@ describe("User Tests", () => {
       });
       it("should throw DB Error. Testing the catch block", async () => {
         const User = require("./models/User");
+        const userRequest = new RegistrationRequest("testUser");
 
         const saveMock = jest
           .spyOn(User.prototype, "save")
@@ -168,5 +171,24 @@ describe("User Tests", () => {
     });
   });
 
-  describe("User Controller Layer tests", () => {});
+  describe("User Controller Layer tests", () => {
+    describe("Register User Tests", () => {
+      it("should register Admin", async () => {
+        const res = await request(app).post("/api/v1/user/register").send({
+          userName: "john",
+          password: "pass123",
+          role: "ADMIN",
+        });
+
+        expect(res.statusCode).toBe(201);
+      });
+      it("should register User", async () => {
+        const res = await request(app).post("/api/v1/user/register").send({
+          userName: "john",
+        });
+
+        expect(res.statusCode).toBe(201);
+      });
+    });
+  });
 });
