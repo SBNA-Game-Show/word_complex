@@ -1,0 +1,39 @@
+{
+  "features": [
+    {
+      "id": 1,
+      "name": "ZIM Canvas Engine",
+      "description": "Handles all game rendering and animations using ZIM.js"
+    },
+    {
+      "id": 2,
+      "name": "React UI Layer",
+      "description": "Manages forms, inputs, authentication, and dashboard UI"
+    },
+    {
+      "id": 3,
+      "name": "Reusable Component System",
+      "description": "Global UI components like buttons, modals, and cards"
+    },
+    {
+      "id": 4,
+      "name": "Admin Dashboard",
+      "description": "Role-based admin interface for managing users and data"
+    },
+    {
+      "id": 5,
+      "name": "User Dashboard",
+      "description": "Personal user area with profile, stats, and settings"
+    },
+    {
+      "id": 6,
+      "name": "Authentication System",
+      "description": "Login, signup, and session management using JWT or NextAuth"
+    },
+    {
+      "id": 7,
+      "name": "Game Integration Layer",
+      "description": "Bridge between React UI and ZIM canvas events"
+    }
+  ]
+}
