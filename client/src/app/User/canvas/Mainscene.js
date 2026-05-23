@@ -10,6 +10,7 @@ export default class MainScene {
     this.ball = null;
     this.customButton = null;
     this.triangle = null;
+    this.bolb = null;
 
     this.createWorld();
   }
@@ -25,6 +26,10 @@ export default class MainScene {
 
     //adding a triangle
     // this.triangle = new Triangle(200, null, null, "green").center(stage);
+
+    // this.bolb = new Blob({
+    //   points: 12, // 12 points for more complex shape
+    // }).center();
 
     // 2. Instantiate and add your custom button wrapper
     this.customButton = new ZIMButton(zim, "Submit", 200, 60, "#222");
