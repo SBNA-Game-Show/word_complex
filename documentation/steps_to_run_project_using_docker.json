@@ -67,7 +67,7 @@
           },
           {
             "step": 3,
-            "cmd": "",
+            "cmd": "http://127.0.0.1:8888/login?next=%2Ftree%3Ftoken%3D",
             "description": "opens up jupyter notebook"
           },
           {

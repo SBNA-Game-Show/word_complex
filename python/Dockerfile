@@ -10,6 +10,9 @@ RUN pip install --upgrade pip setuptools wheel && \
     pip install -r requirements.txt && \
     pip install notebook ipykernel
 
+# Download spaCy English model
+RUN python -m spacy download en_core_web_sm
+
 # Copy your app code
 COPY . /app
 
