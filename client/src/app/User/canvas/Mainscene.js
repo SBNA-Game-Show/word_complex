@@ -25,7 +25,7 @@ export default class MainScene {
     this.ball.drag();
 
     //adding a triangle
-    // this.triangle = new Triangle(200, null, null, "green").center(stage);
+    this.triangle = new Triangle(200, null, null, "green").center(stage);
 
     // this.bolb = new Blob({
     //   points: 12, // 12 points for more complex shape
