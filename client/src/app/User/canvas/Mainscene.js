@@ -1,5 +1,6 @@
 // src/app/GlobalComponents/MainScene.js
 import ZIMButton from "@/app/GlobalComponents/button";
+import PlayerNameInput from "../pages/PlayerNameInput";
 
 export default class MainScene {
   constructor(zim, stage) {
@@ -10,7 +11,9 @@ export default class MainScene {
     this.ball = null;
     this.customButton = null;
     this.triangle = null;
-    this.bolb = null;
+
+    // main imports
+    this.initialDisplayContainer = null;
 
     this.createWorld();
   }
@@ -19,23 +22,27 @@ export default class MainScene {
     const zim = this.zim;
     const stage = this.stage;
 
-    // 1. Add your interactive Circle
+    //-- TEST OBJECTS --
+    /*
     this.ball = new zim.Circle(100, "purple");
     this.ball.center(stage);
     this.ball.drag();
+    
 
+    
+    
     //adding a triangle
-    this.triangle = new Triangle(200, null, null, "green").center(stage);
-
-    // this.bolb = new Blob({
-    //   points: 12, // 12 points for more complex shape
-    // }).center();
-
+    // this.triangle = new Triangle(200, null, null, "green").center
     // 2. Instantiate and add your custom button wrapper
-    this.customButton = new ZIMButton(zim, "Submit", 200, 60, "#222");
-    this.customButton.component.loc(100, 100, stage);
+    // this.customButton = new ZIMButton(zim, "Submit", 200, 60, "#222");
+    // this.customButton.component.loc(100, 100, stage);
 
-    stage.addChild(this.customButton.component);
+    // stage.addChild(this.customButton.component);
+    */
+    /**
+     * MAIN PAGE ENTRY POINT OBJECTS GOES HERE
+     */
+    this.initialDisplayContainer = new PlayerNameInput(zim, stage);
 
     // 3. Render everything onto the viewport
     stage.update();

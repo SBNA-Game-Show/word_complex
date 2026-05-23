@@ -28,7 +28,7 @@ export default function ZimCanvas() {
         width: 1024,
         height: 768,
         outerColor: zimModule.light,
-        color: zimModule.dark,
+        color: "#9F9F92",
         container: canvasTargetRef.current,
         ready: () => {
           if (isDestroyed) {
