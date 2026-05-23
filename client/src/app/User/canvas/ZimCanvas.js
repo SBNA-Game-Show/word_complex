@@ -1,21 +1,27 @@
-// src/app/User/canvas/ZimCanvas.js
 "use client";
 
 import { useEffect, useRef } from "react";
+// 1. Keep MainScene as a top-level static import so Next.js actively watches it!
 import MainScene from "@/app/User/canvas/Mainscene";
 
 export default function ZimCanvas() {
   const canvasTargetRef = useRef(null);
 
   useEffect(() => {
-    let frame;
-    let scene;
+    let frame = null;
+    let scene = null;
+    let isDestroyed = false;
 
     async function init() {
       const zimModule = await import("zimjs");
       const { Frame, FIT, zimplify } = zimModule;
 
+      if (isDestroyed) return;
       zimplify();
+
+      if (canvasTargetRef.current) {
+        canvasTargetRef.current.innerHTML = "";
+      }
 
       frame = new Frame({
         scaling: FIT,
@@ -25,14 +31,16 @@ export default function ZimCanvas() {
         color: zimModule.dark,
         container: canvasTargetRef.current,
         ready: () => {
-          // 1. Create the scene
+          if (isDestroyed) {
+            frame.dispose();
+            return;
+          }
+
+          // 2. MainScene is used here normally
           scene = new MainScene(zimModule, frame.stage);
 
-          // 2. Listen to the frame's internal resize calculations instead of restarting React
           frame.on("resize", () => {
-            if (scene && typeof scene.handleResize === "function") {
-              scene.handleResize();
-            }
+            scene?.handleResize?.();
           });
         },
       });
@@ -41,15 +49,24 @@ export default function ZimCanvas() {
     init();
 
     return () => {
+      isDestroyed = true;
       if (scene) scene.destroy();
       if (frame) frame.dispose();
+
+      if (canvasTargetRef.current) {
+        canvasTargetRef.current.innerHTML = "";
+      }
     };
-  }, []);
+  }, [MainScene]); // 3. Putting MainScene here FORCES the effect to re-run on code change!
 
   return (
     <div
       ref={canvasTargetRef}
-      style={{ width: "100%", height: "100vh", overflow: "hidden" }}
+      style={{
+        width: "100%",
+        height: "100vh",
+        overflow: "hidden",
+      }}
     />
   );
 }
