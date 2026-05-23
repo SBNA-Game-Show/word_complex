@@ -1,27 +1,20 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-// 1. Keep MainScene as a top-level static import so Next.js actively watches it!
 import MainScene from "@/app/User/canvas/Mainscene";
 
 export default function ZimCanvas() {
   const canvasTargetRef = useRef(null);
 
   useEffect(() => {
-    let frame = null;
-    let scene = null;
-    let isDestroyed = false;
+    let frame;
+    let scene;
 
     async function init() {
       const zimModule = await import("zimjs");
       const { Frame, FIT, zimplify } = zimModule;
 
-      if (isDestroyed) return;
       zimplify();
-
-      if (canvasTargetRef.current) {
-        canvasTargetRef.current.innerHTML = "";
-      }
 
       frame = new Frame({
         scaling: FIT,
@@ -30,13 +23,8 @@ export default function ZimCanvas() {
         outerColor: zimModule.light,
         color: zimModule.dark,
         container: canvasTargetRef.current,
-        ready: () => {
-          if (isDestroyed) {
-            frame.dispose();
-            return;
-          }
 
-          // 2. MainScene is used here normally
+        ready: () => {
           scene = new MainScene(zimModule, frame.stage);
 
           frame.on("resize", () => {
@@ -48,16 +36,19 @@ export default function ZimCanvas() {
 
     init();
 
+    // HOT RELOAD SUPPORT
+    if (module.hot) {
+      module.hot.dispose(() => {
+        if (scene) scene.destroy();
+        if (frame) frame.dispose();
+      });
+    }
+
     return () => {
-      isDestroyed = true;
       if (scene) scene.destroy();
       if (frame) frame.dispose();
-
-      if (canvasTargetRef.current) {
-        canvasTargetRef.current.innerHTML = "";
-      }
     };
-  }, [MainScene]); // 3. Putting MainScene here FORCES the effect to re-run on code change!
+  }, []);
 
   return (
     <div
