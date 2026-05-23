@@ -9,6 +9,8 @@ export default class MainScene {
     // Track visual elements globally on the class instance so we can reposition them on resize if needed
     this.ball = null;
     this.customButton = null;
+    this.triangle = null;
+    this.bolb = null;
 
     this.createWorld();
   }
@@ -21,6 +23,13 @@ export default class MainScene {
     this.ball = new zim.Circle(100, "purple");
     this.ball.center(stage);
     this.ball.drag();
+
+    //adding a triangle
+    this.triangle = new Triangle(200, null, null, "green").center(stage);
+
+    // this.bolb = new Blob({
+    //   points: 12, // 12 points for more complex shape
+    // }).center();
 
     // 2. Instantiate and add your custom button wrapper
     this.customButton = new ZIMButton(zim, "Submit", 200, 60, "#222");
@@ -43,6 +52,7 @@ export default class MainScene {
 
   destroy() {
     if (this.stage) {
+      this.stage.removeAllEventListeners(); // Stops running tickers from throwing errors
       this.stage.removeAllChildren();
       this.stage.update();
     }
