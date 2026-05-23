@@ -1,0 +1,143 @@
+{
+  "guides": {
+    "developmentEnvironment": [
+      "Development uses mongodb docker image as db",
+      {
+        "title": "Running all Projects at once",
+        "steps": [
+          {
+            "step": 1,
+            "cmd": "cd word_complex",
+            "description": "Move to the root of the project folder"
+          },
+          {
+            "step": 2,
+            "cmd": "docker compose up --build",
+            "description": "Builds the complete project in Docker with all services running on their specific ports. (NOTE: Make sure Docker Desktop is running)"
+          },
+          {
+            "step": 3,
+            "cmd": "docker compose down -v",
+            "description": "Stops and removes all containers, networks, and volumes"
+          }
+        ]
+      },
+      {
+        "title": "Running Frontend/client Only using Docker",
+        "steps": [
+          {
+            "step": 1,
+            "cmd": "cd client",
+            "description": "Move to the frontend folder"
+          },
+          {
+            "step": 2,
+            "cmd": "docker compose up --build",
+            "description": "Builds only the frontend/client service"
+          }
+        ]
+      },
+      {
+        "title": "Running Backend/server Only using Docker",
+        "steps": [
+          {
+            "step": 1,
+            "cmd": "cd server",
+            "description": "Move to the backend/server folder"
+          },
+          {
+            "step": 2,
+            "cmd": "docker compose up --build",
+            "description": "Builds only the backend/server service"
+          }
+        ]
+      },
+      {
+        "title": "Running python Only using Docker",
+        "steps": [
+          {
+            "step": 1,
+            "cmd": "cd python",
+            "description": "Move to the python folder"
+          },
+          {
+            "step": 2,
+            "cmd": "docker compose up --build",
+            "description": "Builds only the python service"
+          },
+          {
+            "step": 3,
+            "cmd": "",
+            "description": "opens up jupyter notebook"
+          },
+          {
+            "step": 4,
+            "cmd": "my-token",
+            "description": "password for jupyter"
+          }
+        ]
+      },
+      {
+        "title": "Resetting Docker Environment",
+        "steps": [
+          {
+            "step": 1,
+            "cmd": "docker compose down -v",
+            "description": "Stops and removes all containers and volumes"
+          },
+          {
+            "step": 2,
+            "cmd": "docker system prune -a",
+            "description": "Removes unused Docker images and cache"
+          },
+          {
+            "step": 3,
+            "cmd": "docker compose up --build",
+            "description": "Rebuilds the entire project from scratch"
+          }
+        ]
+      },
+      {
+        "title": "Running Frontend Only",
+        "steps": [
+          {
+            "step": 1,
+            "cmd": "cd client",
+            "description": "Move to the frontend folder"
+          },
+          {
+            "step": 2,
+            "cmd": "npm install",
+            "description": "Install frontend dependencies"
+          },
+          {
+            "step": 3,
+            "cmd": "npm run dev",
+            "description": "Starts the Next.js frontend development server"
+          }
+        ]
+      },
+      {
+        "title": "Running Backend Only",
+        "steps": [
+          {
+            "step": 1,
+            "cmd": "cd server",
+            "description": "Move to the backend folder"
+          },
+          {
+            "step": 2,
+            "cmd": "npm install",
+            "description": "Install backend dependencies"
+          },
+          {
+            "step": 3,
+            "cmd": "npm run dev",
+            "description": "Starts the backend Express server"
+          }
+        ]
+      }
+    ],
+    "productionEnvironment": ["production uses Atlas Mongo DB"]
+  }
+}

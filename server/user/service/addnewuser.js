@@ -2,6 +2,7 @@ const createUser = require("../repository/createUser");
 const registrationRequest = require("../DTO/RegistrationRequest");
 const findByUserName = require("./finduserbyname");
 const PasswordHandler = require("./passwordhandler");
+const { TopologyDescription } = require("mongodb");
 
 const addNewUser = async (registrationRequest) => {
   try {
@@ -10,6 +11,10 @@ const addNewUser = async (registrationRequest) => {
     //check if the user already exists
 
     if (existingUser) {
+      /**
+       * then we will be returning the user id for the user. 
+       * ASSUMING ITS THE SAME USER
+       */
       throw new Error("USER_ALREADY_EXISTS_BY_GIVEN_NAME");
     }
     //password hashing
