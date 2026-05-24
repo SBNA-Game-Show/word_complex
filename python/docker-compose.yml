@@ -17,6 +17,8 @@ services:
       - "8888:8888"
     volumes:
       - .:/app
+
+    working_dir: /app/jupyter_notebook
     command: >
       jupyter notebook
       --ip=0.0.0.0
