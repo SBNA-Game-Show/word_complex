@@ -6,3 +6,8 @@ spacy
 stanza
 transformers
 torch
+pymongo
+dnspython
+mongomock
+pytest
+python-dotenv
