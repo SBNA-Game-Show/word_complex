@@ -4,3 +4,5 @@ requests
 urllib3
 spacy
 stanza
+transformers
+torch
