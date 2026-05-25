@@ -1,7 +1,10 @@
 import json
-from flask import Flask
+from flask import Flask,jsonify
 from config.envconfig import ENV
 from config.dbconfig import connect_db
+
+
+from controller.get_all_fable_title import GetAllFableTitleController
 
 app = Flask(__name__)
 
@@ -9,18 +12,21 @@ db = connect_db()
 
 stories_collection = db.stories
 
+baseUrl = "/api/v1/python"
 
+# @app.route("/")
+# def hello_world():
+#     stories_collection.insert_one({
+#         "message": "Hello MongoDB"
+#     })
 
+#     return "<p>Hello World</p>"
 
-
-
-@app.route("/")
-def hello_world():
-    stories_collection.insert_one({
-        "message": "Hello MongoDB"
-    })
-
-    return "<p>Hello World</p>"
+@app.route(f"{baseUrl}/getAllFableTitle", methods=["GET"])
+def get_unused_stories():
+    controller = GetAllFableTitleController()
+    result = controller.execute()
+    return jsonify(result)
 
 
 
