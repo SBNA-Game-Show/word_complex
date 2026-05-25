@@ -18,6 +18,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.pytest_cache
 
 # --- Environments ---
 .env
@@ -32,7 +33,7 @@ ENV/
 
 # --- Machine Learning Specifics ---
 # Large data files (CSV, JSON, H5, Parquet, etc.)
-data/
+
 *.csv
 *.json
 *.h5

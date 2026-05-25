@@ -23,10 +23,10 @@ export default class MainScene {
     const stage = this.stage;
 
     //-- TEST OBJECTS --
-    /*
-    this.ball = new zim.Circle(100, "purple");
-    this.ball.center(stage);
-    this.ball.drag();
+    
+    // this.ball = new zim.Circle(100, "purple");
+    // this.ball.center(stage);
+    // this.ball.drag();
     
 
     
@@ -38,7 +38,7 @@ export default class MainScene {
     // this.customButton.component.loc(100, 100, stage);
 
     // stage.addChild(this.customButton.component);
-    */
+    
     /**
      * MAIN PAGE ENTRY POINT OBJECTS GOES HERE
      */

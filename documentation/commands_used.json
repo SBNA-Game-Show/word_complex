@@ -8,6 +8,10 @@
     {
       "command": "docker exec -it <container_id_or_name> pip install <package_name>",
       "usage": "Installing new python package while running in docker"
+    },
+    {
+      "command": "docker exec -it python-services pytest -v",
+      "usage": "Running tests using python"
     }
   ]
 }

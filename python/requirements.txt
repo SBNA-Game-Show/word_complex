@@ -11,3 +11,5 @@ dnspython
 mongomock
 pytest
 python-dotenv
+pydantic
+spacy-wordnet
