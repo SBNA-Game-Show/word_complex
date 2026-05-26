@@ -2,8 +2,8 @@ from controller.get_all_fable_title import GetAllFableTitleController
 
 
 class FakeService:
-    def __init__(self):
-        self.stories = [
+    def return_all_stories(self):
+        return [
             {"storyNumber": "aesop01", "used": False},
             {"storyNumber": "aesop02", "used": False}
         ]

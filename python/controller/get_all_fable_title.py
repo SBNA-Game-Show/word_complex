@@ -12,7 +12,7 @@ class GetAllFableTitleController:
 
     def execute(self):
 
-        stories = self.service.stories
+        stories = self.service.return_all_stories()
 
         if not stories:
             return {
