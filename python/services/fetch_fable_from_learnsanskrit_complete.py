@@ -20,8 +20,6 @@ class RetrieveStoryFromLearnSanskrit:
         # generate URL automatically
         self.url = self.generate_url()
 
-        # send request automatically
-        self.response = self.send_request()
 
     def generate_url(self):
 

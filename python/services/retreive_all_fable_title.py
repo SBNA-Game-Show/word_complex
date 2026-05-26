@@ -12,13 +12,13 @@ class RetrieveAllFableTitle:
         with open(self.file_path, "r", encoding="utf-8") as f:
             self.data = json.load(f)
 
-        self.stories = self.return_all_stories()
 
     def validate_story(self, story):
+        """Verifing if the story is alreay downloaded or not"""
         return story.get("used") is False
 
     def return_all_stories(self):
-
+        """Returning all stories that are not downloaded"""
         unused_stories = []
 
         for category, stories in self.data.items():

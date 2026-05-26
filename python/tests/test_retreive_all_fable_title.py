@@ -9,13 +9,6 @@ def test_class_initialization():
     assert isinstance(retriever.data, dict)
 
 
-def test_stories_are_loaded():
-
-    retriever = RetrieveAllFableTitle()
-
-    assert isinstance(retriever.stories, list)
-
-
 def test_validate_story():
 
     retriever = RetrieveAllFableTitle()
@@ -34,9 +27,12 @@ def test_validate_story():
     assert retriever.validate_story(invalid_story) is False
 
 
-def test_only_used_stories_returned():
+def test_only_unused_stories_returned():
 
     retriever = RetrieveAllFableTitle()
 
-    for story in retriever.stories:
+    result = retriever.return_all_stories()
+
+    # all returned stories must be unused
+    for story in result:
         assert story.get("used") is False
