@@ -3,6 +3,9 @@ from bs4 import BeautifulSoup
 
 
 class ExtractDataFromLearnSanskrit:
+    """Given raw data this class extracts all the required files from the data provided
+    NOTE: Specific to learnsanskrit.cc page
+    """
 
     def __init__(self, data):
 
@@ -18,6 +21,7 @@ class ExtractDataFromLearnSanskrit:
         
     
     def parse_json(self,data):
+        """Parsing the input json data"""
         try:
             if isinstance (data,(dict,list)):
                 return data

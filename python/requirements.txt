@@ -13,3 +13,5 @@ pytest
 python-dotenv
 pydantic
 spacy-wordnet
+flask-restplus
+flasgger

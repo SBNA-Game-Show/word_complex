@@ -1,29 +1,36 @@
-import os
 import json
+import os
 
 
 class RetrieveAllFableTitle:
 
-    BASE_DIR = os.path.dirname(os.path.dirname(__file__))  # /app
-    file_path = os.path.join(BASE_DIR, "data", "stories_data.json")
-
     def __init__(self):
+        BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-        with open(self.file_path, "r", encoding="utf-8") as f:
+        json_path = os.path.join(
+            BASE_DIR,
+            "data",
+            "stories_data.json"
+        )
+
+        with open(json_path, "r", encoding="utf-8") as f:
             self.data = json.load(f)
 
-
     def validate_story(self, story):
-        """Verifing if the story is alreay downloaded or not"""
-        return story.get("used") is False
+        """
+        Example validation
+        """
+        return True
 
     def return_all_stories(self):
-        """Returning all stories that are not downloaded"""
+        """Returning all stories"""
+
         unused_stories = []
 
-        for category, stories in self.data.items():
-            for story in stories:
-                if self.validate_story(story):
-                    unused_stories.append(story)
+        # self.data is a LIST
+        for story in self.data:
+
+            if self.validate_story(story):
+                unused_stories.append(story)
 
         return unused_stories

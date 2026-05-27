@@ -5,6 +5,7 @@ import json
 
 
 class RetrieveStoryFromLearnSanskrit:
+    """Sends request to the page to extract t"""
 
     BASE_URL = "https://learnsanskrit.cc/fables/story"
 
@@ -22,6 +23,7 @@ class RetrieveStoryFromLearnSanskrit:
 
 
     def generate_url(self):
+        """Generating required URL using the input"""
 
         return f"{self.BASE_URL}?name={self.storyNumber}&active=true"
 

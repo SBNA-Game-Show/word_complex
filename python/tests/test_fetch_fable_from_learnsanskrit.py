@@ -1,4 +1,4 @@
-from services.fetch_fable_from_learnsanskrit_complete import RetrieveStoryFromLearnSanskrit
+from python.services.fable_extraction_pipeline.fetch_fable_from_learnsanskrit_complete import RetrieveStoryFromLearnSanskrit
 
 
 # Fake response object
