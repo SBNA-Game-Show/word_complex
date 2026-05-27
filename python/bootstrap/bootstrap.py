@@ -1,36 +1,33 @@
 import json
-import os
-
-
 class AppBootstrap:
 
     def __init__(self, db, json_path):
-
         self.db = db
         self.json_path = json_path
         self.collection = db["stories"]
 
     def already_seeded(self):
-
         return self.collection.count_documents({}) > 0
 
     def load_json(self):
-
         with open(self.json_path, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def transform(self, data):
 
-        documents = []
+        # CASE 1: single story dict
+        if isinstance(data, dict):
+            data["type"] = "fable"
+            return [data]
 
-        for category, stories in data.items():
+        # CASE 2: list of stories
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict):
+                    item["type"] = "fable"
+            return data
 
-            for story in stories:
-
-                story["category"] = category
-                documents.append(story)
-
-        return documents
+        raise ValueError(f"Unsupported data type: {type(data)}")
 
     def seed(self):
 
