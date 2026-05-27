@@ -1,36 +1,34 @@
 import json
 import os
+from utils.file_system_reader import FileSystemReader
 
 
 class RetrieveAllFableTitle:
 
     def __init__(self):
-        BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+        self.FILE_NAME = "stories_data.json"
+        self.data = self.read_data()
 
-        json_path = os.path.join(
-            BASE_DIR,
-            "data",
-            "stories_data.json"
-        )
-
-        with open(json_path, "r", encoding="utf-8") as f:
-            self.data = json.load(f)
+    def read_data(self):
+        reader = FileSystemReader(self.FILE_NAME)
+        return reader.read_file()
 
     def validate_story(self, story):
-        """
-        Example validation
-        """
-        return True
+        return story.get("used") is False
 
     def return_all_stories(self):
         """Returning all stories"""
 
         unused_stories = []
 
-        # self.data is a LIST
-        for story in self.data:
+        # data is a list of categories
+        for category in self.data:
 
-            if self.validate_story(story):
-                unused_stories.append(story)
+            stories = category.get("story_description", [])
+
+            for story in stories:
+
+                if self.validate_story(story):
+                    unused_stories.append(story)
 
         return unused_stories

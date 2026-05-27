@@ -2,24 +2,22 @@ from services.retreive_all_fable_title import RetrieveAllFableTitle
 
 
 def test_class_initialization():
-
     retriever = RetrieveAllFableTitle()
 
     assert retriever.data is not None
-    assert isinstance(retriever.data, dict)
+    assert isinstance(retriever.data, list)  # FIXED
 
 
 def test_validate_story():
-
     retriever = RetrieveAllFableTitle()
 
     valid_story = {
-        "storyNumber": "aesop01",
+        "vendorId": "aesop01",
         "used": False
     }
 
     invalid_story = {
-        "storyNumber": "aesop02",
+        "vendorId": "aesop02",
         "used": True
     }
 
@@ -28,7 +26,6 @@ def test_validate_story():
 
 
 def test_only_unused_stories_returned():
-
     retriever = RetrieveAllFableTitle()
 
     result = retriever.return_all_stories()
