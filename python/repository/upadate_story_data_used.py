@@ -1,6 +1,6 @@
-import os
-import json
 from datetime import datetime
+import json
+import os
 
 
 class UpdateStoryDataUsedStatus:
@@ -9,7 +9,6 @@ class UpdateStoryDataUsedStatus:
     file_path = os.path.join(BASE_DIR, "data", "stories_data.json")
 
     def __init__(self, storyName, used=True):
-
         self.storyName = storyName
         self.used = used
 
@@ -22,11 +21,15 @@ class UpdateStoryDataUsedStatus:
 
         story_found = False
 
-        for category, stories in self.data.items():
+        # ✅ FIX: iterate categories
+        for category in self.data:
 
+            stories = category.get("story_description", [])
+
+            # ✅ FIX: iterate nested stories
             for story in stories:
 
-                if story.get("storyNumber") == self.storyName:
+                if story.get("vendorId") == self.storyName:
 
                     story["used"] = self.used
                     story["updatedOn"] = datetime.now().isoformat()

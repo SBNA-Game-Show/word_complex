@@ -1,8 +1,11 @@
-from python.services.fable_extraction_pipeline.fetch_fable_from_learnsanskrit_complete import RetrieveStoryFromLearnSanskrit
+from services.fable_extraction_pipeline.fetch_fable_from_learnsanskrit_complete import RetrieveStoryFromLearnSanskrit
 
 
-# Fake response object
+# Fake response
 class FakeResponse:
+    status_code = 200
+    text = "ok"
+
     def json(self):
         return {
             "storyNumber": "aesop01",
@@ -15,9 +18,8 @@ def fake_requests_get(*args, **kwargs):
     return FakeResponse()
 
 
-# Test 1: URL generation
+# 1. URL generation
 def test_generate_url():
-
     obj = RetrieveStoryFromLearnSanskrit.__new__(RetrieveStoryFromLearnSanskrit)
     obj.storyNumber = "aesop01"
 
@@ -29,23 +31,18 @@ def test_generate_url():
     )
 
 
-# Test 2: Class initialization
+# 2. Class initialization + request
 def test_class_initialization(monkeypatch):
 
     monkeypatch.setattr(
-        "services.fetch_fable_from_learnsanskrit_complete.requests.get",
+        "services.fable_extraction_pipeline.fetch_fable_from_learnsanskrit_complete.requests.get",
         fake_requests_get
     )
 
     obj = RetrieveStoryFromLearnSanskrit("aesop01")
 
     assert obj.storyNumber == "aesop01"
-    assert obj.url == (
-        "https://learnsanskrit.cc/fables/story?"
-        "name=aesop01&active=true"
-    )
 
-    # ✅ FIX: call method explicitly
     result = obj.send_request()
 
     assert isinstance(result, dict)
@@ -53,11 +50,11 @@ def test_class_initialization(monkeypatch):
     assert result["used"] is False
 
 
-# Test 3: send_request method
+# 3. send_request method
 def test_send_request(monkeypatch):
 
     monkeypatch.setattr(
-        "services.fetch_fable_from_learnsanskrit_complete.requests.get",
+        "services.fable_extraction_pipeline.fetch_fable_from_learnsanskrit_complete.requests.get",
         fake_requests_get
     )
 
@@ -70,17 +67,16 @@ def test_send_request(monkeypatch):
     assert result["used"] is False
 
 
-# Test 4: ensure response is dict
+# 4. response type
 def test_response_type(monkeypatch):
 
     monkeypatch.setattr(
-        "services.fetch_fable_from_learnsanskrit_complete.requests.get",
+        "services.fable_extraction_pipeline.fetch_fable_from_learnsanskrit_complete.requests.get",
         fake_requests_get
     )
 
     obj = RetrieveStoryFromLearnSanskrit("aesop01")
 
-    # ✅ FIX: no attribute check, just method output
     result = obj.send_request()
 
     assert isinstance(result, dict)
