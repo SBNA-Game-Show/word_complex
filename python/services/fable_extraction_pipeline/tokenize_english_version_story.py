@@ -8,7 +8,19 @@ class TokenizeEnglishVersion:
         self.nlp = spacy.load("en_core_web_sm")
 
     def load_english_version_story(self):
-        return self.data.get("englishVersion", "")
+
+        if isinstance(self.data, dict):
+            return self.data.get("englishVersion", "")
+
+        if isinstance(self.data, list):
+            # try safe extraction from list of dicts
+            return " ".join(
+                item.get("englishVersion", "")
+                for item in self.data
+                if isinstance(item, dict)
+            )
+
+        return ""
 
     def load_sentence_to_model(self):
         text = self.load_english_version_story()
