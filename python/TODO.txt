@@ -1,0 +1,18 @@
+TESTS:
+1. Test Route addNewFable from server.py in test_routes.py
+2. Test add_new_story_learnsanskrit.py from controller
+3. Test get_story_data_by_id from repository
+4. Test extract_new_fable_learnsanskrit from services
+5. Test tokenize_sanskrit_version_story from services/fable_extraction_pipeline
+6. Test extact_data_learnsanskrit
+7. Test tokenize_english_version_story
+
+
+API ENDPOINTS
+1. get all tokenized stories
+2. get stories by category 
+3. get story by Id
+
+EXPLORE pycdsl for dictionary
+
+trial push to render for compatibility and exposing API ENDPOINTS
