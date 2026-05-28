@@ -1,0 +1,9 @@
+{
+  "features": [
+    {
+      "feature": 1,
+      "title": "API Documentaion",
+      "description": "http://localhost:5001/api-docs/"
+    }
+  ]
+}
