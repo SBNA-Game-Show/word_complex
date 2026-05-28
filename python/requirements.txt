@@ -1,4 +1,6 @@
 Flask
+Flask-Cors
+flask_swagger_ui
 beautifulsoup4
 requests
 urllib3
@@ -13,5 +15,4 @@ pytest
 python-dotenv
 pydantic
 spacy-wordnet
-flask-restplus
-flasgger
+

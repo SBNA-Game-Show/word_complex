@@ -101,8 +101,8 @@ class ExtractDataFromLearnSanskrit:
             
             for div in divs:
                 data = div.get_text(strip=True)
-                data.replace("\n","").replace("","").replace(" ","")
-                data.replace("\\","").replace(" ","")
+                data = data.replace("\n","").replace("\\","")
+                
                 
                 if data == "":
                     continue
@@ -113,7 +113,7 @@ class ExtractDataFromLearnSanskrit:
                 words.append(data)
                 
             if words:
-                sanskrit_version.append("".join(words))
+                sanskrit_version.append(" ".join(words))
             
         
         return sanskrit_version
