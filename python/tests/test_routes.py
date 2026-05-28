@@ -4,7 +4,7 @@ def test_get_unused_stories_route():
 
     client = app.test_client()
 
-    response = client.get("/api/v1/python/getAllFableTitle")
+    response = client.get("/api/v1/python/getAllFableInfo")
 
     assert response.status_code == 200
 
