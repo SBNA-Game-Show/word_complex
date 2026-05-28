@@ -1,6 +1,6 @@
 import json
 import os
-from flask import Flask,jsonify
+from flask import Flask,jsonify,request
 from flask_cors import CORS
 from config.envconfig import ENV
 from config.dbconfig import connect_db
@@ -8,6 +8,7 @@ from config.dbconfig import connect_db
 from flask_swagger_ui import get_swaggerui_blueprint
 
 from controller.get_all_fable_title import GetAllFableTitleController
+from controller.add_new_story_learnsanskrit import AddNewStory
 from bootstrap.bootstrap import AppBootstrap
 
 
@@ -53,6 +54,25 @@ def get_unused_stories():
     controller = GetAllFableTitleController()
     result = controller.execute()
     return jsonify(result)
+
+
+# Post request for adding a new story to collection
+@app.route(f"{baseUrl}/addNewFable", methods=["POST"])
+def add_new_fable():
+
+    story_id = request.args.get("story_id")
+
+    if not story_id:
+        return jsonify({
+            "success": False,
+            "message": "story_id query parameter is required"
+        }), 400
+
+    controller = AddNewStory(story_id)
+
+    response = controller.execute()
+
+    return jsonify(response)
 
 
 SWAGGER_URL = "/api-docs"
