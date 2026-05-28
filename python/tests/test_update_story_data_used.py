@@ -1,7 +1,7 @@
 import json
 import os
 import pytest
-from repository.upadate_story_data_used import UpdateStoryDataUsedStatus
+from python.repository.update_story_data_used import UpdateStoryDataUsedStatus
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 FILE_PATH = os.path.join(BASE_DIR, "data", "stories_data.json")
