@@ -1,7 +1,9 @@
 import json
 import os
 import pytest
-from python.repository.update_story_data_used import UpdateStoryDataUsedStatus
+
+from repository.update_story_data_used import UpdateStoryDataUsedStatus
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 FILE_PATH = os.path.join(BASE_DIR, "data", "stories_data.json")
@@ -9,12 +11,14 @@ FILE_PATH = os.path.join(BASE_DIR, "data", "stories_data.json")
 
 @pytest.fixture(autouse=True)
 def reset_file():
-    """Reset JSON before each test"""
+    """
+    Reset JSON before each test
+    """
 
     with open(FILE_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # FIX: iterate list of categories
+    # Reset all stories
     for category in data:
         for story in category.get("story_description", []):
             story["used"] = False
@@ -27,30 +31,61 @@ def reset_file():
 
 
 def test_class_initialization():
-    story_name = "aesop01"
 
-    updater = UpdateStoryDataUsedStatus(story_name)
+    story_identifier = "aesop01"
 
-    assert updater.storyName == story_name
-    assert updater.result is not None
+    updater = UpdateStoryDataUsedStatus(story_identifier)
+
+    assert updater.story_identifier == story_identifier
+    assert updater.used is True
 
 
 def test_execute_update():
-    story_number = "aesop01"
 
-    updater = UpdateStoryDataUsedStatus(story_number)
+    story_identifier = "aesop01"
 
-    result = updater.result
+    updater = UpdateStoryDataUsedStatus(story_identifier)
+
+    result = updater.execute()
 
     assert result["success"] is True
-    assert result["storyNumber"] == story_number
+    assert result["storyIdentifier"] == story_identifier
     assert result["used"] is True
 
 
 def test_invalid_story():
+
     updater = UpdateStoryDataUsedStatus("invalid_story")
 
-    result = updater.result
+    result = updater.execute()
 
     assert result["success"] is False
     assert "not found" in result["message"]
+
+
+def test_story_file_updated():
+
+    story_identifier = "aesop01"
+
+    updater = UpdateStoryDataUsedStatus(story_identifier)
+
+    updater.execute()
+
+    with open(FILE_PATH, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    updated_story = None
+
+    for category in data:
+        for story in category.get("story_description", []):
+
+            if (
+                story.get("_id") == story_identifier
+                or story.get("vendorId") == story_identifier
+            ):
+                updated_story = story
+                break
+
+    assert updated_story is not None
+    assert updated_story["used"] is True
+    assert "updatedOn" in updated_story
