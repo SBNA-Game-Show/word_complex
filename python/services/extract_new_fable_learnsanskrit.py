@@ -41,12 +41,12 @@ class FetchNewFable:
         # 4. Load / Persist
         write_success = self._write_to_file_system(final_version)
         if not write_success:
-            return "ERROR OCCURRED ATTEMPTING TO WRITE FILE."
+            raise IOError("Failed writing tokenized story")
        
         # 5. DB Updates
         update_status = self._update_story_status(story_id)
-        if not update_status:
-            return "UNABLE TO UPDATE STATUS"
+        if not update_status.get("success"):
+            raise ValueError(update_status.get("message"))
             
         return "FABLE DOWNLOADED SUCCESSFULLY"
 
