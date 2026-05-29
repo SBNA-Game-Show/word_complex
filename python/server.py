@@ -23,7 +23,7 @@ stories_collection = db.stories
 
 BASE_DIR = os.path.dirname(__file__)
 
-json_path = os.path.join(BASE_DIR, "data", "stories_data.json")
+json_path = os.path.join(BASE_DIR, "data", "tokenized_stories.json")
 OPENAPI_PATH = os.path.join(BASE_DIR,"config","swaggerconfig.json")
 
 
