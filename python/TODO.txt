@@ -7,8 +7,7 @@ TESTS:
 6. Test extact_data_learnsanskrit
 7. Test tokenize_english_version_story
 8. Test extract synonym_antonym
-9. get_all_tokenized_story from repository 
-10. retreive_all_tokenized_stories
+
 
 
 API ENDPOINTS
