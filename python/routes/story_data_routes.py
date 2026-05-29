@@ -1,11 +1,8 @@
 from flask import Blueprint
-from controller.tokenized_data_learnsanskrit_controller import add_new_story
+from controller.story_data_learnsanskrit_controller import fetch_all_story_data
 
 
-tokenize_data_bp = Blueprint("tokenize_data_bp",__name__)
+story_data_bp = Blueprint("story_data_bp",__name__)
 
 
-
-#Post route that will take an id retrieve data from learn sanskrit.cc tokenize it and store it in data folder
-
-tokenize_data_bp.route("/addNew",methods=["POST"])(add_new_story)
+story_data_bp.route("/getAll", methods=["GET"])(fetch_all_story_data)

@@ -7,10 +7,11 @@ from config.dbconfig import connect_db
 
 from flask_swagger_ui import get_swaggerui_blueprint
 
-from controller.get_all_fable_title import GetAllFableTitleController
 from bootstrap.bootstrap import AppBootstrap
 from middleware.error_handler import (register_error_handlers)
-from routes.story_data_routes import tokenize_data_bp
+
+from routes.tokenized_data_routes import tokenize_data_bp
+from routes.story_data_routes import story_data_bp
 
 
 
@@ -34,7 +35,7 @@ bootstrap.seed()
 baseUrl = "/api/v1/python"
 
 
-
+app.register_blueprint(story_data_bp,url_prefix = baseUrl)
 app.register_blueprint(tokenize_data_bp,url_prefix=baseUrl)
 
 
@@ -42,12 +43,6 @@ app.register_blueprint(tokenize_data_bp,url_prefix=baseUrl)
 
 
 
-# Returns the list of all story lists for download with titles
-@app.route(f"{baseUrl}/getAllFableInfo", methods=["GET"])    
-def get_unused_stories():
-    controller = GetAllFableTitleController()
-    result = controller.execute()
-    return jsonify(result)
 
 
 
