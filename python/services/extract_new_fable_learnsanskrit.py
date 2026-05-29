@@ -1,10 +1,11 @@
+import re
 from repository.get_stroy_data_by_id import GetStoryData
-# FIXED: Typo in 'upadate' -> 'update'
 from repository.update_story_data_used import UpdateStoryDataUsedStatus
 from services.fable_extraction_pipeline.fetch_fable_from_learnsanskrit_complete import RetrieveStoryFromLearnSanskrit
 from services.fable_extraction_pipeline.extract_data_learnsanskrit import ExtractDataFromLearnSanskrit
 from services.fable_extraction_pipeline.tokenize_english_version_story import TokenizeEnglishVersion
 from services.fable_extraction_pipeline.tokenize_sanskrit_version_story import TokenizeSanskritVersion
+from services.fable_extraction_pipeline.extract_english_synonym_antonym import ExtractEnglishSynonymAntonym
 from utils.file_system_writer import WriteToFileSystem
 
 class FetchNewFable:
@@ -22,16 +23,18 @@ class FetchNewFable:
             raise ValueError(f"No data found for the given ID: {story_id}")
             
         vendor_id = story_data.get("vendorId")
-
+        story_category = re.match(r"[a-zA-Z]+", vendor_id).group()
         # 2. Extract & Transform
         raw_data = self._retrieve_raw_data(vendor_id)
         cleaned_data = self._clean_data(raw_data)
-        
+        ## Adding the same request id for the story
         cleaned_data["_id"] = story_id
+        cleaned_data["category"] = story_category
         
         # 3. Enrich / Tokenize
         tokenized_english = self._tokenize_english_version(cleaned_data)
-        final_version = self._tokenize_sanskrit_version(tokenized_english)
+        tokenized_english_with_grammer = self._add_synonym_antonym(tokenized_english)
+        final_version = self._tokenize_sanskrit_version(tokenized_english_with_grammer)
         
 
         
@@ -59,9 +62,13 @@ class FetchNewFable:
         
     def _tokenize_english_version(self, cleaned_data):
         return TokenizeEnglishVersion(cleaned_data).tokenize_english_version()
+    
+    
+    def _add_synonym_antonym(self, tokenized_english):
+        return ExtractEnglishSynonymAntonym(tokenized_english).execute()
         
-    def _tokenize_sanskrit_version(self, tokenized_english):
-        return TokenizeSanskritVersion(tokenized_english).tokenize_sanskrit()
+    def _tokenize_sanskrit_version(self, tokenized_english_with_grammar):
+        return TokenizeSanskritVersion(tokenized_english_with_grammar).tokenize_sanskrit()
     
     def _write_to_file_system(self, final_data):
         # FIXED: Wrapped in try-except to return a boolean result based on the writer's success

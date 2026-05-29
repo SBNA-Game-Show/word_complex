@@ -6,12 +6,15 @@ TESTS:
 5. Test tokenize_sanskrit_version_story from services/fable_extraction_pipeline
 6. Test extact_data_learnsanskrit
 7. Test tokenize_english_version_story
+8. Test extract synonym_antonym 
 
 
 API ENDPOINTS
 1. get all tokenized stories
 2. get stories by category 
 3. get story by Id
+4. get unused stories //done
+5. download story by id //done
 
 EXPLORE pycdsl for dictionary
 
