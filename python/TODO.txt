@@ -15,4 +15,4 @@ API ENDPOINTS
 
 EXPLORE pycdsl for dictionary
 
-trial push to render for compatibility and exposing API ENDPOINTS
+trial push to hugging face for compatibility and exposing API ENDPOINTS //done

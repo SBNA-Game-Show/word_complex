@@ -1,0 +1,37 @@
+Get tokenized story by ID
+---
+tags:
+  - Tokenized Data Routes
+
+summary: Retrieve a tokenized story
+
+description: Returns a tokenized story using its story ID.
+
+parameters:
+  - name: story_id
+    in: query
+    type: string
+    required: true
+    description: Unique identifier of the story.
+    example: 929e7fb1-ba2c-40a9-9e8b-9bf0bbc8c06e
+
+responses:
+  200:
+    description: Story retrieved successfully
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+
+  404:
+    description: Story not found
+
+  400:
+    description: Missing story_id parameter
+
+  500:
+    description: Internal server error
