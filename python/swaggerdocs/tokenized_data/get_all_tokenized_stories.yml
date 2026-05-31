@@ -1,0 +1,25 @@
+Get all tokenized stories
+---
+tags:
+  - Tokenized Data Routes
+
+summary: Retrieve all tokenized stories
+
+description: Returns all tokenized stories stored in the collection.
+
+responses:
+  200:
+    description: Tokenized stories retrieved successfully
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            type: object
+
+  500:
+    description: Internal server error

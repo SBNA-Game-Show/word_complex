@@ -1,0 +1,34 @@
+Get all Available Stories from Learn Sanskrit.cc
+---
+tags:
+  - Available Stories
+
+summary: Retrieve all available stories
+
+description: Returns all available stories from Learn Sanskrit.cc.
+
+responses:
+  200:
+    description: Stories retrieved successfully
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            type: object
+
+  500:
+    description: Internal server error
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: An unexpected error occurred
