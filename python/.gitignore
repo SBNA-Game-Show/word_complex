@@ -32,7 +32,7 @@ ENV/
 
 # --- Machine Learning Specifics ---
 # Large data files (CSV, JSON, H5, Parquet, etc.)
-data/
+
 *.csv
 *.json
 *.h5
