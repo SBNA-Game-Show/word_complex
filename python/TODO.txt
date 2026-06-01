@@ -16,7 +16,7 @@ New Tests
 6. retrieve_tokenized_stories_by_category from services
 7. tokenized_data_learnsanskrit.fetch_tokenized_stories_by_category from controller
 8. tokenized_story_mapper from utils
-
+9. from dictionary_controller tokenize_english_word
 
 
 API ENDPOINTS
