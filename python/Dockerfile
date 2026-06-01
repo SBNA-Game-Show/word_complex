@@ -2,15 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN mkdir -p /app/jupyter_notebook
 
 # Copy requirements
-COPY requirements.txt .
+COPY requirements_prod.txt .
+
+
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    update-ca-certificates
 
 # Install Python dependencies
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install -r requirements.txt && \
-    pip install notebook ipykernel
+    pip install -r requirements_prod.txt 
 
 # Download spaCy English model
 RUN python -m spacy download en_core_web_sm
@@ -20,11 +23,11 @@ RUN python -c "import stanza; stanza.download('sa')"
 COPY . /app
 
 # Add startup script
-COPY ./scripts/start.sh /start.sh
-RUN chmod +x /start.sh
+COPY ./scripts/prodstart.sh /prodstart.sh
+RUN chmod +x /prodstart.sh
 
 ENV PYTHONPATH=/app
 
-EXPOSE 5001
+EXPOSE 7860
 
-CMD ["/start.sh"]
+CMD ["/prodstart.sh"]
