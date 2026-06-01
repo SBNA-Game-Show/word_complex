@@ -5,13 +5,11 @@ requests
 urllib3
 spacy
 stanza
-transformers
-torch
 dnspython
-pytest
 python-dotenv
 pydantic
 spacy-wordnet
-flasgger
+gunicorn
 pymongo
+flasgger
 
