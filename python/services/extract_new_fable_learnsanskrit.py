@@ -7,6 +7,7 @@ from services.fable_extraction_pipeline.tokenize_english_version_story import To
 from services.fable_extraction_pipeline.tokenize_sanskrit_version_story import TokenizeSanskritVersion
 from services.fable_extraction_pipeline.extract_english_synonym_antonym import ExtractEnglishSynonymAntonym
 from utils.file_system_writer import WriteToFileSystem
+from repository.write_tokenized_stories_to_mongodb import WriteTokenizedStoryToMongoDB
 
 class FetchNewFable:
     """Orchestrates the pipeline to fetch, clean, tokenize, and save a fable."""
@@ -23,7 +24,15 @@ class FetchNewFable:
             raise ValueError(f"No data found for the given ID: {story_id}")
             
         vendor_id = story_data.get("vendorId")
-        story_category = re.match(r"[a-zA-Z]+", vendor_id).group()
+        
+        if not vendor_id:
+            raise ValueError("Vendor Id Mismatch")
+        
+        match = re.match(r"[a-zA-Z]+",vendor_id)
+        
+        if not match:
+            raise ValueError(f"Invalid vendorId format: {vendor_id}")
+        story_category = match.group()
         # 2. Extract & Transform
         raw_data = self._retrieve_raw_data(vendor_id)
         cleaned_data = self._clean_data(raw_data)
@@ -36,19 +45,29 @@ class FetchNewFable:
         tokenized_english_with_grammer = self._add_synonym_antonym(tokenized_english)
         final_version = self._tokenize_sanskrit_version(tokenized_english_with_grammer)
         
-
         
-        # 4. Load / Persist
-        write_success = self._write_to_file_system(final_version)
-        if not write_success:
-            raise IOError("Failed writing tokenized story")
+        # writing to mongo db database
+        result = self._write_to_mongoDB(final_version)
+        
+        if result is None:
+            return "Internal server Error"
+        
+
+        # Writes to the file system    
+        # # 4. Load / Persist
+        # write_success = self._write_to_file_system(final_version)
+        # if not write_success:
+        #     raise IOError("Failed writing tokenized story")
        
-        # 5. DB Updates
-        update_status = self._update_story_status(story_id)
-        if not update_status.get("success"):
-            raise ValueError(update_status.get("message"))
+        # # 5. DB Updates
+        # update_status = self._update_story_status(story_id)
+        # if not update_status.get("success"):
+        #     raise ValueError(update_status.get("message"))
             
-        return "FABLE DOWNLOADED SUCCESSFULLY"
+        return {
+            "success": True,
+            "message": "Fable downloaded successfully"
+        }
 
     # Helper methods 
     def _get_story_data(self, story_id):
@@ -69,6 +88,10 @@ class FetchNewFable:
         
     def _tokenize_sanskrit_version(self, tokenized_english_with_grammar):
         return TokenizeSanskritVersion(tokenized_english_with_grammar).tokenize_sanskrit()
+    
+    def _write_to_mongoDB(self, story):
+        writer = WriteTokenizedStoryToMongoDB(story)
+        return writer.save_story()
     
     def _write_to_file_system(self, final_data):
         # FIXED: Wrapped in try-except to return a boolean result based on the writer's success
