@@ -13,7 +13,9 @@ New Tests
 3. get_synonyms from services/tokenize_english_word
 4. get_wordnet_pos from services/tokenize_english_word
 5. process_english_word from services
-6. retrieve_tokenized_stories_by_category
+6. retrieve_tokenized_stories_by_category from services
+7. tokenized_data_learnsanskrit.fetch_tokenized_stories_by_category from controller
+8. tokenized_story_mapper from utils
 
 
 
