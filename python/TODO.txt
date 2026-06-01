@@ -6,10 +6,20 @@ TESTS:
 5. tokenize_sanskrit_version_story from services/fable_extraction_pipeline
 
 
+
+New Tests
+1. tokenize_english_word from services/tokenize_english_word
+2.  get_antonyms from services/tokenize_english_word
+3. get_synonyms from services/tokenize_english_word
+4. get_wordnet_pos from services/tokenize_english_word
+5. process_english_word from services
+6. retrieve_tokenized_stories_by_category
+
+
+
 API ENDPOINTS
 
-1. get stories by category 
-3. get_noun_verb_synonym_english (word based)
+
 4. get_noun_verb_sanskrit(word based)
 
 
