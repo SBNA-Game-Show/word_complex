@@ -4,6 +4,7 @@ from flask import jsonify, request
 from services.extract_new_fable_learnsanskrit import FetchNewFable
 from services.retrieve_all_tokenized_stories import RetrieveTokenizedStories
 from services.retrieve_tokenized_story_by_Id import RetrieveTokenizedStoryById
+from services.retrieve_tokenized_stories_by_category import RetrieveTokenizedStoryByCategory
 
 
 ## Adding a new story to the collection
@@ -68,5 +69,22 @@ def fetch_tokenized_story_by_id():
     
 
 ## Get tokenized story by category
+
+def fetch_tokenized_stories_by_category():
+    category = request.args.get("category_name")
+    
+    if not category:
+        return jsonify({
+            "success":False,
+            "message":"Category Name is Required"
+        }),400
+        
+    service = RetrieveTokenizedStoryByCategory(category)
+    data = service.get_by_category()
+    
+    return jsonify({
+        "success": True,
+        "data": data
+    }),200
 
 
