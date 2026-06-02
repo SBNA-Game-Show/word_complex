@@ -29,9 +29,36 @@ responses:
 
   404:
     description: Story not found
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: No Story Found By Given Id.
 
   400:
     description: Missing story_id parameter
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Missing Story Id in parameter.
 
   500:
     description: Internal server error
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Internal server error.
