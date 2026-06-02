@@ -5,7 +5,8 @@ tags:
 
 summary: Retrieve all available stories
 
-description: Returns all available stories from Learn Sanskrit.cc.
+description: >
+  Returns all available fables that are available to be taken from https://learnsanskrit.cc/
 
 responses:
   200:
