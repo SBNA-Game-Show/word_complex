@@ -14,5 +14,6 @@ pydantic
 spacy-wordnet
 flasgger
 pymongo
+vidyut
 
 
