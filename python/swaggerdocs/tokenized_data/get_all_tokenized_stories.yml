@@ -5,11 +5,25 @@ tags:
 
 summary: Retrieve all tokenized stories
 
-description: Returns all tokenized stories stored in the collection.
+description: >
+  Returns all tokenized stories that have been downloaded and tokenized from MongoDB
 
 responses:
   200:
     description: Tokenized stories retrieved successfully
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            type: object
+
+  404:
+    description: No Stories in DB
     schema:
       type: object
       properties:

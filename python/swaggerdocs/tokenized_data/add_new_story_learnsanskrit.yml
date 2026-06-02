@@ -1,4 +1,4 @@
-Adds a new Story to the collection from Learn Sanskrit.cc
+Adds a new Story to the collection from LearnSanskrit.cc
 ---
 tags:
   - Tokenized Data Routes
@@ -6,8 +6,8 @@ tags:
 summary: Add a new story to the tokenized collection
 
 description: >
-  ⚠️ This endpoint triggers the Sanskrit tokenization pipeline and writes
-  data to the tokenized story collection.
+  ⚠️ This endpoint triggers the Sanskrit tokenization pipeline and stores
+  the processed story into the tokenized collection (MongoDB).
 
 security:
   - Bearer: []
@@ -18,16 +18,31 @@ parameters:
     type: string
     required: true
     description: >
-      Unique identifier of the story to retrieve and tokenize.
+      The unique identifier of the story to be processed.
+      Example request:
+        GET /addNew?story_id=929e7fb1-ba2c-40a9-9e8b-9bf0bbc8c06e
 
-      Example:
-      929e7fb1-ba2c-40a9-9e8b-9bf0bbc8c06e
+      Workflow:
+      - Fetches story data from LearnSanskrit.cc
+      - Cleans and normalizes text
+      - Tokenizes English and Sanskrit versions
+      - Stores processed output in MongoDB Atlas
+
     example: 929e7fb1-ba2c-40a9-9e8b-9bf0bbc8c06e
+    
 
 responses:
   200:
     description: Story successfully retrieved, tokenized, and stored.
-
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Fable downloaded successfully
 
   500:
     description: Internal server error.
