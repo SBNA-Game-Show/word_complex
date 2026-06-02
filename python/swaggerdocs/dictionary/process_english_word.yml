@@ -1,0 +1,84 @@
+Tokenize English Word
+---
+tags:
+  - Dictionary Routes
+
+summary: Tokenizes a given English word.
+
+description: |
+  Given an English word, this endpoint:
+
+  - Extracts the word's part of speech (POS) using the spaCy library.
+  - Uses NLTK's WordNet corpus to find synonyms and antonyms.
+  - Returns a JSON object containing the word, its part of speech (`pos`), synonyms, and antonyms.
+
+parameters:
+  - name: word
+    in: query
+    required: true
+    type: string
+    description: English word to tokenize.
+    example: happy
+
+responses:
+  200:
+    description: Word successfully tokenized.
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            token:
+              type: object
+              properties:
+                text:
+                  type: string
+                  example: happy
+                pos:
+                  type: string
+                  example: ADJ
+                lemma:
+                  type: string
+                  example: happy
+            synonyms:
+              type: array
+              items:
+                type: string
+              example:
+                - felicitous
+                - glad
+                - well-chosen
+            antonyms:
+              type: array
+              items:
+                type: string
+              example:
+                - unhappy
+
+  400:
+    description: Invalid request.
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: English word is required
+
+  500:
+    description: Internal server error.
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Internal server error
