@@ -1,0 +1,10 @@
+title: Libraries Used
+content: |
+  The following libraries have been used:
+
+  - **Fable Tokenization**
+    - Data sourced from https://learnsanskrit.cc/
+      - Pre-structured content used as input for processing
+    - Text processing pipeline:
+      - spaCy ("en_core_web_sm") used for tokenizing each extracted word
+      - NLTK WordNet and omw-1.4 used for generating synonyms and antonyms for English words
