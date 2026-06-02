@@ -20,9 +20,11 @@ New Tests
 
 
 API ENDPOINTS
-
-
 4. get_noun_verb_sanskrit(word based)
+
+
+REFACTOR:
+ - ENGLISH SYNONYMS AND ANTONYMS PIPELINE TO PROCESS BY WORD
 
 
 EXPLORE pycdsl for dictionary

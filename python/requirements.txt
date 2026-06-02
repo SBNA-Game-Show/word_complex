@@ -15,3 +15,4 @@ spacy-wordnet
 flasgger
 pymongo
 
+
