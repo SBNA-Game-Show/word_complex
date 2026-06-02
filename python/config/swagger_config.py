@@ -1,5 +1,4 @@
-# swagger_config.py
-
+from config.load_project_description import load_swagger_description
 SWAGGER_CONFIG = {
     "headers": [],
     "specs": [
@@ -19,7 +18,7 @@ SWAGGER_TEMPLATE = {
     "swagger": "2.0",
     "info": {
         "title": "SB Python Module API's",
-        "description": "This is Python module.",
+        "description": load_swagger_description(),
         "version": "1.0.0"
     },
         "securityDefinitions": {
