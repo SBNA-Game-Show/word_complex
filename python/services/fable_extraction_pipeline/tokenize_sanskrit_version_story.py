@@ -1,10 +1,11 @@
 import stanza
+from nlp.stanza_loader import sanskrit_nlp
 
 class TokenizeSanskritVersion:
     def __init__(self, data):
         self.data = data
         # We explicitly activate the 'tokenize' processor with default segmenter options
-        self.nlp = stanza.Pipeline('sa', processors='tokenize,pos,lemma')
+        self.nlp = sanskrit_nlp
         self.sentences = self.data.get("sanskritVersion", [])
         
     def tag_words(self):
