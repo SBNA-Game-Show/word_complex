@@ -5,8 +5,9 @@ from pathlib import Path
 def load_swagger_description():
     files = [
         Path("swaggerdocs/project/project_overview.yml"),
-        Path("swaggerdocs/project/sources_credits.yml"),
-        Path("swaggerdocs/project/libraries_used.yml")
+        # Path("swaggerdocs/project/sources_credits.yml"),
+        # Path("swaggerdocs/project/libraries_used.yml"),
+        # Path("swaggerdocs/project/footer.yml")
     ]
 
     sections = []
