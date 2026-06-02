@@ -20,13 +20,5 @@ SWAGGER_TEMPLATE = {
         "title": "SB Python Module API's",
         "description": load_swagger_description(),
         "version": "1.0.0"
-    },
-        "securityDefinitions": {
-        "Bearer": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header",
-            "description": "JWT Authorization header using the Bearer scheme. Example: Bearer <token>"
-        }
-        }
+    }
 }
