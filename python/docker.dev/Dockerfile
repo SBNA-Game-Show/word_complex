@@ -12,7 +12,7 @@ RUN pip install --upgrade pip setuptools wheel && \
     pip install -r requirements.txt && \
     pip install notebook ipykernel
 
-# Download spaCy English model
+# Download spaCy, Stanza, and NLTK models
 RUN python -m spacy download en_core_web_sm
 RUN python -c "import stanza; stanza.download('sa')"
 RUN python -m nltk.downloader wordnet
