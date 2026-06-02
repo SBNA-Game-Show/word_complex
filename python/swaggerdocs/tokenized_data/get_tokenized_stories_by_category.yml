@@ -5,7 +5,7 @@ tags:
 
 summary: Retrieve tokenized stories by category
 
-description: >
+description: |
   Returns tokenized stories belonging to the specified category.
 
 parameters:
@@ -35,9 +35,36 @@ responses:
 
   400:
     description: Category name is required
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: English name is required
 
   404:
     description: No tokenized stories found for category
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: No Tokenized Found In the Given Category.
 
   500:
-    description: Internal server error
+    description: Internal server error.
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Internal server error

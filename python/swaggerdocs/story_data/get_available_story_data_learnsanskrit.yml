@@ -21,6 +21,18 @@ responses:
           items:
             type: object
 
+  400:
+    description: to be added later
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Incomplete
+
   500:
     description: Internal server error
     schema:

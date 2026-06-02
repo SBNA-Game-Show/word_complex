@@ -27,3 +27,16 @@ parameters:
 responses:
   200:
     description: Story successfully retrieved, tokenized, and stored.
+
+
+  500:
+    description: Internal server error.
+    schema:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Internal server error
