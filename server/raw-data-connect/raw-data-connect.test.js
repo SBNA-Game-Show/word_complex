@@ -4,7 +4,8 @@ const DBManager = require("../config/testdbconfig");
 jest.mock("../config/dataConnectConfig", () => jest.fn());
 
 const connectTokenizedStories = require("../config/dataConnectConfig");
-const retrieveAllStories = require("./retreiveAllTokenizedStories");
+const retrieveAllStories = require("./retrieveAllTokenizedStories");
+const retrieveStoryById = require("./retrieveTokenizedStoryById");
 
 const dbManager = new DBManager();
 
@@ -82,5 +83,63 @@ describe("Retrieve All Tokenized Stories Tests", () => {
     );
 
     console.error.mockRestore();
+  });
+});
+
+describe("Retrieve Tokenized Story By Id", () => {
+  it("should should throw and error. Story Id is Missing", async () => {
+    await db.collection("tokenized_stories").insertMany([
+      {
+        _id: "1",
+        title: "Aesop",
+        origin: "Aesop",
+      },
+      {
+        _id: "2",
+        title: "Panchatantra",
+        origin: "Panchatantra",
+      },
+    ]);
+    await expect(retrieveStoryById("")).rejects.toThrow("Story Id is Required");
+  });
+  it("should successfully retrieve a story given a valid Id", async () => {
+    await db.collection("tokenized_stories").insertMany([
+      {
+        _id: "1",
+        title: "Aesop",
+        origin: "Aesop",
+      },
+      {
+        _id: "2",
+        title: "Panchatantra",
+        origin: "Panchatantra",
+      },
+    ]);
+
+    const story = await retrieveStoryById("1");
+
+    expect(story).toMatchObject({
+      _id: "1",
+      title: "Aesop",
+      origin: "Aesop",
+    });
+  });
+  it("should throw an error when no tokenized story is found by the given id", async () => {
+    await db.collection("tokenized_stories").insertMany([
+      {
+        _id: "1",
+        title: "Aesop",
+        origin: "Aesop",
+      },
+      {
+        _id: "2",
+        title: "Panchatantra",
+        origin: "Panchatantra",
+      },
+    ]);
+
+    await expect(retrieveStoryById("999")).rejects.toThrow(
+      "No Tokenized story found by given Id",
+    );
   });
 });
