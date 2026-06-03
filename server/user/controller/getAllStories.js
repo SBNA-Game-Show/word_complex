@@ -1,4 +1,4 @@
-const getAllStories = require("../../data-connect/retreiveAllTokenizedStories");
+const getAllStories = require("../../raw-data-connect/retreiveAllTokenizedStories");
 const getAll = async (req, res) => {
   const response = await getAllStories();
 
