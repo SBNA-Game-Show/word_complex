@@ -1,19 +1,16 @@
 name: word-complex-project
 
 services:
-  next-app:
+  frontend:
     build: ./client
-    container_name: nextjs-app
+    container_name: vite-app
     ports:
       - "3000:3000"
     volumes:
       - ./client:/app
       - /app/node_modules
-      - /app/.next
     environment:
       - NODE_ENV=development
-      - WATCHPACK_POLLING=true
-      - CHOKIDAR_USEPOLLING=true
     command: npm run dev
 
     restart: unless-stopped
