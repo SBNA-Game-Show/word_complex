@@ -3,38 +3,10 @@ import { useAuth } from "../auth/AuthContext";
 import UserBadge from "./UserBadge";
 import { useEffect } from "react";
 import { getFillInBlanks } from "../services/api";
+import { games } from "../games/index.js";
 
 export default function Launcher({ onStart, onAbout, onHowToPlay }) {
   const { logout, user } = useAuth();
-
-  const games = [
-    {
-      id: "sentence-builder",
-      number: "01",
-      className: "art-meadow",
-      title: "Passage Reconstruction",
-      description: "Snap word clouds together to rebuild the passage.",
-    },
-    {
-      id: "word-match",
-      number: "02",
-      title: "Word Match",
-      description: "Match silly clues with their vocabulary buddies.",
-    },
-    {
-      id: "context-cloze-quest",
-      number: "03",
-      className: "art-night",
-      title: "Context Cloze Quest",
-      description: "Choose the best missing words from the context.",
-    },
-    {
-      id: "word-hunt",
-      number: "04",
-      title: "Word Hunt",
-      description: "Search for hidden words and collect bright clues.",
-    },
-  ];
 
   useEffect(() => {
   getFillInBlanks()
@@ -84,26 +56,39 @@ export default function Launcher({ onStart, onAbout, onHowToPlay }) {
       </section>
 
       <section className="games-row" aria-label="Game previews">
-        {games.map((game) => (
-          <article className={`preview-card ${game.className ?? ""}`} key={game.id}>
-            <span className="card-number">{game.number}</span>
-            <div className="preview-art" aria-hidden="true" />
-            <div className="preview-content">
-              <span className="game-pill">Playable</span>
-              <h2>{game.title}</h2>
-              <p>{game.description}</p>
-              <div className="preview-actions">
-                <button className="preview-cta" type="button" onClick={() => onStart(game.id)}>
-                  Start playing
-                  <span className="btn-arrow" aria-hidden="true">&rarr;</span>
-                </button>
-                <button className="preview-help" type="button" onClick={() => onHowToPlay(game.id)}>
-                  How to play
-                </button>
+        {games.map((game) =>
+          game.Component ? (
+            <article className={`preview-card ${game.cardArt ?? ""}`} key={game.id}>
+              <span className="card-number">{game.cardNumber}</span>
+              <div className="preview-art" aria-hidden="true" />
+              <div className="preview-content">
+                <span className="game-pill">Playable</span>
+                <h2>{game.title}</h2>
+                <p>{game.description}</p>
+                <div className="preview-actions">
+                  <button className="preview-cta" type="button" onClick={() => onStart(game.id)}>
+                    Start playing
+                    <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+                  </button>
+                  <button className="preview-help" type="button" onClick={() => onHowToPlay(game.id)}>
+                    How to play
+                  </button>
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          ) : (
+            <article className={`preview-card preview-card-locked ${game.cardArt ?? ""}`} key={game.id}>
+              <span className="lock-badge"><span className="lock" /> Soon</span>
+              <span className="card-number">{game.cardNumber}</span>
+              <div className="preview-art" aria-hidden="true" />
+              <div className="preview-content">
+                <span className="game-pill locked">Coming soon</span>
+                <h2>{game.title}</h2>
+                <p>{game.description}</p>
+              </div>
+            </article>
+          )
+        )}
       </section>
     </main>
   );

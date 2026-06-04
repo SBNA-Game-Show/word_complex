@@ -1,3 +1,5 @@
+> **Note:** Ignore this folder for now — TBD if removing.
+
 # Word Complex Game Platform
 
 A configurable passage-based word puzzle platform for language learning and literary comprehension.
