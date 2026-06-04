@@ -1,9 +1,17 @@
 import BackgroundDecor from "./BackgroundDecor";
 import { useAuth } from "../auth/AuthContext";
 import UserBadge from "./UserBadge";
+import { useEffect } from "react";
+import { getFillInBlanks } from "../services/api";
 
 export default function Launcher({ onStart, onHowToPlay }) {
   const { logout, user } = useAuth();
+
+  useEffect(() => {
+  getFillInBlanks()
+    .then(console.log)
+    .catch(console.error);
+  }, []);
 
   return (
     <main className="launcher">
