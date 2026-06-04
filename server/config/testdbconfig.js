@@ -7,6 +7,7 @@ jest.setTimeout(60000);
 class DBManager {
   constructor() {
     this.server = null;
+    this.db = null;
   }
 
   async start() {
@@ -18,23 +19,30 @@ class DBManager {
 
     // Connect mongoose
     await mongoose.connect(uri);
+
+    // Store native MongoDB database instance
+    this.db = mongoose.connection.db;
+  }
+
+  getDb() {
+    return this.db;
   }
 
   async stop() {
-    // Close mongoose connection
     await mongoose.connection.close();
 
-    // Stop memory server
     if (this.server) {
       await this.server.stop();
     }
   }
 
   async cleanup() {
-    const collections = mongoose.connection.collections;
+    if (!this.db) return;
 
-    for (const key in collections) {
-      await collections[key].deleteMany({});
+    const collections = await this.db.listCollections().toArray();
+
+    for (const collection of collections) {
+      await this.db.collection(collection.name).deleteMany({});
     }
   }
 }
