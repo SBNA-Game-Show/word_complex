@@ -3,7 +3,6 @@ const cors = require("cors");
 const path = require("path");
 
 // Routes
-const userRouter = require("./user/routes/userroutes");
 const fillInBlanks = require("./fillinblanks/routes/fillinblanksroutes");
 const matchWords = require("./matchwords/routes/matchwordsroutes");
 const passageReconstruction = require("./passagereconstruction/routes/passagereconstructionroutes");
@@ -20,7 +19,6 @@ app.get("/", (req, res) => {
 });
 
 // Routes
-app.use("/api/v1/user", userRouter);
 app.use("/api/v1/fillInBlanks", fillInBlanks);
 app.use("/api/v1/matchWords", matchWords);
 app.use("/api/v1/passageReconstruct", passageReconstruction);
