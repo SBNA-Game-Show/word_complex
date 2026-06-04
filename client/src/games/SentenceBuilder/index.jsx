@@ -502,7 +502,8 @@ export default createZimGame({
 
 export const meta = {
   id: "sentence-builder",
+  cardNumber: "01",
+  cardArt: "art-meadow",
   title: "Passage Reconstruction",
   description: "Snap word clouds together to rebuild the passage.",
-  status: "ready"
 };

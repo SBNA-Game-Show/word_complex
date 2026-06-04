@@ -3,9 +3,10 @@ import { getFillInBlanks } from "../../services/api";
 
 export const meta = {
   id: "context-cloze-quest",
+  cardNumber: "03",
+  cardArt: "art-night",
   title: "Context Cloze Quest",
   description: "Choose the best missing words from the context.",
-  status: "ready"
 };
 
 export default function ContextClozeQuest() {

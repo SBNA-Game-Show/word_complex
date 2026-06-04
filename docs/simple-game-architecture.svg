@@ -1,0 +1,80 @@
+<svg viewBox="0 0 800 620" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+
+  <!-- Background -->
+  <rect width="800" height="620" fill="#0f1117" rx="12"/>
+
+  <!-- Title -->
+  <text x="400" y="40" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="bold">Simple Game Architecture</text>
+  <text x="400" y="62" text-anchor="middle" fill="#6b7280" font-size="13">No real-time multiplayer sync · Shared monorepo · Same domain</text>
+
+  <!-- ── MONOREPO BOX ── -->
+  <rect x="30" y="85" width="740" height="310" rx="10" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="50" y="108" fill="#2563eb" font-size="12" font-weight="bold">SHARED MONOREPO  /zatam-simple-games</text>
+
+  <!-- Game subfolder: Word Complex -->
+  <rect x="55" y="120" width="190" height="100" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="150" y="143" text-anchor="middle" fill="#a5b4fc" font-size="12" font-weight="bold">/word-complex</text>
+  <text x="150" y="163" text-anchor="middle" fill="#9ca3af" font-size="11">ZIM.js + React</text>
+  <text x="150" y="181" text-anchor="middle" fill="#9ca3af" font-size="11">Client-side logic</text>
+  <text x="150" y="199" text-anchor="middle" fill="#6b7280" font-size="10">src/ · package.json</text>
+
+  <!-- Game subfolder: Tic Tac Toe -->
+  <rect x="305" y="120" width="190" height="100" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="400" y="143" text-anchor="middle" fill="#a5b4fc" font-size="12" font-weight="bold">/tic-tac-toe</text>
+  <text x="400" y="163" text-anchor="middle" fill="#9ca3af" font-size="11">ZIM.js + React</text>
+  <text x="400" y="181" text-anchor="middle" fill="#9ca3af" font-size="11">Client-side logic</text>
+  <text x="400" y="199" text-anchor="middle" fill="#6b7280" font-size="10">src/ · package.json</text>
+
+  <!-- Game subfolder: Snakes -->
+  <rect x="555" y="120" width="190" height="100" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="650" y="143" text-anchor="middle" fill="#a5b4fc" font-size="12" font-weight="bold">/snakes-and-ladders</text>
+  <text x="650" y="163" text-anchor="middle" fill="#9ca3af" font-size="11">ZIM.js + React</text>
+  <text x="650" y="181" text-anchor="middle" fill="#9ca3af" font-size="11">Client-side logic</text>
+  <text x="650" y="199" text-anchor="middle" fill="#6b7280" font-size="10">src/ · package.json</text>
+
+  <!-- Dots for more games -->
+  <text x="400" y="250" text-anchor="middle" fill="#4b5563" font-size="22" letter-spacing="8">· · ·</text>
+  <text x="400" y="268" text-anchor="middle" fill="#4b5563" font-size="11">more games as subfolders</text>
+
+  <!-- Shared folder -->
+  <rect x="270" y="285" width="260" height="90" rx="8" fill="#1a2340" stroke="#2563eb" stroke-width="1"/>
+  <text x="400" y="308" text-anchor="middle" fill="#60a5fa" font-size="12" font-weight="bold">/shared</text>
+  <text x="400" y="328" text-anchor="middle" fill="#9ca3af" font-size="11">Firebase Auth · Common utils</text>
+  <text x="400" y="346" text-anchor="middle" fill="#9ca3af" font-size="11">Shared components · Config</text>
+  <text x="400" y="364" text-anchor="middle" fill="#6b7280" font-size="10">Direct Firebase session (same domain)</text>
+
+  <!-- ── OPTIONAL BACKEND ── -->
+  <rect x="270" y="420" width="260" height="75" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="400" y="444" text-anchor="middle" fill="#34d399" font-size="12" font-weight="bold">Optional Lightweight Backend</text>
+  <text x="400" y="464" text-anchor="middle" fill="#9ca3af" font-size="11">Node.js · Stateless requests only</text>
+  <text x="400" y="482" text-anchor="middle" fill="#ef4444" font-size="10">✕ No WebSockets</text>
+
+  <!-- Arrow: game folders → backend (routed around the right side) -->
+  <polyline points="745,170 780,170 780,457 530,457" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow-gray)"/>
+
+  <!-- ── DEPLOYMENT BOX ── -->
+  <rect x="190" y="520" width="420" height="75" rx="8" fill="#14201a" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="400" y="546" text-anchor="middle" fill="#22c55e" font-size="13" font-weight="bold">zat.am · Shared Deployment</text>
+  <text x="400" y="566" text-anchor="middle" fill="#9ca3af" font-size="11">All simple games served from same domain</text>
+  <text x="400" y="583" text-anchor="middle" fill="#6b7280" font-size="10">One deployment · Shared Firebase Auth session · Lower cost</text>
+
+  <!-- Arrow: monorepo → deployment -->
+  <line x1="400" y1="495" x2="400" y2="520" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+
+  <!-- ── USER ── -->
+  <circle cx="80" cy="555" r="22" fill="#1e2330" stroke="#6b7280" stroke-width="1.5"/>
+  <text x="80" y="551" text-anchor="middle" fill="#d1d5db" font-size="18">👤</text>
+  <text x="80" y="570" text-anchor="middle" fill="#9ca3af" font-size="10">User</text>
+  <line x1="103" y1="555" x2="190" y2="555" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow-gray)"/>
+
+  <!-- Defs -->
+  <defs>
+    <marker id="arrow-gray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#4b5563"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#22c55e"/>
+    </marker>
+  </defs>
+
+</svg>

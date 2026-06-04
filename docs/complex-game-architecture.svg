@@ -1,0 +1,104 @@
+<svg viewBox="0 0 800 700" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+
+  <!-- Background -->
+  <rect width="800" height="700" fill="#0f1117" rx="12"/>
+
+  <!-- Title -->
+  <text x="400" y="40" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="bold">Complex Game Architecture</text>
+  <text x="400" y="62" text-anchor="middle" fill="#6b7280" font-size="13">Real-time multiplayer sync · Own repo · Containerized deployment</text>
+
+  <!-- ── CLIENTS ── -->
+  <text x="400" y="98" text-anchor="middle" fill="#9ca3af" font-size="11" font-style="italic">Multiple concurrent players</text>
+
+  <!-- Player 1 -->
+  <rect x="55" y="108" width="150" height="90" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="130" y="132" text-anchor="middle" fill="#d1d5db" font-size="20">👤</text>
+  <text x="130" y="153" text-anchor="middle" fill="#a5b4fc" font-size="12" font-weight="bold">Player 1</text>
+  <text x="130" y="171" text-anchor="middle" fill="#9ca3af" font-size="10">React + ZIM.js</text>
+  <text x="130" y="187" text-anchor="middle" fill="#6b7280" font-size="10">Browser client</text>
+
+  <!-- Player 2 -->
+  <rect x="325" y="108" width="150" height="90" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="400" y="132" text-anchor="middle" fill="#d1d5db" font-size="20">👤</text>
+  <text x="400" y="153" text-anchor="middle" fill="#a5b4fc" font-size="12" font-weight="bold">Player 2</text>
+  <text x="400" y="171" text-anchor="middle" fill="#9ca3af" font-size="10">React + ZIM.js</text>
+  <text x="400" y="187" text-anchor="middle" fill="#6b7280" font-size="10">Browser client</text>
+
+  <!-- Player 3 -->
+  <rect x="595" y="108" width="150" height="90" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="670" y="132" text-anchor="middle" fill="#d1d5db" font-size="20">👤</text>
+  <text x="670" y="153" text-anchor="middle" fill="#a5b4fc" font-size="12" font-weight="bold">Player N</text>
+  <text x="670" y="171" text-anchor="middle" fill="#9ca3af" font-size="10">React + ZIM.js</text>
+  <text x="670" y="187" text-anchor="middle" fill="#6b7280" font-size="10">Browser client</text>
+
+  <!-- WebSocket lines from players to server -->
+  <line x1="130" y1="198" x2="310" y2="290" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-amber)"/>
+  <line x1="400" y1="198" x2="400" y2="290" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-amber)"/>
+  <line x1="670" y1="198" x2="490" y2="290" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-amber)"/>
+
+  <!-- WebSocket label -->
+  <rect x="300" y="238" width="200" height="22" rx="4" fill="#292218"/>
+  <text x="400" y="253" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="bold">WebSocket connections</text>
+
+  <!-- ── CONTAINER BOX ── -->
+  <rect x="50" y="290" width="700" height="270" rx="10" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="70" y="313" fill="#8b5cf6" font-size="12" font-weight="bold">CONTAINER  /monopoly  (own repo · isolated environment)</text>
+
+  <!-- Node.js Backend -->
+  <rect x="75" y="325" width="250" height="110" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="200" y="350" text-anchor="middle" fill="#34d399" font-size="12" font-weight="bold">Node.js Backend</text>
+  <text x="200" y="372" text-anchor="middle" fill="#9ca3af" font-size="11">WebSocket server</text>
+  <text x="200" y="392" text-anchor="middle" fill="#9ca3af" font-size="11">Game state manager</text>
+  <text x="200" y="412" text-anchor="middle" fill="#9ca3af" font-size="11">Firebase Admin SDK</text>
+  <text x="200" y="428" text-anchor="middle" fill="#6b7280" font-size="10">Broadcasts state to all players</text>
+
+  <!-- Firebase Auth -->
+  <rect x="395" y="325" width="160" height="110" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="475" y="350" text-anchor="middle" fill="#fb923c" font-size="12" font-weight="bold">Firebase</text>
+  <text x="475" y="370" text-anchor="middle" fill="#9ca3af" font-size="11">Auth verification</text>
+  <text x="475" y="390" text-anchor="middle" fill="#9ca3af" font-size="11">Custom tokens</text>
+  <text x="475" y="410" text-anchor="middle" fill="#9ca3af" font-size="11">SSO launch code</text>
+  <text x="475" y="428" text-anchor="middle" fill="#6b7280" font-size="10">Shared Firebase UID</text>
+
+  <!-- MongoDB -->
+  <rect x="575" y="325" width="155" height="110" rx="8" fill="#1e2330" stroke="#374151" stroke-width="1"/>
+  <text x="652" y="350" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="bold">MongoDB</text>
+  <text x="652" y="370" text-anchor="middle" fill="#9ca3af" font-size="11">Game state</text>
+  <text x="652" y="390" text-anchor="middle" fill="#9ca3af" font-size="11">Player scores</text>
+  <text x="652" y="410" text-anchor="middle" fill="#9ca3af" font-size="11">Progress data</text>
+  <text x="652" y="428" text-anchor="middle" fill="#6b7280" font-size="10">Per-game collection</text>
+
+  <!-- Arrows between backend components -->
+  <line x1="325" y1="380" x2="395" y2="380" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow-gray)"/>
+  <line x1="555" y1="380" x2="575" y2="380" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow-gray)"/>
+
+  <!-- Next.js note -->
+  <rect x="75" y="450" width="655" height="90" rx="6" fill="#141a2e" stroke="#312e81" stroke-width="1"/>
+  <text x="402" y="473" text-anchor="middle" fill="#818cf8" font-size="11" font-weight="bold">Frontend: React + ZIM.js</text>
+  <text x="402" y="493" text-anchor="middle" fill="#9ca3af" font-size="11">Next.js is optional — decided case by case per game requirements</text>
+  <text x="402" y="513" text-anchor="middle" fill="#6b7280" font-size="10">(e.g. Monopoly may use Next.js for routing; Pictionary may not need it)</text>
+  <text x="402" y="530" text-anchor="middle" fill="#6b7280" font-size="10">ZIM.js handles all canvas/game rendering · React handles UI shell</text>
+
+  <!-- ── DEPLOYMENT ── -->
+  <rect x="190" y="585" width="420" height="80" rx="8" fill="#1a1420" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="400" y="610" text-anchor="middle" fill="#a78bfa" font-size="13" font-weight="bold">Independent Containerized Deployment</text>
+  <text x="400" y="630" text-anchor="middle" fill="#9ca3af" font-size="11">Own subdomain · Isolated environment · Scales independently</text>
+  <text x="400" y="650" text-anchor="middle" fill="#6b7280" font-size="10">SSO via Firebase launch code flow → same UID as zat.am portal</text>
+
+  <!-- Arrow container → deployment -->
+  <line x1="400" y1="560" x2="400" y2="585" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrow-purple)"/>
+
+  <!-- Defs -->
+  <defs>
+    <marker id="arrow-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#4b5563"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#8b5cf6"/>
+    </marker>
+  </defs>
+
+</svg>
