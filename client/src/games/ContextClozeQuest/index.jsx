@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getFillInBlanks } from "../services/api";
+import { getFillInBlanks } from "../../services/api";
 
 export const meta = {
   id: "context-cloze-quest",
