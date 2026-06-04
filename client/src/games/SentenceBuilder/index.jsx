@@ -1,4 +1,4 @@
-import { createZimGame } from "./createZimGame";
+import { createZimGame } from "../createZimGame";
 
 const rounds = [
   {

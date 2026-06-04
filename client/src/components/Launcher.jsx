@@ -4,8 +4,37 @@ import UserBadge from "./UserBadge";
 import { useEffect } from "react";
 import { getFillInBlanks } from "../services/api";
 
-export default function Launcher({ onStart, onHowToPlay }) {
+export default function Launcher({ onStart, onAbout, onHowToPlay }) {
   const { logout, user } = useAuth();
+
+  const games = [
+    {
+      id: "sentence-builder",
+      number: "01",
+      className: "art-meadow",
+      title: "Passage Reconstruction",
+      description: "Snap word clouds together to rebuild the passage.",
+    },
+    {
+      id: "word-match",
+      number: "02",
+      title: "Word Match",
+      description: "Match silly clues with their vocabulary buddies.",
+    },
+    {
+      id: "context-cloze-quest",
+      number: "03",
+      className: "art-night",
+      title: "Context Cloze Quest",
+      description: "Choose the best missing words from the context.",
+    },
+    {
+      id: "word-hunt",
+      number: "04",
+      title: "Word Hunt",
+      description: "Search for hidden words and collect bright clues.",
+    },
+  ];
 
   useEffect(() => {
   getFillInBlanks()
@@ -49,70 +78,32 @@ export default function Launcher({ onStart, onHowToPlay }) {
               Play now
               <span className="btn-arrow" aria-hidden="true">&rarr;</span>
             </button>
-            <button className="btn-ghost" type="button" onClick={onHowToPlay}>How to play</button>
+            <button className="btn-ghost" type="button" onClick={onAbout}>About</button>
           </div>
         </div>
       </section>
 
       <section className="games-row" aria-label="Game previews">
-        <button className="preview-card art-meadow" type="button" onClick={() => onStart("sentence-builder")}>
-          <span className="card-number">01</span>
-          <div className="preview-art" aria-hidden="true" />
-          <div className="preview-content">
-            <span className="game-pill">Featured</span>
-            <h2>Passage Reconstruction</h2>
-            <p>Snap word clouds together to rebuild the passage.</p>
-            <span className="preview-cta">
-              Start playing
-              <span className="btn-arrow" aria-hidden="true">&rarr;</span>
-            </span>
-          </div>
-        </button>
-
-        <article className="preview-card preview-card-locked art-sea">
-          <span className="lock-badge"><span className="lock" /> Soon</span>
-          <span className="card-number">02</span>
-          <div className="preview-art" aria-hidden="true" />
-          <div className="preview-content">
-            <span className="game-pill locked">Coming soon</span>
-            <h2>Word Match</h2>
-            <p>Match silly clues with their vocabulary buddies.</p>
-          </div>
-        </article>
-
-        <button
-          className="preview-card art-night"
-          type="button"
-          onClick={() => onStart("context-cloze-quest")}
-        >
-          <span className="card-number">03</span>
-          <div className="preview-art" aria-hidden="true" />
-          <div className="preview-content">
-            <span className="game-pill">Playable</span>
-            <h2>Context Cloze Quest</h2>
-            <p>
-              Choose the best missing words from the context.
-            </p>
-
-            <span className="preview-cta">
-              Start playing
-              <span className="btn-arrow" aria-hidden="true">
-                &rarr;
-              </span>
-            </span>
-          </div>
-        </button>
-
-        <article className="preview-card preview-card-locked art-hunt">
-          <span className="lock-badge"><span className="lock" /> Soon</span>
-          <span className="card-number">04</span>
-          <div className="preview-art" aria-hidden="true" />
-          <div className="preview-content">
-            <span className="game-pill locked">Coming soon</span>
-            <h2>Word Hunt</h2>
-            <p>Search for hidden words and collect bright clues.</p>
-          </div>
-        </article>
+        {games.map((game) => (
+          <article className={`preview-card ${game.className ?? ""}`} key={game.id}>
+            <span className="card-number">{game.number}</span>
+            <div className="preview-art" aria-hidden="true" />
+            <div className="preview-content">
+              <span className="game-pill">Playable</span>
+              <h2>{game.title}</h2>
+              <p>{game.description}</p>
+              <div className="preview-actions">
+                <button className="preview-cta" type="button" onClick={() => onStart(game.id)}>
+                  Start playing
+                  <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+                </button>
+                <button className="preview-help" type="button" onClick={() => onHowToPlay(game.id)}>
+                  How to play
+                </button>
+              </div>
+            </div>
+          </article>
+        ))}
       </section>
     </main>
   );
