@@ -5,6 +5,7 @@ import LoginPage from "./components/LoginPage";
 import Launcher from "./components/Launcher";
 import GameScreen from "./components/GameScreen";
 import HowToPlay from "./components/HowToPlay";
+import AboutPage from "./components/AboutPage";
 import "./App.css";
 
 export default function App() {
@@ -31,6 +32,11 @@ function AuthenticatedApp() {
     setScreen("game");
   }
 
+  function openHowToPlay(gameId = activeGameId) {
+    setActiveGameId(gameId);
+    setScreen("how-to-play");
+  }
+
   return (
     <div className="app">
       <VideoBackground />
@@ -39,12 +45,19 @@ function AuthenticatedApp() {
       ) : screen === "launcher" ? (
           <Launcher
             onStart={openGame}
-            onHowToPlay={() => setScreen("how-to-play")}
+            onAbout={() => setScreen("about")}
+            onHowToPlay={openHowToPlay}
           />
-      ) : screen === "how-to-play" ? (
-        <HowToPlay
+      ) : screen === "about" ? (
+        <AboutPage
           onBack={() => setScreen("launcher")}
           onPlay={() => openGame("sentence-builder")}
+        />
+      ) : screen === "how-to-play" ? (
+        <HowToPlay
+          gameId={activeGameId}
+          onBack={() => setScreen("launcher")}
+          onPlay={() => openGame(activeGameId)}
         />
       ) : (
         <GameScreen gameId={activeGameId} onBack={() => setScreen("launcher")} />
