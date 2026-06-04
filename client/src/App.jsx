@@ -37,10 +37,10 @@ function AuthenticatedApp() {
       {!isAuthenticated ? (
         <LoginPage />
       ) : screen === "launcher" ? (
-        <Launcher
-          onStart={() => openGame("sentence-builder")}
-          onHowToPlay={() => setScreen("how-to-play")}
-        />
+          <Launcher
+            onStart={openGame}
+            onHowToPlay={() => setScreen("how-to-play")}
+          />
       ) : screen === "how-to-play" ? (
         <HowToPlay
           onBack={() => setScreen("launcher")}

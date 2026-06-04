@@ -3,9 +3,12 @@
 // React component (use `createZimGame`) and named-export a `meta` object,
 // then register it below. Teammates can keep their game files independent.
 import SentenceBuilder, { meta as sentenceBuilderMeta } from "./SentenceBuilder";
+import ContextClozeQuest, { meta as contextClozeQuestMeta } from "./ContextClozeQuest";
+
 
 export const games = [
-  { ...sentenceBuilderMeta, Component: SentenceBuilder }
+  { ...sentenceBuilderMeta, Component: SentenceBuilder },
+  { ...contextClozeQuestMeta, Component: ContextClozeQuest }
   // { ...wordMeaningMatchMeta, Component: WordMeaningMatch },
   // { ...storySequenceMeta,    Component: StorySequence },
 ];
