@@ -55,7 +55,7 @@ export default function Launcher({ onStart, onHowToPlay }) {
       </section>
 
       <section className="games-row" aria-label="Game previews">
-        <button className="preview-card art-meadow" type="button" onClick={onStart}>
+        <button className="preview-card art-meadow" type="button" onClick={() => onStart("sentence-builder")}>
           <span className="card-number">01</span>
           <div className="preview-art" aria-hidden="true" />
           <div className="preview-content">
@@ -80,16 +80,15 @@ export default function Launcher({ onStart, onHowToPlay }) {
           </div>
         </article>
 
-        <article className="preview-card preview-card-locked art-night">
-          <span className="lock-badge"><span className="lock" /> Soon</span>
+        <button className="preview-card art-night" type="button" onClick={() => onStart("context-cloze-quest")}>
+          <span className="game-pill">Playable</span>
           <span className="card-number">03</span>
           <div className="preview-art" aria-hidden="true" />
           <div className="preview-content">
-            <span className="game-pill locked">Coming soon</span>
             <h2>Context Cloze Quest</h2>
             <p>Choose the best missing words from the context.</p>
           </div>
-        </article>
+        </button>
 
         <article className="preview-card preview-card-locked art-hunt">
           <span className="lock-badge"><span className="lock" /> Soon</span>
