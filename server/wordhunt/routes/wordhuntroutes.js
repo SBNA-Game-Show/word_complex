@@ -1,9 +1,9 @@
 const express = require("express");
 const wordHuntRouter = express.Router();
 
-const { initializeGame } = require("../controller/wordhuntcontroller");
+const findPOSEnglish = require("../controller/wordhuntcontroller");
 
 //API Routes
-wordHuntRouter.get("/", initializeGame);
+wordHuntRouter.get("/POSEnglish", findPOSEnglish);
 
 module.exports = wordHuntRouter;
