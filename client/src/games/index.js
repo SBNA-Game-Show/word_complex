@@ -12,6 +12,7 @@
 
 import SentenceBuilder, { meta as sentenceBuilderMeta } from "./SentenceBuilder";
 import ContextClozeQuest, { meta as contextClozeQuestMeta } from "./ContextClozeQuest";
+import WordHunt, { meta as wordHuntMeta } from "./WordHunt";
 
 export const games = [
   { ...sentenceBuilderMeta, Component: SentenceBuilder },
@@ -23,13 +24,7 @@ export const games = [
     description: "Match silly clues with their vocabulary buddies.",
   },
   { ...contextClozeQuestMeta, Component: ContextClozeQuest },
-  {
-    id: "word-hunt",
-    cardNumber: "04",
-    cardArt: "art-hunt",
-    title: "Word Hunt",
-    description: "Search for hidden words and collect bright clues.",
-  },
+  { ...wordHuntMeta, Component: WordHunt },
 ];
 
 export function getGame(id) {
