@@ -121,4 +121,3 @@ describe("Find Nouns Verbs and Adjectives Game English Tests. Service Layer", ()
     expect(retrieveStoryById).toHaveBeenCalledWith("123");
   });
 });
-de
