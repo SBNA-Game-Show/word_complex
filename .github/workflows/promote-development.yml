@@ -45,6 +45,8 @@ jobs:
 
       - name: Run server tests
         working-directory: server
+        env:
+          ATLAS_URI: ${{ secrets.ATLAS_URI }}
         run: npm test
 
       - name: Install client dependencies
