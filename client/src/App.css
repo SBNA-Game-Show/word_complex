@@ -26,7 +26,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    url("../c6e25cf8-6974-49aa-9470-aac22b2a5d8f.png") center top / cover no-repeat fixed,
+    url("/scenes/house-hill.png") center top / cover no-repeat fixed,
     #fff3d7;
 }
 
@@ -49,6 +49,12 @@ body {
   -webkit-filter: contrast(1.06) saturate(0.95) brightness(1.02);
   will-change: transform, opacity;
   transform: translateZ(0);
+  transform-origin: 82% 36%;
+  transition: transform 700ms cubic-bezier(0.7, 0, 0.3, 1);
+}
+
+.app.is-zooming-house .video-bg-media {
+  transform: scale(2.6);
 }
 
 .video-bg-overlay {
@@ -541,6 +547,18 @@ input {
   position: relative;
   z-index: 1;
 }
+
+.launcher.is-zooming {
+  animation: launcher-zoom-in 700ms cubic-bezier(0.7, 0, 0.3, 1) forwards;
+}
+
+@keyframes launcher-zoom-in {
+  0%   { transform: scale(1);   filter: brightness(1); }
+  60%  { transform: scale(1.6); filter: brightness(1.05); }
+  100% { transform: scale(2.6); filter: brightness(1.4); opacity: 0; }
+}
+
+.launcher.is-zooming > * { opacity: 0.7; }
 
 .topbar {
   position: fixed;
