@@ -1,6 +1,6 @@
-import ZimLabel from "../UI/ZimLabel";
-import ZimContainer from "../UI/ZimContainer";
-import ZimButton from "../UI/ZimButton";
+import ZimLabel from "../../../zimcomponents/ZimLabel";
+import ZimContainer from "../../../zimcomponents/ZimContainer";
+import ZimButton from "../../../zimcomponents/ZimButton";
 class LandingPage {
   constructor(game) {
     this.game = game;
