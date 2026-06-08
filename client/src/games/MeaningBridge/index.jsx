@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { createZimGame } from "../createZimGame";
 import {
   generateMeaningBridgeRound,
@@ -224,7 +225,7 @@ function wrapText(value, maxCharsPerLine, maxLines) {
   return lines;
 }
 
-export default createZimGame({
+const ZimGame = createZimGame({
   id: "zim-meaning-bridge-game",
   width: 1100,
   height: 720,
@@ -695,6 +696,12 @@ export default createZimGame({
       }
 
       hintsUsed += 1;
+
+      const imageUrl = puzzle.hintImages?.[selectedLeftId];
+      if (imageUrl) {
+        window.dispatchEvent(new CustomEvent("mb-hint", { detail: { imageUrl } }));
+      }
+
       setFeedback(
         puzzle.hints[selectedLeftId] || "No hint available.",
         "neutral",
@@ -2107,3 +2114,61 @@ export default createZimGame({
     });
   },
 });
+
+function MeaningBridge() {
+  const [hintImage, setHintImage] = useState(null);
+
+  useEffect(() => {
+    function onHint(e) {
+      setHintImage(e.detail.imageUrl);
+    }
+    window.addEventListener("mb-hint", onHint);
+    return () => window.removeEventListener("mb-hint", onHint);
+  }, []);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <ZimGame />
+      {hintImage && (
+        <div
+          onClick={() => setHintImage(null)}
+          style={{
+            position: "absolute",
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+            cursor: "pointer",
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "20px",
+              maxWidth: "340px",
+              textAlign: "center",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+            }}
+          >
+            <img
+              src={hintImage}
+              alt="hint"
+              style={{ width: "100%", borderRadius: "10px", display: "block" }}
+              onError={(e) => {
+                e.target.src = "https://loremflickr.com/300/200/word";
+              }}
+            />
+            <p style={{ marginTop: "10px", color: "#475569", fontSize: "13px" }}>
+              Tap anywhere to close
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default MeaningBridge;

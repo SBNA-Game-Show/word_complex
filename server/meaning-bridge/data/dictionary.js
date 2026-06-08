@@ -7,6 +7,7 @@ const seedDictionary = [
     category: "person",
     synonyms: ["ruler", "monarch"],
     antonyms: ["commoner"],
+    imageUrl: "https://loremflickr.com/300/200/crown,king,royal",
   },
   {
     english: "forest",
@@ -16,6 +17,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["woods"],
     antonyms: ["city"],
+    imageUrl: "https://loremflickr.com/300/200/forest,trees,woods",
   },
   {
     english: "fire",
@@ -25,6 +27,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["flame"],
     antonyms: ["water"],
+    imageUrl: "https://loremflickr.com/300/200/fire,flame,campfire",
   },
   {
     english: "river",
@@ -34,6 +37,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["stream"],
     antonyms: ["desert"],
+    imageUrl: "https://loremflickr.com/300/200/river,stream,flowing",
   },
   {
     english: "water",
@@ -43,6 +47,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["liquid"],
     antonyms: ["fire"],
+    imageUrl: "https://loremflickr.com/300/200/water,ocean,lake",
   },
   {
     english: "mountain",
@@ -52,6 +57,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["peak"],
     antonyms: ["valley"],
+    imageUrl: "https://loremflickr.com/300/200/mountain,peak,summit",
   },
   {
     english: "tree",
@@ -61,6 +67,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["plant"],
     antonyms: ["open ground"],
+    imageUrl: "https://loremflickr.com/300/200/tree,oak,trunk",
   },
   {
     english: "student",
@@ -70,6 +77,7 @@ const seedDictionary = [
     category: "education",
     synonyms: ["learner", "pupil"],
     antonyms: ["teacher"],
+    imageUrl: "https://loremflickr.com/300/200/student,studying,school",
   },
   {
     english: "book",
@@ -79,6 +87,7 @@ const seedDictionary = [
     category: "education",
     synonyms: ["text", "volume"],
     antonyms: [],
+    imageUrl: "https://loremflickr.com/300/200/book,reading,library",
   },
   {
     english: "school",
@@ -88,6 +97,7 @@ const seedDictionary = [
     category: "education",
     synonyms: ["academy"],
     antonyms: [],
+    imageUrl: "https://loremflickr.com/300/200/school,classroom,education",
   },
   {
     english: "teacher",
@@ -97,6 +107,7 @@ const seedDictionary = [
     category: "education",
     synonyms: ["instructor", "mentor"],
     antonyms: ["student"],
+    imageUrl: "https://loremflickr.com/300/200/teacher,classroom,teaching",
   },
   {
     english: "knowledge",
@@ -106,6 +117,7 @@ const seedDictionary = [
     category: "education",
     synonyms: ["wisdom", "understanding"],
     antonyms: ["ignorance"],
+    imageUrl: "https://loremflickr.com/300/200/books,knowledge,wisdom",
   },
   {
     english: "friend",
@@ -115,6 +127,7 @@ const seedDictionary = [
     category: "relationship",
     synonyms: ["companion"],
     antonyms: ["enemy"],
+    imageUrl: "https://loremflickr.com/300/200/friends,friendship,together",
   },
   {
     english: "speech",
@@ -124,6 +137,7 @@ const seedDictionary = [
     category: "communication",
     synonyms: ["voice", "talk"],
     antonyms: ["silence"],
+    imageUrl: "https://loremflickr.com/300/200/speaking,speech,microphone",
   },
   {
     english: "music",
@@ -133,6 +147,7 @@ const seedDictionary = [
     category: "art",
     synonyms: ["melody", "song"],
     antonyms: ["noise"],
+    imageUrl: "https://loremflickr.com/300/200/music,instrument,melody",
   },
   {
     english: "flower",
@@ -142,6 +157,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["blossom"],
     antonyms: [],
+    imageUrl: "https://loremflickr.com/300/200/flower,blossom,bloom",
   },
   {
     english: "sun",
@@ -151,6 +167,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["daystar"],
     antonyms: ["moon"],
+    imageUrl: "https://loremflickr.com/300/200/sun,sunrise,sunshine",
   },
   {
     english: "moon",
@@ -160,6 +177,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["lunar body"],
     antonyms: ["sun"],
+    imageUrl: "https://loremflickr.com/300/200/moon,night,lunar",
   },
   {
     english: "star",
@@ -169,6 +187,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["celestial light"],
     antonyms: [],
+    imageUrl: "https://loremflickr.com/300/200/stars,night,sky",
   },
   {
     english: "sky",
@@ -178,6 +197,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["heavens"],
     antonyms: ["earth"],
+    imageUrl: "https://loremflickr.com/300/200/sky,clouds,blue",
   },
   {
     english: "earth",
@@ -187,6 +207,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["ground", "world"],
     antonyms: ["sky"],
+    imageUrl: "https://loremflickr.com/300/200/earth,ground,nature",
   },
   {
     english: "rain",
@@ -196,6 +217,7 @@ const seedDictionary = [
     category: "weather",
     synonyms: ["shower"],
     antonyms: ["drought"],
+    imageUrl: "https://loremflickr.com/300/200/rain,rainfall,drops",
   },
   {
     english: "wind",
@@ -205,6 +227,7 @@ const seedDictionary = [
     category: "weather",
     synonyms: ["breeze"],
     antonyms: ["stillness"],
+    imageUrl: "https://loremflickr.com/300/200/wind,breeze,storm",
   },
   {
     english: "garden",
@@ -214,6 +237,7 @@ const seedDictionary = [
     category: "nature",
     synonyms: ["yard"],
     antonyms: [],
+    imageUrl: "https://loremflickr.com/300/200/garden,flowers,plants",
   },
   {
     english: "child",
@@ -223,6 +247,7 @@ const seedDictionary = [
     category: "person",
     synonyms: ["kid", "youngster"],
     antonyms: ["adult"],
+    imageUrl: "https://loremflickr.com/300/200/child,kid,playing",
   },
   {
     english: "path",
@@ -232,6 +257,7 @@ const seedDictionary = [
     category: "place",
     synonyms: ["road", "trail"],
     antonyms: [],
+    imageUrl: "https://loremflickr.com/300/200/path,trail,road",
   },
   {
     english: "home",
@@ -241,6 +267,7 @@ const seedDictionary = [
     category: "place",
     synonyms: ["house"],
     antonyms: [],
+    imageUrl: "https://loremflickr.com/300/200/house,home,cozy",
   },
   {
     english: "courage",
@@ -250,6 +277,7 @@ const seedDictionary = [
     category: "value",
     synonyms: ["bravery"],
     antonyms: ["fear"],
+    imageUrl: "https://loremflickr.com/300/200/lion,brave,courage",
   },
   {
     english: "peace",
@@ -259,6 +287,7 @@ const seedDictionary = [
     category: "value",
     synonyms: ["calm", "harmony"],
     antonyms: ["conflict"],
+    imageUrl: "https://loremflickr.com/300/200/peaceful,calm,meditation",
   },
   {
     english: "family",
@@ -268,6 +297,7 @@ const seedDictionary = [
     category: "relationship",
     synonyms: ["household"],
     antonyms: [],
+    imageUrl: "https://loremflickr.com/300/200/family,together,parents",
   },
   {
     english: "truth",
@@ -277,6 +307,7 @@ const seedDictionary = [
     category: "value",
     synonyms: ["honesty"],
     antonyms: ["falsehood"],
+    imageUrl: "https://loremflickr.com/300/200/honest,truth,justice",
   },
   {
     english: "gift",
@@ -286,6 +317,7 @@ const seedDictionary = [
     category: "object",
     synonyms: ["present"],
     antonyms: [],
+    imageUrl: "https://loremflickr.com/300/200/gift,present,box",
   },
   {
     english: "work",
@@ -295,6 +327,7 @@ const seedDictionary = [
     category: "action",
     synonyms: ["task", "labor"],
     antonyms: ["rest"],
+    imageUrl: "https://loremflickr.com/300/200/work,labor,working",
   },
   {
     english: "care",
@@ -304,6 +337,7 @@ const seedDictionary = [
     category: "value",
     synonyms: ["support"],
     antonyms: ["neglect"],
+    imageUrl: "https://loremflickr.com/300/200/care,helping,support",
   },
 ];
 

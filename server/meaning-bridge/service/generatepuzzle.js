@@ -135,6 +135,13 @@ function generateMeaningBridgePuzzle(params) {
     }),
   );
 
+  const hintImages = Object.fromEntries(
+    leftItems.map((left, index) => {
+      const entry = candidates[index];
+      return [left.id, entry.imageUrl || `https://loremflickr.com/300/200/${encodeURIComponent(entry.english)}`];
+    }),
+  );
+
   return {
     gameId: "meaning_bridge",
     roundId: createRoundId(),
@@ -148,6 +155,7 @@ function generateMeaningBridgePuzzle(params) {
     rightItems: shuffle(rightItemsOrdered),
     answerKey,
     hints,
+    hintImages,
     scoreRules: {
       correct: 10,
       incorrect: 0,
