@@ -10,19 +10,18 @@
 // To mark a game as coming soon (no component yet), add an entry without Component.
 // The launcher locks it automatically. No status flag needed.
 
-import SentenceBuilder, { meta as sentenceBuilderMeta } from "./SentenceBuilder";
-import ContextClozeQuest, { meta as contextClozeQuestMeta } from "./ContextClozeQuest";
+import SentenceBuilder, {
+  meta as sentenceBuilderMeta,
+} from "./SentenceBuilder";
+import ContextClozeQuest, {
+  meta as contextClozeQuestMeta,
+} from "./ContextClozeQuest";
 import WordHunt, { meta as wordHuntMeta } from "./WordHunt";
+import MeaningBridge, { meta as meaningBridgeMeta } from "./MeaningBridge";
 
 export const games = [
   { ...sentenceBuilderMeta, Component: SentenceBuilder },
-  {
-    id: "word-match",
-    cardNumber: "02",
-    cardArt: "art-sea",
-    title: "Word Match",
-    description: "Match silly clues with their vocabulary buddies.",
-  },
+  { ...meaningBridgeMeta, Component: MeaningBridge },
   { ...contextClozeQuestMeta, Component: ContextClozeQuest },
   { ...wordHuntMeta, Component: WordHunt },
 ];
