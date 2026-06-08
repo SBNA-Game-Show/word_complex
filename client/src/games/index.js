@@ -13,22 +13,17 @@
 import SentenceBuilder, {
   meta as sentenceBuilderMeta,
 } from "./SentenceBuilder";
-import MeaningBridge, { meta as meaningBridgeMeta } from "./MeaningBridge";
 import ContextClozeQuest, {
   meta as contextClozeQuestMeta,
 } from "./ContextClozeQuest";
+import WordHunt, { meta as wordHuntMeta } from "./WordHunt";
+import MeaningBridge, { meta as meaningBridgeMeta } from "./MeaningBridge";
 
 export const games = [
   { ...sentenceBuilderMeta, Component: SentenceBuilder },
   { ...meaningBridgeMeta, Component: MeaningBridge },
   { ...contextClozeQuestMeta, Component: ContextClozeQuest },
-  {
-    id: "word-hunt",
-    cardNumber: "04",
-    cardArt: "art-hunt",
-    title: "Word Hunt",
-    description: "Search for hidden words and collect bright clues.",
-  },
+  { ...wordHuntMeta, Component: WordHunt },
 ];
 
 export function getGame(id) {
