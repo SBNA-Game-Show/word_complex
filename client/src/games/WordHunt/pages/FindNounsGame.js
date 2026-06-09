@@ -9,6 +9,7 @@ class FindNounsGame {
   constructor(game) {
     this.game = game;
     this.score = 0;
+    this.gameOver = false;
 
     this.blackboard = null;
     this.foundWordsContainer = null;
@@ -17,6 +18,7 @@ class FindNounsGame {
     this.apiData = null;
     this.tokenizedArray = null;
     this.foundWords = [];
+    this.totalNouns = 0;
   }
   /**
    *
@@ -100,16 +102,28 @@ class FindNounsGame {
    *
    * Creating a single label object
    */
+  // createWordLabel(word) {
+  //   const label = new ZimLabel(this.game, word, 24).createLabel();
+
+  //   let clicked = false;
+
+  //   label.tap(() => {
+  //     if (clicked) return;
+
+  //     clicked = true;
+
+  //     this.handleWordClick(label, word);
+  //   });
+
+  //   return label;
+  // }
+
   createWordLabel(word) {
     const label = new ZimLabel(this.game, word, 24).createLabel();
 
-    let clicked = false;
+    label.color = "white";
 
     label.tap(() => {
-      if (clicked) return;
-
-      clicked = true;
-
       this.handleWordClick(label, word);
     });
 
@@ -173,22 +187,43 @@ class FindNounsGame {
 
     this.game.stage.update();
   }
+  /**
+   * Game Over Scenario
+   */
+
+  handleGameOver() {
+    console.log("Found:", this.foundWords.length, "Total:", this.totalNouns);
+
+    if (this.foundWords.length >= this.totalNouns) {
+      this.gameOver = true;
+
+      const gameOverLabel = new ZimLabel(
+        this.game,
+        "You Found All Nouns!",
+        40,
+      ).createLabel();
+
+      gameOverLabel.color = "red";
+      gameOverLabel.center(this.game.stage);
+
+      gameOverLabel.addTo(this.game.stage);
+
+      console.log("Game Over!");
+    }
+  }
 
   /**
    * Handling the click function when a certain word is clicked
    */
 
   handleWordClick(label, word) {
-    console.log("Clicked:", word);
+    if (this.gameOver) return;
+
     const pos = this.getWordPOS(word);
 
-    if (pos === "NOUN") {
-      this.score++;
-      // console.log("Score:", this.score);
-      this.foundWords.push(word);
-      console.log(this.foundWords);
-      this.updateFoundWordsDisplay();
+    if (pos !== "NOUN") return;
 
+    if (!label.isUnderlined) {
       const underline = new this.game.zim.Line({
         length: label.width,
         thickness: 2,
@@ -197,11 +232,17 @@ class FindNounsGame {
 
       underline.pos(label.x + 80, label.y + label.height + 20);
 
-      if (label.parent) {
-        underline.addTo(label.parent);
-      }
-    } else {
-      console.log(`Wrong! ${word} is a ${pos}`);
+      underline.addTo(label.parent);
+
+      label.isUnderlined = true;
+    }
+
+    if (!this.foundWords.includes(word)) {
+      this.score++;
+      this.foundWords.push(word);
+
+      this.updateFoundWordsDisplay();
+      this.handleGameOver();
     }
 
     this.game.stage.update();
@@ -218,7 +259,16 @@ class FindNounsGame {
       this.apiData = response;
       this.passage = response?.data?.passageArray || [];
       this.tokenizedArray = response?.data?.tokenizedPassage || [];
-      console.log("Tokenized Array:", this.tokenizedArray);
+
+      const nounWords = this.tokenizedArray
+        .filter((item) => item.pos === "NOUN")
+        .map((item) => item.text);
+
+      this.totalNouns = [...new Set(nounWords)].length;
+
+      console.log("Total unique nouns:", this.totalNouns);
+
+      console.log("Total nouns:", this.totalNouns);
     } catch (error) {
       console.error(error);
     }
