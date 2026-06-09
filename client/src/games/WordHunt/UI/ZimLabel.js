@@ -1,16 +1,18 @@
 class ZimLabel {
-  constructor(game, text) {
+  constructor(game, text, size = 40, color = "#333") {
     this.game = game;
     this.zim = game.zim;
     this.text = text;
+    this.size = size;
+    this.color = color;
     this.label = null;
   }
 
   createLabel() {
     this.label = new this.zim.Label({
       text: this.text,
-      size: 40,
-      color: "#333",
+      size: this.size,
+      color: this.color,
     });
 
     return this.label;
