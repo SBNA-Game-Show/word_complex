@@ -1,4 +1,4 @@
-import ZimLabel from "../UI/ZimLabel";
+import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
 import Chalk from "../UI/Chalk";
 
