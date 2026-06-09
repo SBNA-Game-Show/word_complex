@@ -10,7 +10,7 @@ export const retrieveEnglishVersion = async () => {
 
     const data = await response.json();
 
-    console.log("Response from word hunt:", data);
+    // console.log("Response from word hunt:", data);
 
     return data;
   } catch (error) {

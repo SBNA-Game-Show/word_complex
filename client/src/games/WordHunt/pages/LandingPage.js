@@ -14,7 +14,12 @@ class LandingPage {
   createLandingPage() {
     this.container = new ZimContainer(this.game).createContainer();
 
-    const zimLabel = new ZimLabel(this.game, this.text).createLabel();
+    const zimLabel = new ZimLabel(
+      this.game,
+      this.text,
+      30,
+      black,
+    ).createLabel();
 
     this.button = new ZimButton(this.game, 200, 60, "Let's Go").createButton();
 
