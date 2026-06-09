@@ -1,6 +1,6 @@
-import ZimLabel from "../UI/ZimLabel";
-import ZimContainer from "../UI/ZimContainer";
-import ZimButton from "../UI/ZimButton";
+import ZimLabel from "../../../zimcomponents/ZimLabel";
+import ZimContainer from "../../../zimcomponents/ZimContainer";
+import ZimButton from "../../../zimcomponents/ZimButton";
 class LandingPage {
   constructor(game) {
     this.game = game;
@@ -14,7 +14,12 @@ class LandingPage {
   createLandingPage() {
     this.container = new ZimContainer(this.game).createContainer();
 
-    const zimLabel = new ZimLabel(this.game, this.text).createLabel();
+    const zimLabel = new ZimLabel(
+      this.game,
+      this.text,
+      30,
+      black,
+    ).createLabel();
 
     this.button = new ZimButton(this.game, 200, 60, "Let's Go").createButton();
 
