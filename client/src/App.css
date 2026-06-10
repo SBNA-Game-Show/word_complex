@@ -722,6 +722,18 @@ input {
 
 .launcher.is-zooming > * { opacity: 0.7; }
 
+/* Menu swipe-out when launching a scene-based game (e.g. Passage Reconstruction).
+   The menu slides to the right and fades while the GameScene mounts underneath.
+   Duration is kept in step with `transitionMs` in scenes/sceneConfig.js (~750ms). */
+.app.is-launching-game .launcher {
+  animation: launcher-swipe-out 750ms cubic-bezier(0.7, 0, 0.3, 1) forwards;
+}
+
+@keyframes launcher-swipe-out {
+  0%   { transform: translateX(0);    opacity: 1; }
+  100% { transform: translateX(18%);  opacity: 0; }
+}
+
 .topbar {
   position: fixed;
   top: 0;
