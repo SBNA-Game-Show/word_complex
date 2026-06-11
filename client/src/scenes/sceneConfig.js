@@ -48,7 +48,7 @@ export const sceneConfigs = {
       side: "right",
       left: "82%",
       bottom: "26%",
-      width: "15%",
+      width: "17%",
       scale: 1,
     },
 

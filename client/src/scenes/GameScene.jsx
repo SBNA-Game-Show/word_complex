@@ -1,9 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getGame } from "../games";
 import { getSceneConfig } from "./sceneConfig";
+import { subscribe } from "./sceneBus";
+import { pickLine } from "./speechLines";
 import CharacterHelper from "./CharacterHelper";
 import "./GameScene.css";
+
+// How long a speech bubble lingers before it starts leaving.
+const SPEECH_MS = 1600;
+// Duration of the pop-out animation (must match `speech-pop-out` in the CSS).
+const SPEECH_OUT_MS = 300;
 
 /**
  * GameScene
@@ -40,6 +47,43 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  // Speech bubble shown beside the character. The ZIM game (running inside the
+  // isolated canvas) emits "moods" on sceneBus when the player gets a round
+  // right/wrong; we turn those into a randomized line the buddy "says".
+  const [speech, setSpeech] = useState(null);
+  const speechIdRef = useRef(0);
+  const speechTimersRef = useRef([]);
+
+  useEffect(() => {
+    const clearTimers = () => {
+      speechTimersRef.current.forEach(clearTimeout);
+      speechTimersRef.current = [];
+    };
+
+    const unsubscribe = subscribe((mood) => {
+      const text = pickLine(mood);
+      if (!text) return;
+      speechIdRef.current += 1;
+      const id = speechIdRef.current;
+      clearTimers();
+      setSpeech({ id, text, mood, leaving: false });
+      // Phase 1: after the dwell time, flip to "leaving" so the bubble plays
+      // its pop-out animation. Phase 2: unmount once that animation finishes.
+      speechTimersRef.current.push(
+        setTimeout(() => {
+          setSpeech((prev) => (prev && prev.id === id ? { ...prev, leaving: true } : prev));
+        }, SPEECH_MS),
+        setTimeout(() => {
+          setSpeech((prev) => (prev && prev.id === id ? null : prev));
+        }, SPEECH_MS + SPEECH_OUT_MS)
+      );
+    });
+    return () => {
+      unsubscribe();
+      clearTimers();
+    };
+  }, []);
+
   return (
     <main
       className={`game-scene${entered ? " is-entered" : ""}`}
@@ -68,6 +112,7 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
           characterId={characterId}
           character={config?.character}
           entered={entered}
+          speech={speech}
         />
       </div>
 
