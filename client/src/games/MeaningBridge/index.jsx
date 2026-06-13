@@ -84,6 +84,16 @@ function formatTimer(seconds) {
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
+function clampCustomTimerMinutes(value) {
+  const parsed = Number.parseInt(String(value || "1"), 10);
+
+  if (!Number.isFinite(parsed)) {
+    return 1;
+  }
+
+  return Math.min(60, Math.max(1, parsed));
+}
+
 /*
   Landing layout constants
   ------------------------
@@ -117,67 +127,86 @@ const LANDING_LAYOUT = {
     width: 220,
     height: 76,
   },
+  leaderboardHotspot: {
+    x: 880,
+    y: 620,
+    width: 190,
+    height: 72,
+  },
 };
 
+/*
+  Gameplay layout constants
+  -------------------------
+  This is the main in-round screen.
+
+  The goal is to move from a simple POC layout toward a polished adventure game
+  layout while keeping the existing game logic stable.
+*/
 const GAMEPLAY_LAYOUT = {
+  header: {
+    titleY: 24,
+    progressY: 64,
+    timerY: 92,
+  },
   passage: {
-    x: 90,
-    y: 154,
-    width: 920,
-    height: 104,
+    x: 120,
+    y: 132,
+    width: 860,
+    height: 112,
   },
   leftPanel: {
     x: 70,
-    y: 282,
-    width: 300,
-    height: 338,
+    y: 286,
+    width: 306,
+    height: 330,
   },
   rightPanel: {
-    x: 730,
-    y: 282,
-    width: 300,
-    height: 338,
+    x: 724,
+    y: 286,
+    width: 306,
+    height: 330,
   },
   centerPanel: {
-    x: 400,
-    y: 282,
-    width: 300,
+    x: 404,
+    y: 286,
+    width: 292,
   },
   feedback: {
-    y: 384,
-    height: 94,
+    y: 392,
+    height: 82,
   },
   controls: {
-    y: 496,
-    secondaryY: 552,
+    y: 488,
+    secondaryY: 536,
   },
   card: {
-    width: 250,
-    height: 36,
+    width: 252,
+    height: 38,
     step: 45,
-    xOffset: 25,
+    xOffset: 27,
     yOffset: 58,
   },
   leaderboard: {
-    x: 70,
+    x: 120,
     y: 638,
-    width: 960,
-    height: 52,
+    width: 860,
+    height: 54,
   },
 };
 
 /*
   Setup/menu layout constants
   ---------------------------
-  This screen is now a real game setup screen.
-
-  It prepares the player before gameplay:
+  This screen prepares the player before gameplay:
   - player name
   - round type
   - timer length
-  - challenge mode
+  - challenge type
   - difficulty
   - pair count
+
+  Timer now has its own panel because custom timers need more room.
 */
 const MENU_LAYOUT = {
   panel: {
@@ -187,29 +216,40 @@ const MENU_LAYOUT = {
     height: 610,
   },
   playerPanel: {
-    x: 702,
-    y: 106,
+    x: 708,
+    y: 92,
     width: 220,
-    height: 66,
+    height: 64,
   },
   roundType: {
-    x: 166,
-    y: 204,
-    cardWidth: 250,
+    x: 142,
+    y: 190,
+    cardWidth: 210,
     cardHeight: 66,
-    gap: 22,
+    gap: 16,
+  },
+  timerPanel: {
+    x: 594,
+    y: 166,
+    width: 344,
+    height: 112,
   },
   timer: {
-    x: 702,
-    y: 204,
-    buttonWidth: 70,
-    buttonHeight: 36,
-    gap: 12,
+    x: 612,
+    y: 206,
+    buttonWidth: 60,
+    buttonHeight: 34,
+    gap: 8,
+    customWidth: 86,
+  },
+  modeTitle: {
+    x: 142,
+    y: 292,
   },
   modeGrid: {
-    x: 160,
+    x: 142,
     y: 326,
-    cardWidth: 220,
+    cardWidth: 216,
     cardHeight: 56,
     columnGap: 34,
     rowGap: 16,
@@ -317,6 +357,10 @@ export default createZimGame({
   outerColor: "#151019",
 
   setup({ stage, W, H, zim }) {
+    if (typeof stage.enableMouseOver === "function") {
+      stage.enableMouseOver(20);
+    }
+
     let screen = "landing";
 
     let playerName = "Guest Player";
@@ -327,10 +371,27 @@ export default createZimGame({
     let difficulty = "easy";
     let pairCount = 4;
     let roundType = "practice";
+
+    /*
+  Timer setup state
+  -----------------
+  timerOption can be:
+  - 120
+  - 300
+  - 600
+  - "custom"
+
+  timerSeconds is the actual countdown value used by gameplay.
+*/
+    let timerOption = 120;
     let timerSeconds = 120;
+    let customTimerMinutes = "3";
+    let isEditingCustomTimer = false;
+    let replaceCustomTimerOnNextInput = false;
 
     let roundData = null;
     let leaderboard = [];
+    let leaderboardReturnScreen = "menu";
     let selectedLeftId = null;
     let matches = [];
     let hintsUsed = 0;
@@ -340,6 +401,24 @@ export default createZimGame({
     let feedback = "Generating your first bridge round...";
     let feedbackType = "neutral";
     let roundStartedAt = Date.now();
+
+    /*
+  Timed round runtime state
+  -------------------------
+  roundType and timerSeconds are selected on the setup screen.
+
+  These runtime values control the active gameplay countdown:
+  - remainingRoundSeconds: what the player sees
+  - timerDeadlineAt: browser timestamp for accurate countdown
+  - roundTimerId: active interval id
+  - timedRoundEnded: prevents repeated auto-submit calls
+  - isSubmittingRound: prevents double submit
+*/
+    let remainingRoundSeconds = timerSeconds;
+    let timerDeadlineAt = null;
+    let roundTimerId = null;
+    let timedRoundEnded = false;
+    let isSubmittingRound = false;
 
     /*
   Landing art image
@@ -367,7 +446,14 @@ export default createZimGame({
         difficulty,
         pairCount,
         roundType,
+        timerOption,
         timerSeconds,
+        customTimerMinutes,
+        isEditingCustomTimer,
+        remainingRoundSeconds,
+        timerRunning: Boolean(roundTimerId),
+        timedRoundEnded,
+        isSubmittingRound,
         roundId: roundData?.puzzle?.roundId || null,
         passageTitle: roundData?.passage?.title || "",
         matches,
@@ -376,6 +462,7 @@ export default createZimGame({
         wrongAttempts,
         resultVisible: Boolean(result),
         leaderboard,
+        leaderboardReturnScreen,
       };
     }
 
@@ -399,6 +486,14 @@ export default createZimGame({
         valign,
         bold,
       });
+
+      /*
+    Labels are visual only.
+
+    Without this, text labels can sit above cards/buttons and steal pointer
+    events from the real clickable object underneath.
+  */
+      label.mouseEnabled = false;
 
       label.addTo(container).loc(x, y);
       return label;
@@ -514,11 +609,154 @@ export default createZimGame({
       renderScene();
     }
 
+    function openLeaderboardScreen(returnScreen = screen) {
+      /*
+    Dedicated leaderboard screen
+    ----------------------------
+    This screen is safe to open from landing, setup, or result.
+
+    During active gameplay we avoid interrupting the timed/matching flow.
+  */
+
+      leaderboardReturnScreen =
+        returnScreen === "leaderboard" ? "menu" : returnScreen || "menu";
+
+      screen = "leaderboard";
+      status = "Viewing Top Explorers.";
+      setFeedback("Top Explorers leaderboard opened.", "neutral");
+
+      renderScene();
+
+      void loadLeaderboard(10).then(() => {
+        renderScene();
+      });
+    }
+
+    function closeLeaderboardScreen() {
+      screen = leaderboardReturnScreen || "menu";
+      status = "Choose your bridge challenge.";
+      renderScene();
+    }
+
+    function stopRoundTimer({ reset = false } = {}) {
+      if (roundTimerId) {
+        window.clearInterval(roundTimerId);
+      }
+
+      roundTimerId = null;
+      timerDeadlineAt = null;
+
+      if (reset) {
+        remainingRoundSeconds = timerSeconds;
+        timedRoundEnded = false;
+      }
+    }
+
+    function updateRemainingRoundSeconds() {
+      if (roundType !== "timed" || !timerDeadlineAt) {
+        remainingRoundSeconds = timerSeconds;
+        return remainingRoundSeconds;
+      }
+
+      remainingRoundSeconds = Math.max(
+        0,
+        Math.ceil((timerDeadlineAt - Date.now()) / 1000),
+      );
+
+      return remainingRoundSeconds;
+    }
+
+    function startRoundTimer() {
+      stopRoundTimer({ reset: true });
+
+      if (roundType !== "timed") {
+        return;
+      }
+
+      remainingRoundSeconds = timerSeconds;
+      timerDeadlineAt = Date.now() + timerSeconds * 1000;
+      timedRoundEnded = false;
+
+      roundTimerId = window.setInterval(() => {
+        const remaining = updateRemainingRoundSeconds();
+
+        if (remaining <= 0) {
+          stopRoundTimer();
+          void handleTimerExpired();
+          return;
+        }
+
+        renderScene();
+      }, 1000);
+    }
+
+    async function handleTimerExpired() {
+      if (timedRoundEnded || result || isSubmittingRound) {
+        return;
+      }
+
+      timedRoundEnded = true;
+      remainingRoundSeconds = 0;
+      status = "Time expired.";
+      setFeedback("Time is up. Submitting your bridge automatically.", "error");
+      renderScene();
+
+      await submitRound({
+        force: true,
+        reason: "timer",
+      });
+    }
+
+    function isGameplayLocked() {
+      return Boolean(result) || isSubmittingRound || timedRoundEnded;
+    }
+
     function getNormalizedPlayerName() {
       return String(playerName || "").trim() || "Guest Player";
     }
 
+    function getCustomTimerSeconds() {
+      return clampCustomTimerMinutes(customTimerMinutes) * 60;
+    }
+
+    function getSelectedTimerSeconds() {
+      return timerOption === "custom" ? getCustomTimerSeconds() : timerOption;
+    }
+
+    function syncTimerSecondsFromSelection() {
+      timerSeconds = getSelectedTimerSeconds();
+    }
+
+    function beginCustomTimerEdit() {
+      roundType = "timed";
+      timerOption = "custom";
+      isEditingCustomTimer = true;
+      isEditingPlayerName = false;
+      replacePlayerNameOnNextInput = false;
+      replaceCustomTimerOnNextInput = true;
+      syncTimerSecondsFromSelection();
+
+      setFeedback(
+        "Type a custom timer in minutes from 1 to 60, then press Enter.",
+        "neutral",
+      );
+
+      renderScene();
+    }
+
+    function finishCustomTimerEdit() {
+      customTimerMinutes = String(clampCustomTimerMinutes(customTimerMinutes));
+      timerOption = "custom";
+      isEditingCustomTimer = false;
+      replaceCustomTimerOnNextInput = false;
+      syncTimerSecondsFromSelection();
+      renderScene();
+    }
+
     function beginPlayerNameEdit() {
+      isEditingCustomTimer = false;
+      replaceCustomTimerOnNextInput = false;
+
       isEditingPlayerName = true;
       replacePlayerNameOnNextInput =
         getNormalizedPlayerName() === "Guest Player";
@@ -537,48 +775,296 @@ export default createZimGame({
     }
 
     function handlePlayerNameKeyDown(event) {
-      if (screen !== "menu" || !isEditingPlayerName) {
+      /*
+    Global Meaning Bridge keyboard handler
+    --------------------------------------
+    Supports:
+    - player name editing
+    - custom timer editing
+    - landing shortcuts
+    - setup shortcuts
+    - gameplay shortcuts
+    - result shortcuts
+    - leaderboard shortcuts
+
+    Editing modes always take priority so normal typing is not interrupted.
+  */
+
+      if (event.ctrlKey || event.metaKey || event.altKey) {
         return;
       }
 
-      if (event.key === "Enter" || event.key === "Escape") {
-        event.preventDefault();
-        finishPlayerNameEdit();
+      const key = String(event.key || "").toLowerCase();
+      const isSpace = event.key === " " || event.code === "Space";
+
+      /*
+    Custom timer editing
+    --------------------
+    Only active on the setup/menu screen.
+  */
+      if (screen === "menu" && isEditingCustomTimer) {
+        if (event.key === "Enter" || event.key === "Escape") {
+          event.preventDefault();
+          finishCustomTimerEdit();
+          return;
+        }
+
+        if (event.key === "Backspace") {
+          event.preventDefault();
+
+          if (replaceCustomTimerOnNextInput) {
+            customTimerMinutes = "";
+            replaceCustomTimerOnNextInput = false;
+          } else {
+            customTimerMinutes = customTimerMinutes.slice(0, -1);
+          }
+
+          syncTimerSecondsFromSelection();
+          renderScene();
+          return;
+        }
+
+        if (/^\d$/.test(event.key)) {
+          event.preventDefault();
+
+          if (replaceCustomTimerOnNextInput) {
+            customTimerMinutes = "";
+            replaceCustomTimerOnNextInput = false;
+          }
+
+          if (customTimerMinutes.length < 2) {
+            customTimerMinutes += event.key;
+          }
+
+          syncTimerSecondsFromSelection();
+          renderScene();
+          return;
+        }
+
         return;
       }
 
-      if (event.key === "Backspace") {
-        event.preventDefault();
-
-        if (replacePlayerNameOnNextInput) {
-          playerName = "";
-          replacePlayerNameOnNextInput = false;
-        } else {
-          playerName = playerName.slice(0, -1);
+      /*
+    Player name editing
+    -------------------
+    Only active on the setup/menu screen.
+  */
+      if (screen === "menu" && isEditingPlayerName) {
+        if (event.key === "Enter" || event.key === "Escape") {
+          event.preventDefault();
+          finishPlayerNameEdit();
+          return;
         }
 
-        renderScene();
+        if (event.key === "Backspace") {
+          event.preventDefault();
+
+          if (replacePlayerNameOnNextInput) {
+            playerName = "";
+            replacePlayerNameOnNextInput = false;
+          } else {
+            playerName = playerName.slice(0, -1);
+          }
+
+          renderScene();
+          return;
+        }
+
+        if (event.key.length === 1) {
+          event.preventDefault();
+
+          if (replacePlayerNameOnNextInput) {
+            playerName = "";
+            replacePlayerNameOnNextInput = false;
+          }
+
+          if (playerName.length < 24) {
+            playerName += event.key;
+          }
+
+          renderScene();
+          return;
+        }
+
         return;
       }
 
-      if (
-        event.key.length === 1 &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !event.altKey
-      ) {
-        event.preventDefault();
-
-        if (replacePlayerNameOnNextInput) {
-          playerName = "";
-          replacePlayerNameOnNextInput = false;
+      /*
+    Dedicated leaderboard screen shortcuts
+  */
+      if (screen === "leaderboard") {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          goToSetupMenu();
+          return;
         }
 
-        if (playerName.length < 24) {
-          playerName += event.key;
+        if (key === "m" || key === "l" || event.key === "Escape") {
+          event.preventDefault();
+          closeLeaderboardScreen();
+          return;
         }
 
-        renderScene();
+        return;
+      }
+
+      /*
+    Landing shortcuts
+  */
+      if (screen === "landing") {
+        if (event.key === "Enter" || isSpace) {
+          event.preventDefault();
+          goToSetupMenu();
+          return;
+        }
+
+        if (key === "l") {
+          event.preventDefault();
+          openLeaderboardScreen("landing");
+          return;
+        }
+
+        return;
+      }
+
+      /*
+    Setup/menu shortcuts
+  */
+      if (screen === "menu") {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          startBridgeRound();
+          return;
+        }
+
+        if (key === "p") {
+          event.preventDefault();
+          selectMenuRoundType("practice");
+          return;
+        }
+
+        if (key === "t") {
+          event.preventDefault();
+          selectMenuRoundType("timed");
+          return;
+        }
+
+        if (key === "1") {
+          event.preventDefault();
+          selectMenuTimerSeconds(120);
+          return;
+        }
+
+        if (key === "2") {
+          event.preventDefault();
+          selectMenuTimerSeconds(300);
+          return;
+        }
+
+        if (key === "3") {
+          event.preventDefault();
+          selectMenuTimerSeconds(600);
+          return;
+        }
+
+        if (key === "c") {
+          event.preventDefault();
+          beginCustomTimerEdit();
+          return;
+        }
+
+        if (key === "e") {
+          event.preventDefault();
+          beginPlayerNameEdit();
+          return;
+        }
+
+        if (key === "l") {
+          event.preventDefault();
+          openLeaderboardScreen("menu");
+          return;
+        }
+
+        return;
+      }
+
+      /*
+    Result overlay shortcuts
+  */
+      if (screen === "gameplay" && result) {
+        if (event.key === "Enter" || key === "n") {
+          event.preventDefault();
+          void loadRound();
+          return;
+        }
+
+        if (key === "l") {
+          event.preventDefault();
+          openLeaderboardScreen("gameplay");
+          return;
+        }
+
+        if (key === "m" || event.key === "Escape") {
+          event.preventDefault();
+          backToMenu();
+          return;
+        }
+
+        return;
+      }
+
+      /*
+    Gameplay shortcuts
+  */
+      if (screen === "gameplay") {
+        if (/^[1-6]$/.test(key)) {
+          event.preventDefault();
+          activateGameplayNumberShortcut(Number(key));
+          return;
+        }
+
+        if (key === "h") {
+          event.preventDefault();
+          useHint();
+          return;
+        }
+
+        if (key === "r") {
+          event.preventDefault();
+          resetRound();
+          return;
+        }
+
+        if (key === "s" || event.key === "Enter") {
+          event.preventDefault();
+
+          if (!isSubmittingRound) {
+            void submitRound();
+          }
+
+          return;
+        }
+
+        if (key === "n") {
+          event.preventDefault();
+          void loadRound();
+          return;
+        }
+
+        if (key === "l") {
+          event.preventDefault();
+          setFeedback(
+            "Finish or submit the round to view the full leaderboard.",
+            "neutral",
+          );
+          renderScene();
+          return;
+        }
+
+        if (key === "m" || event.key === "Escape") {
+          event.preventDefault();
+          backToMenu();
+        }
       }
     }
 
@@ -599,11 +1085,22 @@ export default createZimGame({
 
     function selectMenuRoundType(nextRoundType) {
       roundType = nextRoundType;
+      isEditingCustomTimer = false;
+      replaceCustomTimerOnNextInput = false;
+
+      if (nextRoundType === "timed") {
+        syncTimerSecondsFromSelection();
+      }
+
       renderScene();
     }
 
     function selectMenuTimerSeconds(nextTimerSeconds) {
+      roundType = "timed";
+      timerOption = nextTimerSeconds;
       timerSeconds = nextTimerSeconds;
+      isEditingCustomTimer = false;
+      replaceCustomTimerOnNextInput = false;
       renderScene();
     }
 
@@ -611,6 +1108,12 @@ export default createZimGame({
       playerName = getNormalizedPlayerName();
       isEditingPlayerName = false;
       replacePlayerNameOnNextInput = false;
+
+      if (isEditingCustomTimer) {
+        finishCustomTimerEdit();
+      } else {
+        syncTimerSecondsFromSelection();
+      }
 
       screen = "gameplay";
 
@@ -622,6 +1125,8 @@ export default createZimGame({
     }
 
     function backToMenu() {
+      stopRoundTimer({ reset: true });
+
       screen = "menu";
       selectedLeftId = null;
       matches = [];
@@ -638,9 +1143,9 @@ export default createZimGame({
       renderScene();
     }
 
-    async function loadLeaderboard() {
+    async function loadLeaderboard(limit = 10) {
       try {
-        const response = await getMeaningBridgeLeaderboard(5);
+        const response = await getMeaningBridgeLeaderboard(limit);
         leaderboard = response.scores || [];
       } catch {
         leaderboard = [];
@@ -648,6 +1153,8 @@ export default createZimGame({
     }
 
     async function loadRound(options = {}) {
+      stopRoundTimer({ reset: true });
+
       screen = "gameplay";
       status = "Generating round...";
       setFeedback("Building a new Meaning Bridge round...", "neutral");
@@ -656,6 +1163,8 @@ export default createZimGame({
       matches = [];
       hintsUsed = 0;
       wrongAttempts = 0;
+      timedRoundEnded = false;
+      isSubmittingRound = false;
       roundStartedAt = Date.now();
       renderScene();
 
@@ -679,6 +1188,9 @@ export default createZimGame({
         );
 
         await loadLeaderboard();
+
+        roundStartedAt = Date.now();
+        startRoundTimer();
       } catch (error) {
         status = "Unable to generate round.";
         setFeedback(
@@ -687,6 +1199,7 @@ export default createZimGame({
             : "Failed to generate Meaning Bridge round.",
           "error",
         );
+        stopRoundTimer({ reset: true });
       }
 
       renderScene();
@@ -743,7 +1256,7 @@ export default createZimGame({
     }
 
     function handleLeftCard(item) {
-      if (result) {
+      if (isGameplayLocked()) {
         return;
       }
 
@@ -762,10 +1275,9 @@ export default createZimGame({
     }
 
     function handleRightCard(item) {
-      if (result) {
+      if (isGameplayLocked()) {
         return;
       }
-
       const puzzle = roundData?.puzzle;
 
       if (!puzzle) {
@@ -813,18 +1325,89 @@ export default createZimGame({
       renderScene();
     }
 
+    function activateGameplayNumberShortcut(cardNumber) {
+      /*
+    Number-key card selection
+    -------------------------
+    If no word card is selected, number keys select from the left word cards.
+    If a word card is already selected, number keys select from the right
+    meaning cards.
+
+    Example:
+    - Press 1 to select the first word card.
+    - Press 3 to match it with the third meaning card.
+  */
+
+      if (isGameplayLocked()) {
+        return;
+      }
+
+      const puzzle = roundData?.puzzle;
+
+      if (!puzzle) {
+        return;
+      }
+
+      const index = cardNumber - 1;
+
+      if (selectedLeftId) {
+        const rightItem = puzzle.rightItems[index];
+
+        if (!rightItem) {
+          setFeedback(
+            `There is no meaning card ${cardNumber} in this round.`,
+            "neutral",
+          );
+          renderScene();
+          return;
+        }
+
+        handleRightCard(rightItem);
+        return;
+      }
+
+      const leftItem = puzzle.leftItems[index];
+
+      if (!leftItem) {
+        setFeedback(
+          `There is no word card ${cardNumber} in this round.`,
+          "neutral",
+        );
+        renderScene();
+        return;
+      }
+
+      handleLeftCard(leftItem);
+    }
+
     function resetRound() {
+      if (isSubmittingRound) {
+        return;
+      }
+
+      stopRoundTimer({ reset: true });
+
       selectedLeftId = null;
       matches = [];
       hintsUsed = 0;
       wrongAttempts = 0;
       result = null;
+      timedRoundEnded = false;
       roundStartedAt = Date.now();
+
       setFeedback("Round reset. Select a word card to begin again.", "neutral");
+
+      if (roundType === "timed") {
+        startRoundTimer();
+      }
+
       renderScene();
     }
 
     function useHint() {
+      if (isGameplayLocked()) {
+        return;
+      }
       const puzzle = roundData?.puzzle;
 
       if (!puzzle) {
@@ -848,27 +1431,50 @@ export default createZimGame({
       renderScene();
     }
 
-    async function submitRound() {
+    async function submitRound({ force = false, reason = "manual" } = {}) {
       const puzzle = roundData?.puzzle;
 
-      if (!puzzle) {
+      if (!puzzle || result || isSubmittingRound) {
         return;
       }
 
-      if (matches.length === 0) {
+      if (!force && matches.length === 0) {
         setFeedback("Match at least one pair before submitting.", "neutral");
         renderScene();
         return;
       }
 
-      status = "Submitting round...";
+      if (roundType === "timed") {
+        updateRemainingRoundSeconds();
+      }
+
+      isSubmittingRound = true;
+      stopRoundTimer();
+
+      status =
+        reason === "timer"
+          ? "Time expired. Submitting round..."
+          : "Submitting round...";
+
+      setFeedback(
+        reason === "timer"
+          ? "Time is up. Your current matches are being scored."
+          : "Submitting your bridge round...",
+        reason === "timer" ? "error" : "neutral",
+      );
+
       renderScene();
 
       try {
-        const timeSeconds = Math.max(
+        const elapsedSeconds = Math.max(
           1,
           Math.round((Date.now() - roundStartedAt) / 1000),
         );
+
+        const timeSeconds =
+          roundType === "timed"
+            ? Math.min(timerSeconds, elapsedSeconds)
+            : elapsedSeconds;
 
         result = await submitMeaningBridgeRound({
           roundId: puzzle.roundId,
@@ -879,20 +1485,50 @@ export default createZimGame({
           wrongAttempts,
         });
 
-        status = "Round submitted.";
-        setFeedback(result.message || "Round submitted.", "success");
+        status =
+          reason === "timer"
+            ? "Time expired. Round submitted."
+            : "Round submitted.";
+
+        setFeedback(
+          reason === "timer"
+            ? "Time expired. Your score has been submitted."
+            : result.message || "Round submitted.",
+          reason === "timer" ? "error" : "success",
+        );
 
         await loadLeaderboard();
       } catch (error) {
+        isSubmittingRound = false;
+        timedRoundEnded = false;
+
         setFeedback(
           error instanceof Error
             ? error.message
             : "Failed to submit Meaning Bridge round.",
           "error",
         );
+
         status = "Submit failed.";
+
+        if (roundType === "timed" && remainingRoundSeconds > 0 && !force) {
+          timerDeadlineAt = Date.now() + remainingRoundSeconds * 1000;
+
+          roundTimerId = window.setInterval(() => {
+            const remaining = updateRemainingRoundSeconds();
+
+            if (remaining <= 0) {
+              stopRoundTimer();
+              void handleTimerExpired();
+              return;
+            }
+
+            renderScene();
+          }, 1000);
+        }
       }
 
+      isSubmittingRound = false;
       renderScene();
     }
 
@@ -928,9 +1564,25 @@ export default createZimGame({
     }
 
     function drawBackground() {
+      /*
+    Adventure-style ZIM background
+    ------------------------------
+    This is still drawn with ZIM shapes, not a baked screenshot.
+
+    Later we can replace this with a clean layered background asset, but this
+    version already gives the gameplay screen a more polished game feel.
+  */
+
       new zim.Rectangle(W, H, "#dff6ff").addTo(stage).loc(0, 0);
 
+      // Sky glow.
+      new zim.Circle(300, "rgba(255,255,255,0.38)").addTo(stage).loc(550, 144);
+
+      // Sun.
       new zim.Circle(44, "#facc15").addTo(stage).loc(982, 78);
+      new zim.Circle(58, "rgba(250,204,21,0.16)").addTo(stage).loc(982, 78);
+
+      // Clouds.
       new zim.Circle(20, "#ffffff").addTo(stage).loc(110, 72);
       new zim.Circle(28, "#ffffff").addTo(stage).loc(140, 62);
       new zim.Circle(20, "#ffffff").addTo(stage).loc(172, 72);
@@ -938,6 +1590,13 @@ export default createZimGame({
         .addTo(stage)
         .loc(100, 72);
 
+      new zim.Circle(18, "rgba(255,255,255,0.9)").addTo(stage).loc(814, 88);
+      new zim.Circle(26, "rgba(255,255,255,0.9)").addTo(stage).loc(846, 78);
+      new zim.Rectangle(86, 18, "rgba(255,255,255,0.9)", null, 0, 14)
+        .addTo(stage)
+        .loc(796, 88);
+
+      // Distant hills.
       const hills = new zim.Shape().addTo(stage);
       hills
         .f("#bbf7d0")
@@ -948,6 +1607,17 @@ export default createZimGame({
         .lt(0, H)
         .cp();
 
+      const farHills = new zim.Shape().addTo(stage);
+      farHills
+        .f("rgba(134,239,172,0.48)")
+        .mt(0, 260)
+        .bt(160, 160, 290, 276, 470, 206)
+        .bt(650, 142, 830, 250, W, 198)
+        .lt(W, H)
+        .lt(0, H)
+        .cp();
+
+      // River.
       const river = new zim.Shape().addTo(stage);
       river
         .f("#7dd3fc")
@@ -958,107 +1628,270 @@ export default createZimGame({
         .lt(0, H)
         .cp();
 
-      new zim.Rectangle(280, 92, "#65a30d", null, 0, 42)
-        .addTo(stage)
-        .loc(-40, 345);
+      const riverHighlight = new zim.Shape().addTo(stage);
+      riverHighlight
+        .s("rgba(255,255,255,0.42)")
+        .ss(4)
+        .mt(322, 420)
+        .bt(450, 392, 520, 470, 650, 430)
+        .bt(740, 402, 790, 448, 900, 418);
 
-      new zim.Rectangle(280, 92, "#65a30d", null, 0, 42)
+      // Grass banks.
+      new zim.Rectangle(300, 92, "#65a30d", null, 0, 42)
         .addTo(stage)
-        .loc(860, 345);
+        .loc(-40, 348);
+
+      new zim.Rectangle(300, 92, "#65a30d", null, 0, 42)
+        .addTo(stage)
+        .loc(840, 348);
+
+      // Soft vignette to frame the game.
+      new zim.Rectangle(W, H, "rgba(7,22,79,0.05)").addTo(stage).loc(0, 0);
     }
 
     function drawBridge() {
-      const progress = getCompletionPercent();
+      /*
+    Adventure bridge center
+    -----------------------
+    This is the visual heart of the gameplay screen.
 
+    It shows:
+    - stone bridge arch
+    - match slots
+    - completion badge
+    - progress glow
+  */
+
+      const progress = getCompletionPercent();
+      const puzzle = roundData?.puzzle;
+      const totalPairs = puzzle?.leftItems?.length || pairCount;
+      const completedPairs = matches.length;
+
+      const bridgeX = 404;
+      const bridgeY = 330;
+      const bridgeWidth = 292;
+
+      // Soft bridge shadow.
       const shadow = new zim.Shape().addTo(stage);
+      shadow.mouseEnabled = false;
       shadow
         .s("rgba(120,53,15,0.18)")
         .ss(18)
-        .mt(410, 358)
-        .bt(492, 304, 608, 304, 690, 358);
+        .mt(bridgeX + 18, bridgeY + 112)
+        .bt(
+          bridgeX + 78,
+          bridgeY + 52,
+          bridgeX + 214,
+          bridgeY + 52,
+          bridgeX + 274,
+          bridgeY + 112,
+        );
 
+      // Main stone arch.
       const arch = new zim.Shape().addTo(stage);
-      arch.s("#92400e").ss(11).mt(410, 350).bt(492, 292, 608, 292, 690, 350);
+      arch.mouseEnabled = false;
+      arch
+        .s("#8b5e34")
+        .ss(13)
+        .mt(bridgeX + 18, bridgeY + 104)
+        .bt(
+          bridgeX + 78,
+          bridgeY + 42,
+          bridgeX + 214,
+          bridgeY + 42,
+          bridgeX + 274,
+          bridgeY + 104,
+        );
 
+      // Bridge deck.
       const deck = new zim.Shape().addTo(stage);
-      deck.s("#b45309").ss(13).mt(398, 370).lt(702, 370);
+      deck.mouseEnabled = false;
+      deck
+        .s("#b45309")
+        .ss(14)
+        .mt(bridgeX + 10, bridgeY + 126)
+        .lt(bridgeX + bridgeWidth - 10, bridgeY + 126);
 
-      for (let index = 0; index < 5; index += 1) {
-        const postX = 432 + index * 58;
-        const postY = 328 - Math.sin((index / 4) * Math.PI) * 28;
-
-        new zim.Rectangle(7, 44, "#78350f", null, 0, 4)
+      // Stone blocks.
+      for (let index = 0; index < 8; index += 1) {
+        const block = new zim.Rectangle(30, 18, "#d6b078", "#8b5e34", 1, 5)
           .addTo(stage)
-          .loc(postX, postY);
+          .loc(bridgeX + 28 + index * 30, bridgeY + 116);
+
+        block.mouseEnabled = false;
       }
 
-      const progressBridge = new zim.Shape().addTo(stage);
-      progressBridge
-        .s("#22c55e")
-        .ss(6)
-        .mt(410, 350)
-        .bt(
-          410 + progress * 0.78,
-          326 - progress * 0.22,
-          470 + progress * 1.08,
-          292 + progress * 0.1,
-          410 + progress * 2.8,
-          350,
-        );
+      // Match slots on the arch.
+      for (let index = 0; index < totalPairs; index += 1) {
+        const slotX =
+          bridgeX + 44 + index * (200 / Math.max(1, totalPairs - 1));
+        const slotY =
+          bridgeY +
+          76 -
+          Math.sin((index / Math.max(1, totalPairs - 1)) * Math.PI) * 28;
+
+        const complete = index < completedPairs;
+
+        const slot = new zim.Circle(
+          17,
+          complete ? "#22c55e" : "rgba(255,255,255,0.82)",
+          complete ? "#16a34a" : "#d6b078",
+          3,
+        )
+          .addTo(stage)
+          .loc(slotX, slotY);
+
+        slot.mouseEnabled = false;
+
+        if (complete) {
+          addLabel({
+            text: "✓",
+            x: slotX,
+            y: slotY - 11,
+            size: 17,
+            color: "#ffffff",
+            bold: true,
+            align: "center",
+          });
+        }
+      }
+
+      // Progress badge.
+      addPanel({
+        x: bridgeX + 78,
+        y: bridgeY + 132,
+        width: 136,
+        height: 78,
+        fill: "rgba(255,255,255,0.96)",
+        stroke: "#fde68a",
+        corner: 24,
+      });
+
+      addLabel({
+        text: `${completedPairs} / ${totalPairs}`,
+        x: bridgeX + 146,
+        y: bridgeY + 146,
+        size: 26,
+        color: "#92400e",
+        bold: true,
+        align: "center",
+      });
+
+      addLabel({
+        text: "pairs matched",
+        x: bridgeX + 146,
+        y: bridgeY + 180,
+        size: 11,
+        color: "#64748b",
+        bold: true,
+        align: "center",
+      });
+
+      addLabel({
+        text: `${progress}% complete`,
+        x: bridgeX + 146,
+        y: bridgeY + 196,
+        size: 11,
+        color: "#2563eb",
+        bold: true,
+        align: "center",
+      });
     }
 
     function drawHeader() {
-      addButton({
+      addPanel({
         x: 28,
-        y: 24,
-        width: 104,
-        height: 34,
-        label: "Game 02",
-        background: "#0f172a",
-        rollBackground: "#1e293b",
-        onClick: () => {},
+        y: 22,
+        width: 112,
+        height: 36,
+        fill: "#ffffff",
+        stroke: "#bfdbfe",
+        corner: 18,
+      });
+
+      addLabel({
+        text: "Game 02",
+        x: 84,
+        y: 32,
+        size: 13,
+        color: "#1e3a8a",
+        bold: true,
+        align: "center",
       });
 
       addLabel({
         text: "Meaning Bridge",
         x: W / 2,
-        y: 26,
+        y: GAMEPLAY_LAYOUT.header.titleY,
         size: 34,
         color: "#07164f",
         bold: true,
         align: "center",
       });
 
+      addPanel({
+        x: W / 2 - 116,
+        y: GAMEPLAY_LAYOUT.header.progressY,
+        width: 232,
+        height: 32,
+        fill: "rgba(255,255,255,0.9)",
+        stroke: "#a7f3d0",
+        corner: 16,
+      });
+
       addLabel({
         text: `${getCompletionPercent()}% complete`,
         x: W / 2,
-        y: 68,
-        size: 18,
+        y: GAMEPLAY_LAYOUT.header.progressY + 8,
+        size: 15,
         color: "#047857",
         bold: true,
         align: "center",
       });
 
+      if (roundType === "timed") {
+        const danger = remainingRoundSeconds <= 10;
+
+        addPanel({
+          x: W / 2 - 78,
+          y: GAMEPLAY_LAYOUT.header.timerY,
+          width: 156,
+          height: 36,
+          fill: danger ? "#fef2f2" : "#fff7ed",
+          stroke: danger ? "#fca5a5" : "#fed7aa",
+          corner: 18,
+        });
+
+        addLabel({
+          text: `⏱ ${formatTimer(remainingRoundSeconds)}`,
+          x: W / 2,
+          y: GAMEPLAY_LAYOUT.header.timerY + 8,
+          size: 17,
+          color: danger ? "#b91c1c" : "#c2410c",
+          bold: true,
+          align: "center",
+        });
+      }
+
       addPanel({
-        x: W - 290,
-        y: 26,
-        width: 250,
-        height: 40,
-        fill: "rgba(255,255,255,0.88)",
+        x: W - 356,
+        y: 24,
+        width: 316,
+        height: 42,
+        fill: "rgba(255,255,255,0.9)",
         stroke: "#bfdbfe",
-        corner: 16,
+        corner: 18,
       });
 
       addLabel({
-        text: shortText(status, 34),
-        x: W - 272,
-        y: 39,
+        text: shortText(status, 44),
+        x: W - 338,
+        y: 38,
         size: 12,
         color: "#1e3a8a",
         bold: true,
       });
     }
-
     function drawMenuPlayerNamePanel() {
       /*
     Player name panel
@@ -1191,6 +2024,13 @@ export default createZimGame({
         },
       });
 
+      addLandingHotspot({
+        ...LANDING_LAYOUT.leaderboardHotspot,
+        onClick: () => {
+          openLeaderboardScreen("landing");
+        },
+      });
+
       if (landingImageFailed) {
         addPanel({
           x: 350,
@@ -1264,8 +2104,8 @@ export default createZimGame({
       addLabel({
         text: "Choose the rules for this round before starting.",
         x: panel.x + 44,
-        y: panel.y + 86,
-        size: 16,
+        y: panel.y + 80,
+        size: 15,
         color: "#475569",
         bold: true,
       });
@@ -1352,26 +2192,39 @@ export default createZimGame({
       });
 
       /*
-    Timer selector
-  */
+  Timer selector
+  --------------
+  Timer now lives inside its own visual panel so the Custom option does not
+  crowd the round type cards or player panel.
+*/
+      addPanel({
+        x: MENU_LAYOUT.timerPanel.x,
+        y: MENU_LAYOUT.timerPanel.y,
+        width: MENU_LAYOUT.timerPanel.width,
+        height: MENU_LAYOUT.timerPanel.height,
+        fill: roundType === "timed" ? "#faf5ff" : "#f8fafc",
+        stroke: roundType === "timed" ? "#ddd6fe" : "#e2e8f0",
+        corner: 22,
+      });
+
       addLabel({
         text: "Timer",
-        x: MENU_LAYOUT.timer.x,
-        y: MENU_LAYOUT.roundType.y - 30,
+        x: MENU_LAYOUT.timerPanel.x + 18,
+        y: MENU_LAYOUT.timerPanel.y + 14,
         size: 18,
         color: roundType === "timed" ? "#5b21b6" : "#94a3b8",
         bold: true,
       });
 
       TIMER_OPTIONS.forEach((entry, index) => {
-        const selected = entry.value === timerSeconds;
+        const selected = timerOption === entry.value;
         const disabled = roundType !== "timed";
 
         addButton({
           x:
             MENU_LAYOUT.timer.x +
             index * (MENU_LAYOUT.timer.buttonWidth + MENU_LAYOUT.timer.gap),
-          y: MENU_LAYOUT.timer.y + 16,
+          y: MENU_LAYOUT.timer.y,
           width: MENU_LAYOUT.timer.buttonWidth,
           height: MENU_LAYOUT.timer.buttonHeight,
           label: entry.label,
@@ -1391,13 +2244,53 @@ export default createZimGame({
         });
       });
 
+      const customTimerSelected = timerOption === "custom";
+      const customTimerDisabled = roundType !== "timed";
+      const customTimerX =
+        MENU_LAYOUT.timer.x +
+        TIMER_OPTIONS.length *
+          (MENU_LAYOUT.timer.buttonWidth + MENU_LAYOUT.timer.gap);
+
+      addButton({
+        x: customTimerX,
+        y: MENU_LAYOUT.timer.y,
+        width: MENU_LAYOUT.timer.customWidth,
+        height: MENU_LAYOUT.timer.buttonHeight,
+        label: customTimerSelected
+          ? formatTimer(getCustomTimerSeconds())
+          : "Custom",
+        background: customTimerDisabled
+          ? "#e2e8f0"
+          : customTimerSelected
+            ? "#7c3aed"
+            : "#ffffff",
+        rollBackground: customTimerDisabled
+          ? "#e2e8f0"
+          : customTimerSelected
+            ? "#6d28d9"
+            : "#f5f3ff",
+        color: customTimerDisabled
+          ? "#94a3b8"
+          : customTimerSelected
+            ? "#ffffff"
+            : "#5b21b6",
+        borderColor:
+          customTimerDisabled || customTimerSelected ? null : "#ddd6fe",
+        onClick: () => {
+          if (!customTimerDisabled) {
+            beginCustomTimerEdit();
+          }
+        },
+      });
+
       addLabel({
-        text:
-          roundType === "timed"
-            ? `Timed round selected: ${formatTimer(timerSeconds)}`
+        text: isEditingCustomTimer
+          ? `Custom: ${customTimerMinutes || "_"} min · Enter to save`
+          : roundType === "timed"
+            ? `Selected: ${formatTimer(getSelectedTimerSeconds())}`
             : "Practice mode: no countdown",
-        x: MENU_LAYOUT.timer.x,
-        y: MENU_LAYOUT.timer.y + 62,
+        x: MENU_LAYOUT.timerPanel.x + 18,
+        y: MENU_LAYOUT.timerPanel.y + 84,
         size: 11,
         color: roundType === "timed" ? "#5b21b6" : "#64748b",
         bold: true,
@@ -1408,8 +2301,8 @@ export default createZimGame({
   */
       addLabel({
         text: "Challenge Mode",
-        x: panel.x + 42,
-        y: 292,
+        x: MENU_LAYOUT.modeTitle.x,
+        y: MENU_LAYOUT.modeTitle.y,
         size: 20,
         color: "#1e3a8a",
         bold: true,
@@ -1545,6 +2438,20 @@ export default createZimGame({
       /*
     Start action
   */
+
+      addButton({
+        x: 170,
+        y: MENU_LAYOUT.startButton.y + 5,
+        width: 138,
+        height: 38,
+        label: "Leaderboard",
+        background: "#f59e0b",
+        rollBackground: "#d97706",
+        onClick: () => {
+          openLeaderboardScreen("menu");
+        },
+      });
+
       addButton({
         x: MENU_LAYOUT.startButton.x,
         y: MENU_LAYOUT.startButton.y,
@@ -1552,7 +2459,7 @@ export default createZimGame({
         height: MENU_LAYOUT.startButton.height,
         label:
           roundType === "timed"
-            ? `Start ${formatTimer(timerSeconds)}`
+            ? `Start ${formatTimer(getSelectedTimerSeconds())}`
             : "Start Practice",
         background: "#4f46e5",
         rollBackground: "#4338ca",
@@ -1563,7 +2470,9 @@ export default createZimGame({
         text: `${
           MODES.find((entry) => entry.value === mode)?.label || "Mode"
         } · ${difficulty} · ${pairCount} pairs · ${
-          roundType === "timed" ? formatTimer(timerSeconds) : "practice"
+          roundType === "timed"
+            ? formatTimer(getSelectedTimerSeconds())
+            : "practice"
         }`,
         x: W / 2,
         y: 648,
@@ -1645,17 +2554,29 @@ export default createZimGame({
         y,
         width,
         height,
-        fill: "rgba(255,255,255,0.95)",
-        stroke: "#bfdbfe",
-        corner: 24,
+        fill: "rgba(255,255,255,0.96)",
+        stroke: "#fed7aa",
+        corner: 28,
+      });
+
+      new zim.Circle(28, "#7c3aed").addTo(stage).loc(x + 42, y + 52);
+
+      addLabel({
+        text: "📖",
+        x: x + 42,
+        y: y + 34,
+        size: 25,
+        color: "#ffffff",
+        bold: true,
+        align: "center",
       });
 
       if (!passage) {
         addLabel({
           text: "Loading passage...",
-          x: x + 24,
-          y: y + 32,
-          size: 18,
+          x: x + 90,
+          y: y + 38,
+          size: 20,
           color: "#475569",
           bold: true,
         });
@@ -1663,32 +2584,33 @@ export default createZimGame({
       }
 
       addLabel({
+        text: passage.title,
+        x: x + 90,
+        y: y + 20,
+        size: 26,
+        color: "#07164f",
+        bold: true,
+      });
+
+      addLabel({
         text: `${passage.difficulty} · ${passage.theme}`,
-        x: x + 24,
-        y: y + 14,
+        x: x + width - 180,
+        y: y + 24,
         size: 12,
         color: "#047857",
         bold: true,
       });
 
-      addLabel({
-        text: passage.title,
-        x: x + 24,
-        y: y + 36,
-        size: 22,
-        color: "#07164f",
-        bold: true,
-      });
-
       addWrappedLabel({
         text: passage.text,
-        x: x + 24,
-        y: y + 66,
-        maxCharsPerLine: 112,
+        x: x + 90,
+        y: y + 58,
+        maxCharsPerLine: 96,
         maxLines: 2,
-        size: 12,
-        lineHeight: 14,
-        color: "#475569",
+        size: 13,
+        lineHeight: 17,
+        color: "#334155",
+        bold: true,
       });
     }
 
@@ -1698,8 +2620,10 @@ export default createZimGame({
 
       const selected = side === "left" && selectedLeftId === item.id;
 
+      const isLeft = side === "left";
+
       const fill = matched ? "#dcfce7" : selected ? "#dbeafe" : "#ffffff";
-      const stroke = matched ? "#16a34a" : selected ? "#2563eb" : "#d1d5db";
+      const stroke = matched ? "#16a34a" : selected ? "#2563eb" : "#e5e7eb";
       const textColor = matched ? "#064e3b" : selected ? "#1e3a8a" : "#111827";
       const subTextColor = matched
         ? "#15803d"
@@ -1707,71 +2631,170 @@ export default createZimGame({
           ? "#2563eb"
           : "#64748b";
 
-      const card = new zim.Rectangle(
-        GAMEPLAY_LAYOUT.card.width,
-        GAMEPLAY_LAYOUT.card.height,
-        fill,
-        stroke,
-        selected ? 4 : matched ? 3 : 2,
-        12,
-      )
-        .addTo(stage)
-        .loc(x, y);
+      const iconFill = isLeft
+        ? selected
+          ? "#2563eb"
+          : "#3b82f6"
+        : matched
+          ? "#16a34a"
+          : "#10b981";
 
-      card.cursor = "pointer";
-      card.on("click", () => {
+      function activateCard() {
         if (side === "left") {
           handleLeftCard(item);
         } else {
           handleRightCard(item);
         }
+      }
+
+      /*
+    Card shadow.
+  */
+      const shadow = new zim.Rectangle(
+        GAMEPLAY_LAYOUT.card.width,
+        GAMEPLAY_LAYOUT.card.height,
+        "rgba(15,23,42,0.12)",
+        null,
+        0,
+        14,
+      )
+        .addTo(stage)
+        .loc(x + 3, y + 4);
+
+      shadow.mouseEnabled = false;
+
+      /*
+    Card visual base.
+  */
+      const base = new zim.Rectangle(
+        GAMEPLAY_LAYOUT.card.width,
+        GAMEPLAY_LAYOUT.card.height,
+        fill,
+        stroke,
+        selected ? 4 : matched ? 3 : 2,
+        14,
+      )
+        .addTo(stage)
+        .loc(x, y);
+
+      base.mouseEnabled = false;
+
+      /*
+    Left-side drag dots.
+  */
+      for (let index = 0; index < 3; index += 1) {
+        const dot = new zim.Circle(2.2, "#cbd5e1")
+          .addTo(stage)
+          .loc(x + 14, y + 13 + index * 7);
+
+        dot.mouseEnabled = false;
+      }
+
+      /*
+    Icon tile.
+  */
+      const iconTile = new zim.Rectangle(36, 30, iconFill, null, 0, 10)
+        .addTo(stage)
+        .loc(x + 28, y + 4);
+
+      iconTile.mouseEnabled = false;
+
+      addLabel({
+        text: isLeft ? "A" : "M",
+        x: x + 46,
+        y: y + 10,
+        size: 14,
+        color: "#ffffff",
+        bold: true,
+        align: "center",
       });
 
       addLabel({
-        text: shortText(item.label, 26),
-        x: x + 14,
-        y: y + 5,
+        text: shortText(item.label, 23),
+        x: x + 78,
+        y: y + 6,
         size: 14,
         color: textColor,
         bold: true,
       });
 
       addLabel({
-        text: shortText(item.sublabel, 30),
-        x: x + 14,
-        y: y + 21,
+        text: shortText(item.sublabel, 27),
+        x: x + 78,
+        y: y + 23,
         size: 9,
         color: subTextColor,
         bold: true,
       });
 
+      /*
+    Speaker / status area.
+    Visual only for now. It can become audio support later.
+  */
       if (matched) {
-        new zim.Circle(10, "#16a34a").addTo(stage).loc(x + 226, y + 17);
+        const matchedCircle = new zim.Circle(10, "#16a34a")
+          .addTo(stage)
+          .loc(x + GAMEPLAY_LAYOUT.card.width - 22, y + 19);
+
+        matchedCircle.mouseEnabled = false;
 
         addLabel({
           text: "✓",
-          x: x + 226,
-          y: y + 8,
+          x: x + GAMEPLAY_LAYOUT.card.width - 22,
+          y: y + 10,
           size: 13,
           color: "#ffffff",
           bold: true,
           align: "center",
         });
-      }
+      } else if (selected) {
+        const selectedCircle = new zim.Circle(10, "#2563eb")
+          .addTo(stage)
+          .loc(x + GAMEPLAY_LAYOUT.card.width - 22, y + 19);
 
-      if (selected && !matched) {
-        new zim.Circle(10, "#2563eb").addTo(stage).loc(x + 226, y + 17);
+        selectedCircle.mouseEnabled = false;
 
         addLabel({
           text: "●",
-          x: x + 226,
-          y: y + 8,
+          x: x + GAMEPLAY_LAYOUT.card.width - 22,
+          y: y + 10,
           size: 12,
           color: "#ffffff",
           bold: true,
           align: "center",
         });
+      } else {
+        addLabel({
+          text: "›",
+          x: x + GAMEPLAY_LAYOUT.card.width - 22,
+          y: y + 7,
+          size: 22,
+          color: "#94a3b8",
+          bold: true,
+          align: "center",
+        });
       }
+
+      /*
+    Reliable card hit area.
+    ----------------------
+    This transparent layer sits above labels/icons so every part of the card
+    responds to input.
+
+    We use mousedown because timed mode redraws the canvas every second.
+  */
+      const hitLayer = new zim.Rectangle(
+        GAMEPLAY_LAYOUT.card.width + 12,
+        GAMEPLAY_LAYOUT.card.height + 10,
+        "rgba(255,255,255,0.01)",
+        null,
+        0,
+        16,
+      );
+
+      hitLayer.addTo(stage).loc(x - 6, y - 5);
+      hitLayer.cursor = "pointer";
+      hitLayer.on("mousedown", activateCard);
     }
 
     function drawCards() {
@@ -1780,42 +2803,78 @@ export default createZimGame({
       const right = GAMEPLAY_LAYOUT.rightPanel;
       const card = GAMEPLAY_LAYOUT.card;
 
+      /*
+    Word card panel
+  */
       addPanel({
         x: left.x,
         y: left.y,
         width: left.width,
         height: left.height,
-        fill: "#ecfdf5",
-        stroke: "#86efac",
-        corner: 24,
+        fill: "rgba(239,246,255,0.96)",
+        stroke: "#60a5fa",
+        corner: 28,
       });
 
+      new zim.Rectangle(178, 42, "#2563eb", "#1d4ed8", 2, 16)
+        .addTo(stage)
+        .loc(left.x + 54, left.y - 22);
+
+      addLabel({
+        text: "Word Cards",
+        x: left.x + 154,
+        y: left.y - 10,
+        size: 18,
+        color: "#ffffff",
+        bold: true,
+        align: "center",
+      });
+
+      addLabel({
+        text: "A",
+        x: left.x + 74,
+        y: left.y - 11,
+        size: 16,
+        color: "#ffffff",
+        bold: true,
+        align: "center",
+      });
+
+      /*
+    Meaning card panel
+  */
       addPanel({
         x: right.x,
         y: right.y,
         width: right.width,
         height: right.height,
-        fill: "#f5f3ff",
-        stroke: "#c4b5fd",
-        corner: 24,
+        fill: "rgba(240,253,244,0.96)",
+        stroke: "#4ade80",
+        corner: 28,
       });
 
-      addLabel({
-        text: "Word Cards",
-        x: left.x + 24,
-        y: left.y + 18,
-        size: 20,
-        color: "#065f46",
-        bold: true,
-      });
+      new zim.Rectangle(196, 42, "#059669", "#047857", 2, 16)
+        .addTo(stage)
+        .loc(right.x + 48, right.y - 22);
 
       addLabel({
         text: "Meaning Cards",
-        x: right.x + 24,
-        y: right.y + 18,
-        size: 20,
-        color: "#5b21b6",
+        x: right.x + 160,
+        y: right.y - 10,
+        size: 18,
+        color: "#ffffff",
         bold: true,
+        align: "center",
+      });
+
+      addLabel({
+        text: "📖",
+        x: right.x + 74,
+        y: right.y - 14,
+        size: 18,
+        color: "#ffffff",
+        bold: true,
+        align: "center",
       });
 
       if (!puzzle) {
@@ -1857,6 +2916,13 @@ export default createZimGame({
         return;
       }
 
+      /*
+    Connection vines
+    ----------------
+    These are drawn before the card panels in renderScene after the next step.
+    Mouse is disabled so the connectors never block card clicking.
+  */
+
       const left = GAMEPLAY_LAYOUT.leftPanel;
       const right = GAMEPLAY_LAYOUT.rightPanel;
       const card = GAMEPLAY_LAYOUT.card;
@@ -1883,14 +2949,32 @@ export default createZimGame({
           right.y + card.yOffset + rightIndex * card.step + card.height / 2;
 
         const connector = new zim.Shape().addTo(stage);
-        connector
-          .s("#22c55e")
-          .ss(4)
-          .mt(leftX, y1)
-          .bt(460, y1, 640, y2, rightX, y2);
+        connector.mouseEnabled = false;
 
-        new zim.Circle(5, "#22c55e").addTo(stage).loc(leftX, y1);
-        new zim.Circle(5, "#22c55e").addTo(stage).loc(rightX, y2);
+        connector
+          .s("rgba(34,197,94,0.72)")
+          .ss(7)
+          .mt(leftX, y1)
+          .bt(470, y1 - 24, 630, y2 - 24, rightX, y2);
+
+        const connectorHighlight = new zim.Shape().addTo(stage);
+        connectorHighlight.mouseEnabled = false;
+
+        connectorHighlight
+          .s("#bbf7d0")
+          .ss(2)
+          .mt(leftX, y1)
+          .bt(470, y1 - 24, 630, y2 - 24, rightX, y2);
+
+        const leftDot = new zim.Circle(6, "#22c55e")
+          .addTo(stage)
+          .loc(leftX, y1);
+        const rightDot = new zim.Circle(6, "#22c55e")
+          .addTo(stage)
+          .loc(rightX, y2);
+
+        leftDot.mouseEnabled = false;
+        rightDot.mouseEnabled = false;
       });
     }
 
@@ -1927,11 +3011,11 @@ export default createZimGame({
         height: GAMEPLAY_LAYOUT.feedback.height,
         fill,
         stroke,
-        corner: 20,
+        corner: 22,
       });
 
       addLabel({
-        text: "Bridge Feedback",
+        text: "Guide Message",
         x: x + 20,
         y: y + 14,
         size: 13,
@@ -1942,8 +3026,8 @@ export default createZimGame({
       addWrappedLabel({
         text: feedback,
         x: x + 20,
-        y: y + 40,
-        maxCharsPerLine: 35,
+        y: y + 38,
+        maxCharsPerLine: 34,
         maxLines: 2,
         size: 14,
         lineHeight: 18,
@@ -1965,14 +3049,17 @@ export default createZimGame({
       const x = GAMEPLAY_LAYOUT.centerPanel.x;
       const y = GAMEPLAY_LAYOUT.controls.y;
 
+      /*
+    Primary action row
+  */
       addButton({
         x,
         y,
-        width: 86,
-        height: 36,
+        width: 84,
+        height: 38,
         label: "Hint",
-        background: "#d97706",
-        rollBackground: "#b45309",
+        background: "#7c3aed",
+        rollBackground: "#6d28d9",
         onClick: useHint,
       });
 
@@ -1980,51 +3067,79 @@ export default createZimGame({
         x: x + 100,
         y,
         width: 86,
-        height: 36,
+        height: 38,
         label: "Reset",
-        background: "#475569",
-        rollBackground: "#334155",
+        background: "#f59e0b",
+        rollBackground: "#d97706",
         onClick: resetRound,
       });
 
       addButton({
-        x: x + 200,
-        y,
-        width: 100,
-        height: 36,
-        label: "Submit",
+        x: x + 202,
+        y: y - 4,
+        width: 116,
+        height: 46,
+        label: isSubmittingRound ? "Wait..." : "Submit",
         background:
           matches.length === roundData?.puzzle?.leftItems?.length
             ? "#059669"
-            : "#64748b",
+            : "#10b981",
         rollBackground: "#047857",
         onClick: () => {
-          void submitRound();
+          if (!isSubmittingRound) {
+            void submitRound();
+          }
         },
       });
 
+      /*
+    Secondary action row
+  */
       addButton({
-        x: x + 30,
+        x: x + 34,
         y: GAMEPLAY_LAYOUT.controls.secondaryY,
         width: 104,
-        height: 36,
+        height: 38,
         label: "Menu",
-        background: "#0f172a",
-        rollBackground: "#1e293b",
+        background: "#2563eb",
+        rollBackground: "#1d4ed8",
         onClick: backToMenu,
       });
 
       addButton({
         x: x + 154,
         y: GAMEPLAY_LAYOUT.controls.secondaryY,
-        width: 122,
-        height: 36,
+        width: 132,
+        height: 38,
         label: "New Round",
-        background: "#4f46e5",
-        rollBackground: "#4338ca",
+        background: "#ea580c",
+        rollBackground: "#c2410c",
         onClick: () => {
           void loadRound();
         },
+      });
+
+      /*
+    Tip ribbon.
+  */
+      addPanel({
+        x: x - 26,
+        y: GAMEPLAY_LAYOUT.controls.secondaryY + 52,
+        width: 344,
+        height: 30,
+        fill: "rgba(255,255,255,0.92)",
+        stroke: "#bfdbfe",
+        corner: 15,
+      });
+
+      addLabel({
+        text: "Keys: 1–6 cards · H hint · R reset · S submit · N new · M menu",
+        x: x + 146,
+        y: GAMEPLAY_LAYOUT.controls.secondaryY + 60,
+        size: 11,
+        color: "#2563eb",
+        bold: true,
+        align: "center",
       });
     }
 
@@ -2037,25 +3152,25 @@ export default createZimGame({
         x,
         y,
         width,
-        height: 84,
-        fill: "rgba(255,255,255,0.94)",
-        stroke: "#dbeafe",
-        corner: 20,
+        height: 92,
+        fill: "rgba(255,255,255,0.96)",
+        stroke: "#fde68a",
+        corner: 24,
       });
 
       addLabel({
-        text: "Round Summary",
+        text: "Bridge Progress",
         x: x + 20,
         y: y + 14,
-        size: 13,
-        color: "#64748b",
+        size: 14,
+        color: "#92400e",
         bold: true,
       });
 
       addLabel({
         text: shortText(getNormalizedPlayerName(), 22),
         x: x + 20,
-        y: y + 34,
+        y: y + 36,
         size: 13,
         color: "#07164f",
         bold: true,
@@ -2064,14 +3179,25 @@ export default createZimGame({
       addLabel({
         text: `${matches.length}/${
           roundData?.puzzle?.leftItems?.length || pairCount
-        } pairs · ${getCompletionPercent()}% · ${
-          roundType === "timed" ? formatTimer(timerSeconds) : "Practice"
-        }`,
+        } pairs · ${getCompletionPercent()}%`,
         x: x + 20,
-        y: y + 56,
-        size: 15,
+        y: y + 58,
+        size: 18,
         color: "#047857",
         bold: true,
+      });
+
+      addLabel({
+        text:
+          roundType === "timed"
+            ? `Timer ${formatTimer(remainingRoundSeconds)}`
+            : "Practice Mode",
+        x: x + width - 20,
+        y: y + 18,
+        size: 12,
+        color: roundType === "timed" ? "#c2410c" : "#64748b",
+        bold: true,
+        align: "right",
       });
     }
 
@@ -2081,154 +3207,165 @@ export default createZimGame({
       }
 
       /*
-    Result overlay
-    --------------
-    This overlay appears after submitting a round.
+    Adventure-style result screen
+    -----------------------------
+    This appears after the player submits or timed mode auto-submits.
 
-    It intentionally sits on top of the gameplay screen instead of replacing it.
-    This keeps the player connected to the round they just completed while still
-    making the score, round point, and leaderboard clear.
+    It shows:
+    - final score
+    - round point result
+    - accuracy and performance stats
+    - top explorers leaderboard
+    - keyboard shortcuts for next/menu
   */
 
       const perfectScore = result.perfectRound && result.roundPoints > 0;
       const title = getResultTitle();
       const badgeIcon = getResultBadge();
 
-      // Soft dim layer over the gameplay screen.
-      new zim.Rectangle(W, H, "rgba(15,23,42,0.28)").addTo(stage).loc(0, 0);
+      const dim = new zim.Rectangle(W, H, "rgba(15,23,42,0.34)")
+        .addTo(stage)
+        .loc(0, 0);
 
-      const panelX = 210;
-      const panelY = 112;
-      const panelWidth = 680;
-      const panelHeight = 500;
+      dim.mouseEnabled = false;
+
+      const panelX = 190;
+      const panelY = 82;
+      const panelWidth = 720;
+      const panelHeight = 552;
 
       addPanel({
         x: panelX,
         y: panelY,
         width: panelWidth,
         height: panelHeight,
-        fill: "rgba(255,255,255,0.98)",
-        stroke: perfectScore ? "#22c55e" : "#6366f1",
-        corner: 32,
+        fill: "rgba(255,255,255,0.985)",
+        stroke: perfectScore ? "#22c55e" : "#facc15",
+        corner: 34,
       });
 
-      // Left badge circle.
-      new zim.Circle(46, perfectScore ? "#22c55e" : "#6366f1")
+      /*
+    Header badge
+  */
+      new zim.Circle(54, perfectScore ? "#22c55e" : "#f59e0b")
         .addTo(stage)
-        .loc(panelX + 72, panelY + 78);
+        .loc(panelX + 86, panelY + 82);
 
       addLabel({
         text: badgeIcon,
-        x: panelX + 72,
-        y: panelY + 53,
-        size: 38,
+        x: panelX + 86,
+        y: panelY + 50,
+        size: 42,
         color: "#ffffff",
         bold: true,
         align: "center",
       });
 
       addLabel({
-        text: "Round Complete",
-        x: panelX + 142,
+        text: "Bridge Complete",
+        x: panelX + 160,
         y: panelY + 38,
-        size: 15,
-        color: perfectScore ? "#047857" : "#4f46e5",
+        size: 16,
+        color: perfectScore ? "#047857" : "#b45309",
         bold: true,
       });
 
       addLabel({
         text: title,
-        x: panelX + 142,
-        y: panelY + 64,
-        size: 32,
+        x: panelX + 160,
+        y: panelY + 66,
+        size: 34,
         color: "#07164f",
         bold: true,
       });
 
       addWrappedLabel({
         text: result.message || "Your bridge round has been submitted.",
-        x: panelX + 142,
-        y: panelY + 108,
-        maxCharsPerLine: 54,
+        x: panelX + 160,
+        y: panelY + 112,
+        maxCharsPerLine: 56,
         maxLines: 2,
         size: 13,
-        lineHeight: 17,
+        lineHeight: 18,
         color: "#475569",
         bold: true,
       });
 
       /*
-    Score card
-    ----------
-    Shows the main score in a large visual treatment so the end state feels
-    rewarding and easy to read during a demo.
+    Main score card
   */
       addPanel({
-        x: panelX + 34,
-        y: panelY + 164,
+        x: panelX + 36,
+        y: panelY + 176,
         width: 190,
-        height: 130,
-        fill: "#f8fafc",
-        stroke: "#e2e8f0",
-        corner: 22,
+        height: 142,
+        fill: "#fff7ed",
+        stroke: "#fed7aa",
+        corner: 24,
+      });
+
+      addLabel({
+        text: "Score",
+        x: panelX + 58,
+        y: panelY + 194,
+        size: 14,
+        color: "#92400e",
+        bold: true,
       });
 
       addLabel({
         text: `${result.score}`,
-        x: panelX + 70,
-        y: panelY + 186,
+        x: panelX + 130,
+        y: panelY + 218,
         size: 54,
         color: "#111827",
         bold: true,
+        align: "center",
       });
 
       addLabel({
-        text: "points",
-        x: panelX + 80,
-        y: panelY + 252,
-        size: 16,
+        text: "points earned",
+        x: panelX + 130,
+        y: panelY + 284,
+        size: 13,
         color: "#64748b",
         bold: true,
+        align: "center",
       });
 
       /*
-    Round point badge
-    -----------------
-    This is important to the Meaning Bridge scoring design:
-    a round point is earned only for a clean perfect round.
+    Round point card
   */
       addPanel({
-        x: panelX + 34,
-        y: panelY + 312,
+        x: panelX + 36,
+        y: panelY + 336,
         width: 190,
-        height: 76,
+        height: 92,
         fill: perfectScore ? "#ecfdf5" : "#f8fafc",
         stroke: perfectScore ? "#86efac" : "#e2e8f0",
-        corner: 20,
+        corner: 22,
       });
 
       addLabel({
         text: "Round Point",
-        x: panelX + 54,
-        y: panelY + 328,
-        size: 12,
+        x: panelX + 58,
+        y: panelY + 354,
+        size: 13,
         color: "#64748b",
         bold: true,
       });
 
       addLabel({
         text: result.roundPoints > 0 ? "+1 earned" : "Not earned",
-        x: panelX + 54,
-        y: panelY + 352,
-        size: 20,
+        x: panelX + 58,
+        y: panelY + 382,
+        size: 22,
         color: result.roundPoints > 0 ? "#047857" : "#475569",
         bold: true,
       });
 
       /*
-    Stat grid
-    ---------
-    Compact stats from the submitted round.
+    Performance stat grid
   */
       const stats = [
         ["Accuracy", `${result.accuracy}%`],
@@ -2240,26 +3377,26 @@ export default createZimGame({
       ];
 
       stats.forEach(([label, value], index) => {
-        const col = index % 2;
-        const row = Math.floor(index / 2);
+        const col = index % 3;
+        const row = Math.floor(index / 3);
 
-        const statX = panelX + 254 + col * 142;
-        const statY = panelY + 164 + row * 70;
+        const statX = panelX + 260 + col * 138;
+        const statY = panelY + 176 + row * 82;
 
         addPanel({
           x: statX,
           y: statY,
-          width: 124,
-          height: 54,
+          width: 122,
+          height: 62,
           fill: "#f8fafc",
           stroke: "#e2e8f0",
-          corner: 16,
+          corner: 18,
         });
 
         addLabel({
           text: label,
           x: statX + 14,
-          y: statY + 10,
+          y: statY + 11,
           size: 11,
           color: "#64748b",
           bold: true,
@@ -2268,8 +3405,8 @@ export default createZimGame({
         addLabel({
           text: value,
           x: statX + 14,
-          y: statY + 30,
-          size: 17,
+          y: statY + 34,
+          size: 18,
           color:
             label === "Perfect" && value === "Yes"
               ? "#047857"
@@ -2281,71 +3418,69 @@ export default createZimGame({
       });
 
       /*
-    Mini leaderboard
-    ----------------
-    Shows top scores inside the result overlay. The normal bottom leaderboard
-    still exists during gameplay, but this version makes the final result screen
-    feel complete.
+    Top Explorers result leaderboard
   */
       addPanel({
-        x: panelX + 540,
-        y: panelY + 164,
-        width: 112,
-        height: 224,
+        x: panelX + 260,
+        y: panelY + 350,
+        width: 404,
+        height: 114,
         fill: "#f0fdf4",
-        stroke: "#a7f3d0",
-        corner: 18,
+        stroke: "#bbf7d0",
+        corner: 22,
       });
 
       addLabel({
-        text: "Top",
-        x: panelX + 562,
-        y: panelY + 182,
-        size: 15,
+        text: "🏆 Top Explorers",
+        x: panelX + 284,
+        y: panelY + 368,
+        size: 16,
         color: "#065f46",
         bold: true,
       });
 
-      const topEntries = leaderboard.slice(0, 4);
+      const topEntries = leaderboard.slice(0, 3);
 
       if (topEntries.length === 0) {
-        addWrappedLabel({
+        addLabel({
           text: "No scores yet.",
-          x: panelX + 558,
-          y: panelY + 222,
-          maxCharsPerLine: 13,
-          maxLines: 2,
-          size: 12,
-          lineHeight: 16,
+          x: panelX + 284,
+          y: panelY + 410,
+          size: 13,
           color: "#64748b",
           bold: true,
         });
       } else {
         topEntries.forEach((entry, index) => {
-          const rowY = panelY + 216 + index * 38;
+          const rowX = panelX + 284 + index * 122;
+
+          new zim.Circle(14, index === 0 ? "#facc15" : "#e2e8f0")
+            .addTo(stage)
+            .loc(rowX, panelY + 420);
 
           addLabel({
-            text: `#${index + 1}`,
-            x: panelX + 558,
-            y: rowY,
+            text: `${index + 1}`,
+            x: rowX,
+            y: panelY + 411,
             size: 11,
-            color: "#047857",
+            color: index === 0 ? "#92400e" : "#475569",
             bold: true,
+            align: "center",
           });
 
           addLabel({
-            text: shortText(entry.playerName, 9),
-            x: panelX + 584,
-            y: rowY,
-            size: 10,
+            text: shortText(entry.playerName, 10),
+            x: rowX + 22,
+            y: panelY + 402,
+            size: 11,
             color: "#111827",
             bold: true,
           });
 
           addLabel({
-            text: `${entry.totalScore}`,
-            x: panelX + 584,
-            y: rowY + 16,
+            text: `${entry.totalScore} pts`,
+            x: rowX + 22,
+            y: panelY + 420,
             size: 10,
             color: "#64748b",
             bold: true,
@@ -2354,33 +3489,53 @@ export default createZimGame({
       }
 
       /*
-    Result actions
-    --------------
-    Menu returns to the ZIMJS menu screen.
-    Next Round keeps the same selected options and generates another round.
+    Action buttons
   */
       addButton({
-        x: panelX + 240,
-        y: panelY + 428,
-        width: 118,
-        height: 40,
+        x: panelX + 154,
+        y: panelY + 492,
+        width: 116,
+        height: 42,
         label: "Menu",
-        background: "#0f172a",
-        rollBackground: "#1e293b",
+        background: "#2563eb",
+        rollBackground: "#1d4ed8",
         onClick: backToMenu,
       });
 
       addButton({
-        x: panelX + 376,
-        y: panelY + 428,
-        width: 150,
-        height: 40,
+        x: panelX + 292,
+        y: panelY + 492,
+        width: 142,
+        height: 42,
+        label: "Leaderboard",
+        background: "#f59e0b",
+        rollBackground: "#d97706",
+        onClick: () => {
+          openLeaderboardScreen("gameplay");
+        },
+      });
+
+      addButton({
+        x: panelX + 456,
+        y: panelY + 492,
+        width: 158,
+        height: 42,
         label: "Next Round",
-        background: "#4f46e5",
-        rollBackground: "#4338ca",
+        background: "#059669",
+        rollBackground: "#047857",
         onClick: () => {
           void loadRound();
         },
+      });
+
+      addLabel({
+        text: "Keys: Enter/N next round · L leaderboard · M/Esc menu",
+        x: panelX + panelWidth / 2,
+        y: panelY + 538,
+        size: 11,
+        color: "#64748b",
+        bold: true,
+        align: "center",
       });
     }
 
@@ -2392,25 +3547,25 @@ export default createZimGame({
         y,
         width,
         height,
-        fill: "rgba(255,255,255,0.92)",
-        stroke: "#a7f3d0",
-        corner: 18,
+        fill: "rgba(255,255,255,0.94)",
+        stroke: "#fde68a",
+        corner: 22,
       });
 
       addLabel({
-        text: "Leaderboard",
-        x: x + 24,
-        y: y + 16,
-        size: 15,
-        color: "#065f46",
+        text: "🏆 Top Explorers",
+        x: x + 28,
+        y: y + 17,
+        size: 16,
+        color: "#92400e",
         bold: true,
       });
 
       if (leaderboard.length === 0) {
         addLabel({
           text: "No scores yet.",
-          x: x + 150,
-          y: y + 17,
+          x: x + 188,
+          y: y + 18,
           size: 14,
           color: "#64748b",
           bold: true,
@@ -2419,14 +3574,267 @@ export default createZimGame({
       }
 
       leaderboard.slice(0, 4).forEach((entry, index) => {
+        const rowX = x + 210 + index * 155;
+
+        new zim.Circle(13, index === 0 ? "#facc15" : "#e2e8f0")
+          .addTo(stage)
+          .loc(rowX, y + 27);
+
         addLabel({
-          text: `#${index + 1} ${shortText(entry.playerName, 12)} · ${entry.totalScore} pts`,
-          x: x + 160 + index * 190,
-          y: y + 17,
-          size: 13,
+          text: `${index + 1}`,
+          x: rowX,
+          y: y + 18,
+          size: 11,
+          color: index === 0 ? "#92400e" : "#475569",
+          bold: true,
+          align: "center",
+        });
+
+        addLabel({
+          text: shortText(entry.playerName, 11),
+          x: rowX + 22,
+          y: y + 12,
+          size: 12,
           color: "#111827",
           bold: true,
         });
+
+        addLabel({
+          text: `${entry.totalScore} pts`,
+          x: rowX + 22,
+          y: y + 30,
+          size: 10,
+          color: "#64748b",
+          bold: true,
+        });
+      });
+    }
+
+    function drawLeaderboardScreen() {
+      /*
+    Full Top Explorers screen
+    -------------------------
+    This is the dedicated leaderboard scene.
+
+    It is separate from:
+    - the small gameplay leaderboard strip
+    - the mini result leaderboard
+  */
+
+      addPanel({
+        x: 130,
+        y: 74,
+        width: 840,
+        height: 570,
+        fill: "rgba(255,255,255,0.97)",
+        stroke: "#fde68a",
+        corner: 34,
+      });
+
+      addButton({
+        x: 160,
+        y: 100,
+        width: 102,
+        height: 36,
+        label: "Back",
+        background: "#2563eb",
+        rollBackground: "#1d4ed8",
+        onClick: closeLeaderboardScreen,
+      });
+
+      addLabel({
+        text: "🏆 Top Explorers",
+        x: W / 2,
+        y: 106,
+        size: 38,
+        color: "#07164f",
+        bold: true,
+        align: "center",
+      });
+
+      addLabel({
+        text: "Best Meaning Bridge players across submitted rounds.",
+        x: W / 2,
+        y: 156,
+        size: 15,
+        color: "#64748b",
+        bold: true,
+        align: "center",
+      });
+
+      addPanel({
+        x: 190,
+        y: 200,
+        width: 720,
+        height: 54,
+        fill: "#f8fafc",
+        stroke: "#e2e8f0",
+        corner: 18,
+      });
+
+      addLabel({
+        text: "Rank",
+        x: 222,
+        y: 218,
+        size: 13,
+        color: "#64748b",
+        bold: true,
+      });
+
+      addLabel({
+        text: "Player",
+        x: 330,
+        y: 218,
+        size: 13,
+        color: "#64748b",
+        bold: true,
+      });
+
+      addLabel({
+        text: "Score",
+        x: 650,
+        y: 218,
+        size: 13,
+        color: "#64748b",
+        bold: true,
+      });
+
+      addLabel({
+        text: "Rounds",
+        x: 780,
+        y: 218,
+        size: 13,
+        color: "#64748b",
+        bold: true,
+      });
+
+      if (leaderboard.length === 0) {
+        addPanel({
+          x: 300,
+          y: 310,
+          width: 500,
+          height: 120,
+          fill: "#f8fafc",
+          stroke: "#e2e8f0",
+          corner: 24,
+        });
+
+        addLabel({
+          text: "No scores yet.",
+          x: W / 2,
+          y: 340,
+          size: 26,
+          color: "#07164f",
+          bold: true,
+          align: "center",
+        });
+
+        addLabel({
+          text: "Play a round and submit your bridge to appear here.",
+          x: W / 2,
+          y: 382,
+          size: 14,
+          color: "#64748b",
+          bold: true,
+          align: "center",
+        });
+      } else {
+        leaderboard.slice(0, 10).forEach((entry, index) => {
+          const rowY = 270 + index * 34;
+          const firstPlace = index === 0;
+
+          addPanel({
+            x: 190,
+            y: rowY,
+            width: 720,
+            height: 28,
+            fill: firstPlace
+              ? "#fffbeb"
+              : index % 2 === 0
+                ? "#ffffff"
+                : "#f8fafc",
+            stroke: firstPlace ? "#fde68a" : "#e2e8f0",
+            corner: 12,
+          });
+
+          new zim.Circle(12, firstPlace ? "#facc15" : "#e2e8f0")
+            .addTo(stage)
+            .loc(236, rowY + 14);
+
+          addLabel({
+            text: `${index + 1}`,
+            x: 236,
+            y: rowY + 6,
+            size: 10,
+            color: firstPlace ? "#92400e" : "#475569",
+            bold: true,
+            align: "center",
+          });
+
+          addLabel({
+            text: shortText(entry.playerName, 24),
+            x: 330,
+            y: rowY + 7,
+            size: 13,
+            color: "#111827",
+            bold: true,
+          });
+
+          addLabel({
+            text: `${entry.totalScore || 0}`,
+            x: 650,
+            y: rowY + 7,
+            size: 13,
+            color: "#047857",
+            bold: true,
+          });
+
+          addLabel({
+            text: `${entry.roundPoints || entry.roundsPlayed || 0}`,
+            x: 792,
+            y: rowY + 7,
+            size: 13,
+            color: "#5b21b6",
+            bold: true,
+            align: "center",
+          });
+        });
+      }
+
+      addButton({
+        x: 370,
+        y: 586,
+        width: 150,
+        height: 42,
+        label: "Setup",
+        background: "#4f46e5",
+        rollBackground: "#4338ca",
+        onClick: goToSetupMenu,
+      });
+
+      addButton({
+        x: 546,
+        y: 586,
+        width: 170,
+        height: 42,
+        label: "Refresh",
+        background: "#059669",
+        rollBackground: "#047857",
+        onClick: () => {
+          void loadLeaderboard(10).then(() => {
+            renderScene();
+          });
+        },
+      });
+
+      addLabel({
+        text: "Keys: L leaderboard · Esc/M back · Enter setup",
+        x: W / 2,
+        y: 660,
+        size: 11,
+        color: "#64748b",
+        bold: true,
+        align: "center",
       });
     }
 
@@ -2442,6 +3850,13 @@ export default createZimGame({
 
       drawBackground();
 
+      if (screen === "leaderboard") {
+        drawLeaderboardScreen();
+        publishDebugState();
+        stage.update();
+        return;
+      }
+
       if (screen === "menu") {
         drawMenuScene();
         publishDebugState();
@@ -2452,8 +3867,14 @@ export default createZimGame({
       drawBridge();
       drawHeader();
       drawPassagePanel();
-      drawCards();
+
+      /*
+  Connections are drawn before cards so they never sit above the transparent
+  card hit layers.
+*/
       drawConnections();
+      drawCards();
+
       drawRoundSummary();
       drawFeedbackPanel();
       drawControls();
@@ -2475,10 +3896,18 @@ export default createZimGame({
         window.__meaningBridgePlayerNameKeyCleanup();
       }
 
+      if (window.__meaningBridgeTimerCleanup) {
+        window.__meaningBridgeTimerCleanup();
+      }
+
       window.addEventListener("keydown", handlePlayerNameKeyDown);
 
       window.__meaningBridgePlayerNameKeyCleanup = () => {
         window.removeEventListener("keydown", handlePlayerNameKeyDown);
+      };
+
+      window.__meaningBridgeTimerCleanup = () => {
+        stopRoundTimer();
       };
     }
 
