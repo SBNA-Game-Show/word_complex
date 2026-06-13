@@ -4,6 +4,7 @@ import {
   getMeaningBridgeLeaderboard,
   submitMeaningBridgeRound,
 } from "../../services/api";
+import landingBackgroundUrl from "./assets/meaning-bridge-landing.png";
 
 export const meta = {
   id: "meaning-bridge",
@@ -40,6 +41,41 @@ const DIFFICULTIES = ["easy", "medium", "hard"];
 const PAIR_COUNTS = [4, 5, 6];
 
 const FONT = "Arial";
+
+/*
+  Landing layout constants
+  ------------------------
+  The landing image already contains the visual title, bridge, characters,
+  Start Adventure button, How to Play button, and Settings button.
+
+  These coordinates create real ZIMJS click zones over the artwork.
+*/
+const LANDING_LAYOUT = {
+  startHotspot: {
+    x: 386,
+    y: 455,
+    width: 330,
+    height: 72,
+  },
+  howToPlayHotspot: {
+    x: 388,
+    y: 585,
+    width: 190,
+    height: 56,
+  },
+  settingsHotspot: {
+    x: 590,
+    y: 585,
+    width: 190,
+    height: 56,
+  },
+  playerHotspot: {
+    x: 24,
+    y: 28,
+    width: 220,
+    height: 76,
+  },
+};
 
 const GAMEPLAY_LAYOUT = {
   passage: {
@@ -232,7 +268,7 @@ export default createZimGame({
   outerColor: "#151019",
 
   setup({ stage, W, H, zim }) {
-    let screen = "menu";
+    let screen = "landing";
 
     let playerName = "Guest Player";
     let isEditingPlayerName = false;
@@ -253,6 +289,19 @@ export default createZimGame({
     let feedback = "Generating your first bridge round...";
     let feedbackType = "neutral";
     let roundStartedAt = Date.now();
+
+    /*
+  Landing art image
+  -----------------
+  This image is imported through Vite, preloaded with the browser Image API,
+  and then drawn into the ZIM stage as a Bitmap.
+
+  If the image is still loading or Bitmap is unavailable, the game falls back
+  to the existing drawn ZIM background.
+*/
+    let landingImageElement = null;
+    let landingImageReady = false;
+    let landingImageFailed = false;
 
     function publishDebugState() {
       if (typeof window === "undefined") {
@@ -376,6 +425,40 @@ export default createZimGame({
     function setFeedback(message, type = "neutral") {
       feedback = message;
       feedbackType = type;
+    }
+
+    function preloadLandingImage() {
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const image = new Image();
+
+      image.onload = () => {
+        landingImageElement = image;
+        landingImageReady = true;
+        landingImageFailed = false;
+        renderScene();
+      };
+
+      image.onerror = () => {
+        landingImageElement = null;
+        landingImageReady = false;
+        landingImageFailed = true;
+        renderScene();
+      };
+
+      image.src = landingBackgroundUrl;
+    }
+
+    function goToSetupMenu() {
+      screen = "menu";
+      status = "Choose your bridge challenge.";
+      setFeedback(
+        "Choose a mode, difficulty, and pair count to begin.",
+        "neutral",
+      );
+      renderScene();
     }
 
     function getNormalizedPlayerName() {
@@ -750,6 +833,37 @@ export default createZimGame({
       renderScene();
     }
 
+    function drawLandingImageBackground() {
+      /*
+    Draw imported landing art inside ZIM.
+
+    The Bitmap is scaled with "cover" logic:
+    - fill the whole 1100x720 canvas
+    - crop gently if aspect ratio differs
+    - keep the artwork centered
+  */
+
+      if (!landingImageReady || !landingImageElement || !zim.Bitmap) {
+        drawBackground();
+        return;
+      }
+
+      const bitmap = new zim.Bitmap(landingImageElement);
+      const scale = Math.max(
+        W / landingImageElement.width,
+        H / landingImageElement.height,
+      );
+
+      bitmap.scaleX = scale;
+      bitmap.scaleY = scale;
+      bitmap.x = (W - landingImageElement.width * scale) / 2;
+      bitmap.y = (H - landingImageElement.height * scale) / 2;
+      stage.addChild(bitmap);
+
+      // Soft readability overlay so ZIM text/buttons stay readable.
+      new zim.Rectangle(W, H, "rgba(7,22,79,0.18)").addTo(stage).loc(0, 0);
+    }
+
     function drawBackground() {
       new zim.Rectangle(W, H, "#dff6ff").addTo(stage).loc(0, 0);
 
@@ -950,6 +1064,101 @@ export default createZimGame({
       clickLayer.addTo(stage).loc(x, y);
       clickLayer.cursor = "pointer";
       clickLayer.on("click", beginPlayerNameEdit);
+    }
+
+    function addLandingHotspot({ x, y, width, height, onClick }) {
+      /*
+    Invisible ZIMJS click zone.
+
+    The landing image already has the button artwork baked in, so we only need
+    a transparent rectangle to make that area interactive.
+  */
+      const hotspot = new zim.Rectangle(
+        width,
+        height,
+        "rgba(255,255,255,0.01)",
+        null,
+        0,
+        18,
+      );
+
+      hotspot.addTo(stage).loc(x, y);
+      hotspot.cursor = "pointer";
+      hotspot.on("click", onClick);
+
+      return hotspot;
+    }
+
+    function drawLandingScene() {
+      /*
+    ZIMJS landing scene
+    -------------------
+    The illustrated landing image is the visual UI.
+
+    We do not draw extra title panels or duplicate buttons here because the
+    artwork already includes them. Instead, we place real transparent ZIMJS
+    click zones over the visible image buttons.
+  */
+
+      drawLandingImageBackground();
+
+      addLandingHotspot({
+        ...LANDING_LAYOUT.startHotspot,
+        onClick: goToSetupMenu,
+      });
+
+      addLandingHotspot({
+        ...LANDING_LAYOUT.settingsHotspot,
+        onClick: goToSetupMenu,
+      });
+
+      addLandingHotspot({
+        ...LANDING_LAYOUT.playerHotspot,
+        onClick: goToSetupMenu,
+      });
+
+      addLandingHotspot({
+        ...LANDING_LAYOUT.howToPlayHotspot,
+        onClick: () => {
+          setFeedback(
+            "Match each word card to the correct meaning card. Complete the bridge, avoid wrong attempts, and earn round points.",
+            "neutral",
+          );
+          goToSetupMenu();
+        },
+      });
+
+      if (landingImageFailed) {
+        addPanel({
+          x: 350,
+          y: 300,
+          width: 400,
+          height: 120,
+          fill: "rgba(255,255,255,0.9)",
+          stroke: "#bfdbfe",
+          corner: 24,
+        });
+
+        addLabel({
+          text: "Meaning Bridge",
+          x: W / 2,
+          y: 324,
+          size: 34,
+          color: "#07164f",
+          bold: true,
+          align: "center",
+        });
+
+        addLabel({
+          text: "Landing art fallback active",
+          x: W / 2,
+          y: 374,
+          size: 14,
+          color: "#64748b",
+          bold: true,
+          align: "center",
+        });
+      }
     }
 
     function drawMenuScene() {
@@ -2053,6 +2262,13 @@ export default createZimGame({
     function renderScene() {
       stage.removeAllChildren();
 
+      if (screen === "landing") {
+        drawLandingScene();
+        publishDebugState();
+        stage.update();
+        return;
+      }
+
       drawBackground();
 
       if (screen === "menu") {
@@ -2078,6 +2294,7 @@ export default createZimGame({
       if (result) {
         drawResultPanel();
       }
+
       publishDebugState();
       stage.update();
     }
@@ -2094,12 +2311,13 @@ export default createZimGame({
       };
     }
 
-    status = "Choose your bridge challenge.";
+    status = "Welcome to Meaning Bridge.";
     setFeedback(
-      "Choose a mode, difficulty, and pair count to begin.",
+      "Start the adventure, then choose your challenge settings.",
       "neutral",
     );
 
+    preloadLandingImage();
     renderScene();
 
     void loadLeaderboard().then(() => {

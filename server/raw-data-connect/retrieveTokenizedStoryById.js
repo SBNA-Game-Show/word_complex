@@ -1,3 +1,4 @@
+// Need to call this method
 const connectTokenizedStories = require("../config/dataConnectConfig");
 const retrieveStoryById = async (storyId) => {
   if (!storyId) {
