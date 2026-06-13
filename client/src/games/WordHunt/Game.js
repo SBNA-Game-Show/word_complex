@@ -1,6 +1,7 @@
 import LandingPage from "./pages/LandingPage";
 import FindNounsGame from "./pages/FindNounsGame";
 import FindVerbGame from "./pages/FindVerbGame";
+import FindAdjectiveGame from "./pages/FindAdjectiveGame";
 
 class Game {
   constructor(setup) {
@@ -16,174 +17,71 @@ class Game {
 
     this.findNounsGame = null;
     this.findVerbGame = null;
-
-    this.currentMode = "noun";
-    this.modeContainer = null;
-  }
-
-  start() {
-    this.landingPage =
-      new LandingPage(this)
-        .createLandingPage();
-
-    this.landingPage.button.on(
-      "click",
-      () => {
-        this.showModeSelection();
-      }
-    );
-
-    this.stage.update();
-  }
-
-  //----------------------------------
-  // MODE SELECTION SCREEN
-  //----------------------------------
-
-  showModeSelection() {
-
-    this.landingPage.hide();
-
-    this.modeContainer =
-      new this.zim.Container(
-        this.width,
-        this.height
-      );
-
-    this.modeContainer.addTo(
-      this.stage
-    );
-
-    const title =
-      new this.zim.Label({
-        text: "Choose Hunt Type",
-        size: 40,
-        color: "#333",
-      });
-
-    title.center(
-      this.modeContainer
-    ).mov(0, -150);
-
-    //----------------------------------
-    // NOUN BUTTON
-    //----------------------------------
-
-    const nounButton =
-      new this.zim.Button({
-        width: 450,
-        height: 70,
-        label: "Find Nouns",
-      });
-
-    nounButton.center(
-      this.modeContainer
-    ).mov(0, -40);
-
-    //----------------------------------
-    // VERB BUTTON
-    //----------------------------------
-
-    const verbButton =
-      new this.zim.Button({
-        width: 450,
-        height: 70,
-        label: "Find Verbs",
-      });
-
-    verbButton.center(
-      this.modeContainer
-    ).mov(0, 60);
-
-    //----------------------------------
-    // ADJECTIVE BUTTON
-    //----------------------------------
-
-    const adjectiveButton =
-      new this.zim.Button({
-        width: 450,
-        height: 70,
-        label: "Find Adjectives",
-      });
-
-    adjectiveButton.center(
-      this.modeContainer
-    ).mov(0, 160);
-
-    //----------------------------------
-    // EVENTS
-    //----------------------------------
-
-    nounButton.tap(() => {
-
-      this.currentMode = "noun";
-
-      this.startGame();
-
-    });
-
-    verbButton.tap(() => {
-
-      this.currentMode = "verb";
-
-      this.startGame();
-
-    });
-
-    adjectiveButton.tap(() => {
-
-      alert(
-        "Adjective Hunt Coming Soon"
-      );
-
-    });
-
-    this.stage.update();
+    this.findAdjectiveGame = null;
   }
 
   //----------------------------------
   // START GAME
   //----------------------------------
 
-  startGame() {
+  start() {
 
-    if (this.modeContainer) {
+    this.landingPage =
+      new LandingPage(this)
+        .createLandingPage();
 
-      this.modeContainer.removeFrom();
+    this.landingPage.button.tap(() => {
 
-    }
+      this.landingPage.hide();
 
-    //----------------------------------
-    // NOUN GAME
-    //----------------------------------
+      this.startNounGame();
 
-    if (
-      this.currentMode === "noun"
-    ) {
+    });
 
-      this.findNounsGame =
-        new FindNounsGame(this);
+    this.stage.update();
+  }
 
-      this.findNounsGame
-        .displayPassage();
+  //----------------------------------
+  // NOUN GAME
+  //----------------------------------
 
-    }
+  startNounGame() {
 
-    //----------------------------------
-    // VERB GAME
-    //----------------------------------
+    this.findNounsGame =
+      new FindNounsGame(this);
 
-    if (
-      this.currentMode === "verb"
-    ) {
+    this.findNounsGame
+      .displayPassage();
 
-      this.findVerbGame =
-        new FindVerbGame(this);
+    this.stage.update();
+  }
 
-      this.findVerbGame
-        .displayPassage();
+  //----------------------------------
+  // VERB GAME
+  //----------------------------------
 
-    }
+  startVerbGame() {
+
+    this.findVerbGame =
+      new FindVerbGame(this);
+
+    this.findVerbGame
+      .displayPassage();
+
+    this.stage.update();
+  }
+
+  //----------------------------------
+  // ADJECTIVE GAME
+  //----------------------------------
+
+  startAdjectiveGame() {
+
+    this.findAdjectiveGame =
+      new FindAdjectiveGame(this);
+
+    this.findAdjectiveGame
+      .displayPassage();
 
     this.stage.update();
   }
