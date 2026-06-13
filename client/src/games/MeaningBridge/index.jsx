@@ -40,7 +40,49 @@ const MODES = [
 const DIFFICULTIES = ["easy", "medium", "hard"];
 const PAIR_COUNTS = [4, 5, 6];
 
+/*
+  Round type options
+  ------------------
+  Practice mode has no countdown pressure.
+  Timed mode will later use timerSeconds during gameplay.
+*/
+const ROUND_TYPES = [
+  {
+    value: "practice",
+    label: "Practice",
+    description: "No timer. Learn at your pace.",
+  },
+  {
+    value: "timed",
+    label: "Timed",
+    description: "Race against the clock.",
+  },
+];
+
+const TIMER_OPTIONS = [
+  {
+    value: 120,
+    label: "2:00",
+  },
+  {
+    value: 300,
+    label: "5:00",
+  },
+  {
+    value: 600,
+    label: "10:00",
+  },
+];
+
 const FONT = "Arial";
+
+function formatTimer(seconds) {
+  const totalSeconds = Number(seconds) || 0;
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+}
 
 /*
   Landing layout constants
@@ -125,67 +167,74 @@ const GAMEPLAY_LAYOUT = {
 };
 
 /*
-  Menu layout constants
-  ---------------------
-  Controls the ZIMJS menu/start screen only.
+  Setup/menu layout constants
+  ---------------------------
+  This screen is now a real game setup screen.
 
-  Design rule:
-  - Title/subtitle get their own clean space.
-  - Player panel stays top-right.
-  - Challenge cards sit in the middle.
-  - Difficulty, pairs, selected setup, and Start are grouped near the bottom.
+  It prepares the player before gameplay:
+  - player name
+  - round type
+  - timer length
+  - challenge mode
+  - difficulty
+  - pair count
 */
 const MENU_LAYOUT = {
   panel: {
-    x: 120,
-    y: 86,
-    width: 860,
-    height: 560,
+    x: 110,
+    y: 64,
+    width: 880,
+    height: 610,
   },
   playerPanel: {
-    x: 745,
-    y: 130,
-    width: 190,
-    height: 60,
+    x: 702,
+    y: 106,
+    width: 220,
+    height: 66,
   },
-  challengeTitle: {
-    y: 238,
+  roundType: {
+    x: 166,
+    y: 204,
+    cardWidth: 250,
+    cardHeight: 66,
+    gap: 22,
+  },
+  timer: {
+    x: 702,
+    y: 204,
+    buttonWidth: 70,
+    buttonHeight: 36,
+    gap: 12,
   },
   modeGrid: {
-    x: 170,
-    y: 282,
+    x: 160,
+    y: 326,
     cardWidth: 220,
-    cardHeight: 52,
+    cardHeight: 56,
     columnGap: 34,
     rowGap: 16,
   },
   difficulty: {
-    labelX: 255,
-    labelY: 430,
-    x: 174,
-    y: 458,
+    labelX: 238,
+    labelY: 500,
+    x: 156,
+    y: 528,
     buttonWidth: 92,
     buttonHeight: 36,
     gap: 12,
   },
   pairs: {
-    labelX: 758,
-    labelY: 430,
-    x: 676,
-    y: 458,
+    labelX: 790,
+    labelY: 500,
+    x: 708,
+    y: 528,
     buttonWidth: 76,
     buttonHeight: 36,
     gap: 12,
   },
-  selectedSetup: {
-    x: 292,
-    y: 522,
-    width: 516,
-    height: 30,
-  },
   startButton: {
     x: 445,
-    y: 568,
+    y: 590,
     width: 210,
     height: 48,
   },
@@ -277,6 +326,8 @@ export default createZimGame({
     let mode = "english-to-sanskrit";
     let difficulty = "easy";
     let pairCount = 4;
+    let roundType = "practice";
+    let timerSeconds = 120;
 
     let roundData = null;
     let leaderboard = [];
@@ -315,6 +366,8 @@ export default createZimGame({
         mode,
         difficulty,
         pairCount,
+        roundType,
+        timerSeconds,
         roundId: roundData?.puzzle?.roundId || null,
         passageTitle: roundData?.passage?.title || "",
         matches,
@@ -541,6 +594,16 @@ export default createZimGame({
 
     function selectMenuPairCount(nextPairCount) {
       pairCount = nextPairCount;
+      renderScene();
+    }
+
+    function selectMenuRoundType(nextRoundType) {
+      roundType = nextRoundType;
+      renderScene();
+    }
+
+    function selectMenuTimerSeconds(nextTimerSeconds) {
+      timerSeconds = nextTimerSeconds;
       renderScene();
     }
 
@@ -1163,18 +1226,18 @@ export default createZimGame({
 
     function drawMenuScene() {
       /*
-    ZIMJS menu scene
-    ----------------
-    Main start screen for Meaning Bridge.
+    ZIMJS setup/menu scene
+    ----------------------
+    This is the real setup screen before gameplay.
 
-    React provides the outer app shell.
-    ZIMJS owns the player-facing setup:
+    The landing screen is the front page.
+    This setup screen lets the player configure the round:
     - player name
-    - challenge mode
+    - practice/timed mode
+    - timer length
+    - challenge type
     - difficulty
     - pair count
-    - selected setup summary
-    - start button
   */
 
       const panel = MENU_LAYOUT.panel;
@@ -1189,43 +1252,167 @@ export default createZimGame({
         corner: 34,
       });
 
-      /*
-    Main title area.
-    Nothing else should overlap this area.
-  */
       addLabel({
-        text: "Meaning Bridge",
-        x: W / 2,
-        y: panel.y + 28,
-        size: 40,
+        text: "Setup Your Bridge",
+        x: panel.x + 42,
+        y: panel.y + 34,
+        size: 38,
         color: "#07164f",
         bold: true,
-        align: "center",
       });
 
       addLabel({
-        text: "Build a bridge between words and meaning.",
-        x: W / 2,
-        y: panel.y + 82,
-        size: 17,
+        text: "Choose the rules for this round before starting.",
+        x: panel.x + 44,
+        y: panel.y + 86,
+        size: 16,
         color: "#475569",
         bold: true,
-        align: "center",
       });
 
       drawMenuPlayerNamePanel();
 
       /*
-    Challenge mode section.
+    Round type cards
   */
       addLabel({
-        text: "Choose Your Challenge",
-        x: W / 2,
-        y: MENU_LAYOUT.challengeTitle.y,
-        size: 23,
+        text: "Round Type",
+        x: MENU_LAYOUT.roundType.x,
+        y: MENU_LAYOUT.roundType.y - 30,
+        size: 18,
+        color: "#065f46",
+        bold: true,
+      });
+
+      ROUND_TYPES.forEach((entry, index) => {
+        const selected = entry.value === roundType;
+        const x =
+          MENU_LAYOUT.roundType.x +
+          index * (MENU_LAYOUT.roundType.cardWidth + MENU_LAYOUT.roundType.gap);
+        const y = MENU_LAYOUT.roundType.y;
+
+        addPanel({
+          x,
+          y,
+          width: MENU_LAYOUT.roundType.cardWidth,
+          height: MENU_LAYOUT.roundType.cardHeight,
+          fill: selected ? "#ecfdf5" : "#ffffff",
+          stroke: selected ? "#059669" : "#dbeafe",
+          corner: 20,
+        });
+
+        addLabel({
+          text: entry.label,
+          x: x + 18,
+          y: y + 12,
+          size: 18,
+          color: selected ? "#047857" : "#07164f",
+          bold: true,
+        });
+
+        addLabel({
+          text: entry.description,
+          x: x + 18,
+          y: y + 40,
+          size: 11,
+          color: selected ? "#047857" : "#64748b",
+          bold: true,
+        });
+
+        if (selected) {
+          new zim.Rectangle(46, 22, "#059669", null, 0, 11)
+            .addTo(stage)
+            .loc(x + MENU_LAYOUT.roundType.cardWidth - 64, y + 12);
+
+          addLabel({
+            text: "ON",
+            x: x + MENU_LAYOUT.roundType.cardWidth - 41,
+            y: y + 16,
+            size: 11,
+            color: "#ffffff",
+            bold: true,
+            align: "center",
+          });
+        }
+
+        const clickLayer = new zim.Rectangle(
+          MENU_LAYOUT.roundType.cardWidth,
+          MENU_LAYOUT.roundType.cardHeight,
+          "rgba(255,255,255,0.01)",
+          null,
+          0,
+          20,
+        );
+
+        clickLayer.addTo(stage).loc(x, y);
+        clickLayer.cursor = "pointer";
+        clickLayer.on("click", () => {
+          selectMenuRoundType(entry.value);
+        });
+      });
+
+      /*
+    Timer selector
+  */
+      addLabel({
+        text: "Timer",
+        x: MENU_LAYOUT.timer.x,
+        y: MENU_LAYOUT.roundType.y - 30,
+        size: 18,
+        color: roundType === "timed" ? "#5b21b6" : "#94a3b8",
+        bold: true,
+      });
+
+      TIMER_OPTIONS.forEach((entry, index) => {
+        const selected = entry.value === timerSeconds;
+        const disabled = roundType !== "timed";
+
+        addButton({
+          x:
+            MENU_LAYOUT.timer.x +
+            index * (MENU_LAYOUT.timer.buttonWidth + MENU_LAYOUT.timer.gap),
+          y: MENU_LAYOUT.timer.y + 16,
+          width: MENU_LAYOUT.timer.buttonWidth,
+          height: MENU_LAYOUT.timer.buttonHeight,
+          label: entry.label,
+          background: disabled ? "#e2e8f0" : selected ? "#7c3aed" : "#ffffff",
+          rollBackground: disabled
+            ? "#e2e8f0"
+            : selected
+              ? "#6d28d9"
+              : "#f5f3ff",
+          color: disabled ? "#94a3b8" : selected ? "#ffffff" : "#5b21b6",
+          borderColor: disabled || selected ? null : "#ddd6fe",
+          onClick: () => {
+            if (!disabled) {
+              selectMenuTimerSeconds(entry.value);
+            }
+          },
+        });
+      });
+
+      addLabel({
+        text:
+          roundType === "timed"
+            ? `Timed round selected: ${formatTimer(timerSeconds)}`
+            : "Practice mode: no countdown",
+        x: MENU_LAYOUT.timer.x,
+        y: MENU_LAYOUT.timer.y + 62,
+        size: 11,
+        color: roundType === "timed" ? "#5b21b6" : "#64748b",
+        bold: true,
+      });
+
+      /*
+    Challenge mode section
+  */
+      addLabel({
+        text: "Challenge Mode",
+        x: panel.x + 42,
+        y: 292,
+        size: 20,
         color: "#1e3a8a",
         bold: true,
-        align: "center",
       });
 
       MODES.forEach((entry, index) => {
@@ -1287,7 +1474,7 @@ export default createZimGame({
       });
 
       /*
-    Difficulty selector.
+    Difficulty selector
   */
       addLabel({
         text: "Difficulty",
@@ -1322,7 +1509,7 @@ export default createZimGame({
       });
 
       /*
-    Pair-count selector.
+    Pair-count selector
   */
       addLabel({
         text: "Pairs",
@@ -1356,50 +1543,30 @@ export default createZimGame({
       });
 
       /*
-    Compact selected setup summary.
-    This replaces the large top panel so the title area stays clean.
-  */
-
-      addPanel({
-        x: MENU_LAYOUT.selectedSetup.x,
-        y: MENU_LAYOUT.selectedSetup.y,
-        width: MENU_LAYOUT.selectedSetup.width,
-        height: MENU_LAYOUT.selectedSetup.height,
-        fill: "#f8fafc",
-        stroke: "#e2e8f0",
-        corner: 15,
-      });
-
-      addLabel({
-        text: `${
-          MODES.find((entry) => entry.value === mode)?.label || "Mode"
-        } · ${difficulty} · ${pairCount} pairs`,
-        x: W / 2,
-        y: MENU_LAYOUT.selectedSetup.y + 8,
-        size: 12,
-        color: "#07164f",
-        bold: true,
-        align: "center",
-      });
-
-      /*
-    Main start action.
+    Start action
   */
       addButton({
         x: MENU_LAYOUT.startButton.x,
         y: MENU_LAYOUT.startButton.y,
         width: MENU_LAYOUT.startButton.width,
         height: MENU_LAYOUT.startButton.height,
-        label: "Start Bridge",
+        label:
+          roundType === "timed"
+            ? `Start ${formatTimer(timerSeconds)}`
+            : "Start Practice",
         background: "#4f46e5",
         rollBackground: "#4338ca",
         onClick: startBridgeRound,
       });
 
       addLabel({
-        text: "Express backend + ZIMJS canvas migration active",
+        text: `${
+          MODES.find((entry) => entry.value === mode)?.label || "Mode"
+        } · ${difficulty} · ${pairCount} pairs · ${
+          roundType === "timed" ? formatTimer(timerSeconds) : "practice"
+        }`,
         x: W / 2,
-        y: 628,
+        y: 648,
         size: 12,
         color: "#64748b",
         bold: true,
@@ -1895,10 +2062,14 @@ export default createZimGame({
       });
 
       addLabel({
-        text: `${matches.length}/${roundData?.puzzle?.leftItems?.length || pairCount} pairs · ${getCompletionPercent()}%`,
+        text: `${matches.length}/${
+          roundData?.puzzle?.leftItems?.length || pairCount
+        } pairs · ${getCompletionPercent()}% · ${
+          roundType === "timed" ? formatTimer(timerSeconds) : "Practice"
+        }`,
         x: x + 20,
         y: y + 56,
-        size: 16,
+        size: 15,
         color: "#047857",
         bold: true,
       });
