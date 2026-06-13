@@ -5,7 +5,13 @@ import { useEffect } from "react";
 import { getFillInBlanks } from "../services/api";
 import { games } from "../games/index.js";
 
-export default function Launcher({ onStart, onAbout, onHowToPlay }) {
+export default function Launcher({
+  onStart,
+  onAbout,
+  onHowToPlay,
+  onChooseCharacter,
+  isZooming = false,
+}) {
   const { logout, user } = useAuth();
 
   useEffect(() => {
@@ -14,8 +20,12 @@ export default function Launcher({ onStart, onAbout, onHowToPlay }) {
     .catch(console.error);
   }, []);
 
+  function startDefaultGame() {
+    onStart("sentence-builder");
+  }
+
   return (
-    <main className="launcher">
+    <main className={`launcher${isZooming ? " is-zooming" : ""}`}>
       <BackgroundDecor />
 
       <header className="topbar">
@@ -46,9 +56,12 @@ export default function Launcher({ onStart, onAbout, onHowToPlay }) {
             earn shiny stars on every magical round.
           </p>
           <div className="hero-actions">
-            <button className="btn-primary" type="button" onClick={onStart}>
+            <button className="btn-primary" type="button" onClick={startDefaultGame}>
               Play now
               <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+            <button className="btn-ghost" type="button" onClick={onChooseCharacter}>
+              Choose character
             </button>
             <button className="btn-ghost" type="button" onClick={onAbout}>About</button>
           </div>
