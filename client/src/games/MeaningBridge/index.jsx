@@ -121,6 +121,12 @@ const LANDING_LAYOUT = {
     width: 190,
     height: 56,
   },
+  soundHotspot: {
+    x: 1010,
+    y: 28,
+    width: 68,
+    height: 68,
+  },
   playerHotspot: {
     x: 24,
     y: 28,
@@ -392,6 +398,7 @@ export default createZimGame({
     let roundData = null;
     let leaderboard = [];
     let leaderboardReturnScreen = "menu";
+    let rulesReturnScreen = "landing";
     let selectedLeftId = null;
     let matches = [];
     let hintsUsed = 0;
@@ -401,6 +408,18 @@ export default createZimGame({
     let feedback = "Generating your first bridge round...";
     let feedbackType = "neutral";
     let roundStartedAt = Date.now();
+
+    /*
+  Quit confirmation state
+  -----------------------
+  Used when the player tries to leave an active round.
+
+  quitConfirmAction can be:
+  - "menu"
+  - "new-round"
+*/
+    let quitConfirmVisible = false;
+    let quitConfirmAction = null;
 
     /*
   Timed round runtime state
@@ -433,6 +452,19 @@ export default createZimGame({
     let landingImageReady = false;
     let landingImageFailed = false;
 
+    /*
+  Sound state
+  -----------
+  Uses browser Web Audio API, so we do not need audio files.
+
+  soundMuted controls whether game sound effects play.
+  audioContext is created lazily after user interaction.
+  lastTimerWarningSecond prevents timer warning sounds from repeating too much.
+*/
+    let soundMuted = false;
+    let audioContext = null;
+    let lastTimerWarningSecond = null;
+
     function publishDebugState() {
       if (typeof window === "undefined") {
         return;
@@ -461,8 +493,12 @@ export default createZimGame({
         hintsUsed,
         wrongAttempts,
         resultVisible: Boolean(result),
+        quitConfirmVisible,
+        quitConfirmAction,
+        soundMuted,
         leaderboard,
         leaderboardReturnScreen,
+        rulesReturnScreen,
       };
     }
 
@@ -565,7 +601,13 @@ export default createZimGame({
 
       button.addTo(stage).loc(x, y);
       button.cursor = "pointer";
-      button.on("click", onClick);
+      button.on("click", () => {
+        playSound("button");
+
+        if (typeof onClick === "function") {
+          onClick();
+        }
+      });
 
       return button;
     }
@@ -573,6 +615,207 @@ export default createZimGame({
     function setFeedback(message, type = "neutral") {
       feedback = message;
       feedbackType = type;
+    }
+
+    function getAudioContext() {
+      if (typeof window === "undefined") {
+        return null;
+      }
+
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
+
+      if (!AudioContextClass) {
+        return null;
+      }
+
+      if (!audioContext) {
+        audioContext = new AudioContextClass();
+      }
+
+      if (audioContext.state === "suspended") {
+        void audioContext.resume();
+      }
+
+      return audioContext;
+    }
+
+    function playTone({
+      frequency = 440,
+      duration = 0.08,
+      volume = 0.035,
+      type = "sine",
+      delay = 0,
+    } = {}) {
+      if (soundMuted) {
+        return;
+      }
+
+      const context = getAudioContext();
+
+      if (!context) {
+        return;
+      }
+
+      const startAt = context.currentTime + delay;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, startAt);
+
+      gain.gain.setValueAtTime(0.0001, startAt);
+      gain.gain.exponentialRampToValueAtTime(volume, startAt + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+
+      oscillator.start(startAt);
+      oscillator.stop(startAt + duration + 0.03);
+    }
+
+    function playSound(kind = "button") {
+      /*
+    Small generated sound effects.
+
+    No external files are needed. These are intentionally short so they feel
+    like game UI feedback instead of music.
+  */
+
+      if (soundMuted) {
+        return;
+      }
+
+      switch (kind) {
+        case "correct":
+          playTone({ frequency: 660, duration: 0.07, volume: 0.04 });
+          playTone({
+            frequency: 880,
+            duration: 0.09,
+            volume: 0.035,
+            delay: 0.07,
+          });
+          break;
+
+        case "wrong":
+          playTone({
+            frequency: 180,
+            duration: 0.1,
+            volume: 0.045,
+            type: "sawtooth",
+          });
+          playTone({
+            frequency: 130,
+            duration: 0.11,
+            volume: 0.035,
+            type: "sawtooth",
+            delay: 0.08,
+          });
+          break;
+
+        case "hint":
+          playTone({
+            frequency: 480,
+            duration: 0.07,
+            volume: 0.03,
+            type: "triangle",
+          });
+          playTone({
+            frequency: 620,
+            duration: 0.07,
+            volume: 0.03,
+            type: "triangle",
+            delay: 0.06,
+          });
+          break;
+
+        case "submit":
+          playTone({ frequency: 520, duration: 0.07, volume: 0.035 });
+          playTone({
+            frequency: 660,
+            duration: 0.07,
+            volume: 0.035,
+            delay: 0.06,
+          });
+          playTone({
+            frequency: 780,
+            duration: 0.09,
+            volume: 0.035,
+            delay: 0.12,
+          });
+          break;
+
+        case "result":
+          playTone({ frequency: 740, duration: 0.08, volume: 0.035 });
+          playTone({
+            frequency: 880,
+            duration: 0.12,
+            volume: 0.035,
+            delay: 0.08,
+          });
+          break;
+
+        case "perfect":
+          playTone({ frequency: 660, duration: 0.07, volume: 0.04 });
+          playTone({
+            frequency: 880,
+            duration: 0.08,
+            volume: 0.04,
+            delay: 0.07,
+          });
+          playTone({
+            frequency: 990,
+            duration: 0.12,
+            volume: 0.035,
+            delay: 0.15,
+          });
+          break;
+
+        case "warning":
+          playTone({
+            frequency: 740,
+            duration: 0.08,
+            volume: 0.035,
+            type: "square",
+          });
+          break;
+
+        case "button":
+        default:
+          playTone({
+            frequency: 520,
+            duration: 0.045,
+            volume: 0.025,
+            type: "triangle",
+          });
+          break;
+      }
+    }
+
+    function toggleSoundMuted() {
+      const wasMuted = soundMuted;
+      soundMuted = !soundMuted;
+
+      // When turning sound back on, play one confirmation sound.
+      if (wasMuted) {
+        playSound("button");
+      }
+
+      renderScene();
+    }
+
+    function drawSoundToggle({ x, y, width = 112, height = 34 } = {}) {
+      addButton({
+        x,
+        y,
+        width,
+        height,
+        label: soundMuted ? "Muted" : "Sound On",
+        background: soundMuted ? "#475569" : "#059669",
+        rollBackground: soundMuted ? "#334155" : "#047857",
+        onClick: toggleSoundMuted,
+      });
     }
 
     function preloadLandingImage() {
@@ -634,6 +877,32 @@ export default createZimGame({
 
     function closeLeaderboardScreen() {
       screen = leaderboardReturnScreen || "menu";
+      status = "Choose your bridge challenge.";
+      renderScene();
+    }
+
+    function openRulesScreen(returnScreen = screen) {
+      /*
+    Rules / How to Play screen
+    --------------------------
+    This screen explains Meaning Bridge rules, scoring, timed mode,
+    custom timers, keyboard shortcuts, and future multiplayer ideas.
+
+    We avoid opening it during active gameplay because it should not hide a
+    running timed round.
+  */
+
+      rulesReturnScreen =
+        returnScreen === "rules" ? "landing" : returnScreen || "landing";
+
+      screen = "rules";
+      status = "Viewing How to Play.";
+      setFeedback("How to Play opened.", "neutral");
+      renderScene();
+    }
+
+    function closeRulesScreen() {
+      screen = rulesReturnScreen || "landing";
       status = "Choose your bridge challenge.";
       renderScene();
     }
@@ -708,7 +977,12 @@ export default createZimGame({
     }
 
     function isGameplayLocked() {
-      return Boolean(result) || isSubmittingRound || timedRoundEnded;
+      return (
+        Boolean(result) ||
+        isSubmittingRound ||
+        timedRoundEnded ||
+        quitConfirmVisible
+      );
     }
 
     function getNormalizedPlayerName() {
@@ -783,11 +1057,11 @@ export default createZimGame({
     - custom timer editing
     - landing shortcuts
     - setup shortcuts
+    - rules shortcuts
+    - leaderboard shortcuts
+    - quit confirmation shortcuts
     - gameplay shortcuts
     - result shortcuts
-    - leaderboard shortcuts
-
-    Editing modes always take priority so normal typing is not interrupted.
   */
 
       if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -796,11 +1070,11 @@ export default createZimGame({
 
       const key = String(event.key || "").toLowerCase();
       const isSpace = event.key === " " || event.code === "Space";
+      const isHelpKey =
+        event.key === "?" || key === "/" || event.code === "Slash";
 
       /*
     Custom timer editing
-    --------------------
-    Only active on the setup/menu screen.
   */
       if (screen === "menu" && isEditingCustomTimer) {
         if (event.key === "Enter" || event.key === "Escape") {
@@ -846,8 +1120,6 @@ export default createZimGame({
 
       /*
     Player name editing
-    -------------------
-    Only active on the setup/menu screen.
   */
       if (screen === "menu" && isEditingPlayerName) {
         if (event.key === "Enter" || event.key === "Escape") {
@@ -890,7 +1162,35 @@ export default createZimGame({
       }
 
       /*
-    Dedicated leaderboard screen shortcuts
+  Global sound toggle
+*/
+      if (key === "v") {
+        event.preventDefault();
+        toggleSoundMuted();
+        return;
+      }
+
+      /*
+    Rules screen shortcuts
+  */
+      if (screen === "rules") {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          goToSetupMenu();
+          return;
+        }
+
+        if (key === "m" || event.key === "Escape" || isHelpKey) {
+          event.preventDefault();
+          closeRulesScreen();
+          return;
+        }
+
+        return;
+      }
+
+      /*
+    Leaderboard screen shortcuts
   */
       if (screen === "leaderboard") {
         if (event.key === "Enter") {
@@ -902,6 +1202,25 @@ export default createZimGame({
         if (key === "m" || key === "l" || event.key === "Escape") {
           event.preventDefault();
           closeLeaderboardScreen();
+          return;
+        }
+
+        return;
+      }
+
+      /*
+    Quit confirmation shortcuts
+  */
+      if (screen === "gameplay" && quitConfirmVisible) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          confirmQuitRound();
+          return;
+        }
+
+        if (event.key === "Escape" || key === "m") {
+          event.preventDefault();
+          cancelQuitConfirmation();
           return;
         }
 
@@ -921,6 +1240,12 @@ export default createZimGame({
         if (key === "l") {
           event.preventDefault();
           openLeaderboardScreen("landing");
+          return;
+        }
+
+        if (key === "h" || isHelpKey) {
+          event.preventDefault();
+          openRulesScreen("landing");
           return;
         }
 
@@ -985,6 +1310,12 @@ export default createZimGame({
           return;
         }
 
+        if (key === "h" || isHelpKey) {
+          event.preventDefault();
+          openRulesScreen("menu");
+          return;
+        }
+
         return;
       }
 
@@ -1004,6 +1335,12 @@ export default createZimGame({
           return;
         }
 
+        if (key === "h" || isHelpKey) {
+          event.preventDefault();
+          openRulesScreen("gameplay");
+          return;
+        }
+
         if (key === "m" || event.key === "Escape") {
           event.preventDefault();
           backToMenu();
@@ -1014,7 +1351,7 @@ export default createZimGame({
       }
 
       /*
-    Gameplay shortcuts
+    Active gameplay shortcuts
   */
       if (screen === "gameplay") {
         if (/^[1-6]$/.test(key)) {
@@ -1047,7 +1384,7 @@ export default createZimGame({
 
         if (key === "n") {
           event.preventDefault();
-          void loadRound();
+          requestNewRound();
           return;
         }
 
@@ -1061,9 +1398,19 @@ export default createZimGame({
           return;
         }
 
+        if (isHelpKey) {
+          event.preventDefault();
+          setFeedback(
+            "Submit or return to the menu to view the full How to Play screen.",
+            "neutral",
+          );
+          renderScene();
+          return;
+        }
+
         if (key === "m" || event.key === "Escape") {
           event.preventDefault();
-          backToMenu();
+          requestBackToMenu();
         }
       }
     }
@@ -1104,7 +1451,75 @@ export default createZimGame({
       renderScene();
     }
 
+    function hasActiveGameplayRound() {
+      /*
+    Active round means:
+    - player is on gameplay screen
+    - a puzzle exists
+    - result screen is not open
+    - submit is not currently running
+  */
+      return (
+        screen === "gameplay" &&
+        Boolean(roundData?.puzzle) &&
+        !result &&
+        !isSubmittingRound
+      );
+    }
+
+    function openQuitConfirmation(action = "menu") {
+      if (!hasActiveGameplayRound()) {
+        if (action === "new-round") {
+          void loadRound();
+          return;
+        }
+
+        backToMenu();
+        return;
+      }
+
+      quitConfirmVisible = true;
+      quitConfirmAction = action;
+      setFeedback(
+        "Confirm before leaving this round. Your current progress will be lost.",
+        "neutral",
+      );
+      renderScene();
+    }
+
+    function cancelQuitConfirmation() {
+      quitConfirmVisible = false;
+      quitConfirmAction = null;
+      setFeedback("Keep playing. Your round is still active.", "neutral");
+      renderScene();
+    }
+
+    function confirmQuitRound() {
+      const action = quitConfirmAction || "menu";
+
+      quitConfirmVisible = false;
+      quitConfirmAction = null;
+
+      if (action === "new-round") {
+        void loadRound();
+        return;
+      }
+
+      backToMenu();
+    }
+
+    function requestBackToMenu() {
+      openQuitConfirmation("menu");
+    }
+
+    function requestNewRound() {
+      openQuitConfirmation("new-round");
+    }
+
     function startBridgeRound() {
+      quitConfirmVisible = false;
+      quitConfirmAction = null;
+
       playerName = getNormalizedPlayerName();
       isEditingPlayerName = false;
       replacePlayerNameOnNextInput = false;
@@ -1126,6 +1541,9 @@ export default createZimGame({
 
     function backToMenu() {
       stopRoundTimer({ reset: true });
+
+      quitConfirmVisible = false;
+      quitConfirmAction = null;
 
       screen = "menu";
       selectedLeftId = null;
@@ -1154,6 +1572,9 @@ export default createZimGame({
 
     async function loadRound(options = {}) {
       stopRoundTimer({ reset: true });
+
+      quitConfirmVisible = false;
+      quitConfirmAction = null;
 
       screen = "gameplay";
       status = "Generating round...";
@@ -1307,6 +1728,8 @@ export default createZimGame({
           },
         ];
 
+        playSound("correct");
+
         selectedLeftId = null;
 
         const completed = matches.length === puzzle.leftItems.length;
@@ -1319,6 +1742,7 @@ export default createZimGame({
         );
       } else {
         wrongAttempts += 1;
+        playSound("wrong");
         setFeedback("Not quite. Try another meaning card.", "error");
       }
 
@@ -1424,6 +1848,7 @@ export default createZimGame({
       }
 
       hintsUsed += 1;
+      playSound("hint");
       setFeedback(
         puzzle.hints[selectedLeftId] || "No hint available.",
         "neutral",
@@ -1450,6 +1875,7 @@ export default createZimGame({
 
       isSubmittingRound = true;
       stopRoundTimer();
+      playSound(reason === "timer" ? "warning" : "submit");
 
       status =
         reason === "timer"
@@ -1485,6 +1911,8 @@ export default createZimGame({
           wrongAttempts,
         });
 
+        playSound(result.perfectRound ? "perfect" : "result");
+
         status =
           reason === "timer"
             ? "Time expired. Round submitted."
@@ -1501,6 +1929,7 @@ export default createZimGame({
       } catch (error) {
         isSubmittingRound = false;
         timedRoundEnded = false;
+        lastTimerWarningSecond = null;
 
         setFeedback(
           error instanceof Error
@@ -1516,6 +1945,14 @@ export default createZimGame({
 
           roundTimerId = window.setInterval(() => {
             const remaining = updateRemainingRoundSeconds();
+
+            if (
+              [10, 5, 3, 2, 1].includes(remaining) &&
+              lastTimerWarningSecond !== remaining
+            ) {
+              lastTimerWarningSecond = remaining;
+              playSound("warning");
+            }
 
             if (remaining <= 0) {
               stopRoundTimer();
@@ -1891,7 +2328,15 @@ export default createZimGame({
         color: "#1e3a8a",
         bold: true,
       });
+
+      drawSoundToggle({
+        x: W - 150,
+        y: 76,
+        width: 110,
+        height: 34,
+      });
     }
+
     function drawMenuPlayerNamePanel() {
       /*
     Player name panel
@@ -2016,11 +2461,7 @@ export default createZimGame({
       addLandingHotspot({
         ...LANDING_LAYOUT.howToPlayHotspot,
         onClick: () => {
-          setFeedback(
-            "Match each word card to the correct meaning card. Complete the bridge, avoid wrong attempts, and earn round points.",
-            "neutral",
-          );
-          goToSetupMenu();
+          openRulesScreen("landing");
         },
       });
 
@@ -2030,6 +2471,33 @@ export default createZimGame({
           openLeaderboardScreen("landing");
         },
       });
+
+      addLandingHotspot({
+        ...LANDING_LAYOUT.soundHotspot,
+        onClick: toggleSoundMuted,
+      });
+
+      if (soundMuted) {
+        addPanel({
+          x: 940,
+          y: 96,
+          width: 126,
+          height: 34,
+          fill: "rgba(15,23,42,0.72)",
+          stroke: "#475569",
+          corner: 17,
+        });
+
+        addLabel({
+          text: "Sound Muted",
+          x: 1003,
+          y: 106,
+          size: 12,
+          color: "#ffffff",
+          bold: true,
+          align: "center",
+        });
+      }
 
       if (landingImageFailed) {
         addPanel({
@@ -2435,6 +2903,13 @@ export default createZimGame({
         });
       });
 
+      drawSoundToggle({
+        x: 836,
+        y: MENU_LAYOUT.startButton.y + 5,
+        width: 110,
+        height: 38,
+      });
+
       /*
     Start action
   */
@@ -2449,6 +2924,19 @@ export default createZimGame({
         rollBackground: "#d97706",
         onClick: () => {
           openLeaderboardScreen("menu");
+        },
+      });
+
+      addButton({
+        x: 322,
+        y: MENU_LAYOUT.startButton.y + 5,
+        width: 108,
+        height: 38,
+        label: "Rules",
+        background: "#2563eb",
+        rollBackground: "#1d4ed8",
+        onClick: () => {
+          openRulesScreen("menu");
         },
       });
 
@@ -2480,68 +2968,6 @@ export default createZimGame({
         color: "#64748b",
         bold: true,
         align: "center",
-      });
-    }
-
-    function drawOptionControls() {
-      const modeStartX = 96;
-      const modeY = 112;
-
-      MODES.forEach((entry, index) => {
-        const selected = entry.value === mode;
-
-        addButton({
-          x: modeStartX + index * 178,
-          y: modeY,
-          width: 164,
-          height: 36,
-          label: shortText(entry.label, 19),
-          background: selected ? "#2563eb" : "#ffffff",
-          rollBackground: selected ? "#1d4ed8" : "#eff6ff",
-          color: selected ? "#ffffff" : "#1e3a8a",
-          borderColor: selected ? null : "#bfdbfe",
-          onClick: () => {
-            void loadRound({ mode: entry.value });
-          },
-        });
-      });
-
-      DIFFICULTIES.forEach((entry, index) => {
-        const selected = entry === difficulty;
-
-        addButton({
-          x: 316 + index * 112,
-          y: 158,
-          width: 96,
-          height: 32,
-          label: entry,
-          background: selected ? "#059669" : "#ffffff",
-          rollBackground: selected ? "#047857" : "#ecfdf5",
-          color: selected ? "#ffffff" : "#047857",
-          borderColor: selected ? null : "#a7f3d0",
-          onClick: () => {
-            void loadRound({ difficulty: entry });
-          },
-        });
-      });
-
-      PAIR_COUNTS.forEach((entry, index) => {
-        const selected = entry === pairCount;
-
-        addButton({
-          x: 662 + index * 92,
-          y: 158,
-          width: 76,
-          height: 32,
-          label: `${entry} pairs`,
-          background: selected ? "#7c3aed" : "#ffffff",
-          rollBackground: selected ? "#6d28d9" : "#f5f3ff",
-          color: selected ? "#ffffff" : "#5b21b6",
-          borderColor: selected ? null : "#ddd6fe",
-          onClick: () => {
-            void loadRound({ pairCount: entry });
-          },
-        });
       });
     }
 
@@ -3103,7 +3529,7 @@ export default createZimGame({
         label: "Menu",
         background: "#2563eb",
         rollBackground: "#1d4ed8",
-        onClick: backToMenu,
+        onClick: requestBackToMenu,
       });
 
       addButton({
@@ -3114,9 +3540,7 @@ export default createZimGame({
         label: "New Round",
         background: "#ea580c",
         rollBackground: "#c2410c",
-        onClick: () => {
-          void loadRound();
-        },
+        onClick: requestNewRound,
       });
 
       /*
@@ -3198,6 +3622,114 @@ export default createZimGame({
         color: roundType === "timed" ? "#c2410c" : "#64748b",
         bold: true,
         align: "right",
+      });
+    }
+
+    function drawQuitConfirmationPanel() {
+      if (!quitConfirmVisible) {
+        return;
+      }
+
+      /*
+    Quit confirmation modal
+    -----------------------
+    Drawn on top of gameplay when the player tries to leave an active round.
+
+    The dim layer intentionally catches pointer input so underlying gameplay
+    buttons/cards are not accidentally clicked.
+  */
+
+      const dim = new zim.Rectangle(W, H, "rgba(15,23,42,0.42)")
+        .addTo(stage)
+        .loc(0, 0);
+
+      dim.cursor = "default";
+      dim.on("mousedown", () => {});
+
+      const panelX = 330;
+      const panelY = 220;
+      const panelWidth = 440;
+      const panelHeight = 250;
+
+      addPanel({
+        x: panelX,
+        y: panelY,
+        width: panelWidth,
+        height: panelHeight,
+        fill: "rgba(255,255,255,0.98)",
+        stroke: "#fca5a5",
+        corner: 30,
+      });
+
+      new zim.Circle(36, "#ef4444").addTo(stage).loc(panelX + 70, panelY + 68);
+
+      addLabel({
+        text: "!",
+        x: panelX + 70,
+        y: panelY + 44,
+        size: 34,
+        color: "#ffffff",
+        bold: true,
+        align: "center",
+      });
+
+      addLabel({
+        text:
+          quitConfirmAction === "new-round"
+            ? "Start a new round?"
+            : "Quit current round?",
+        x: panelX + 126,
+        y: panelY + 42,
+        size: 28,
+        color: "#07164f",
+        bold: true,
+      });
+
+      addWrappedLabel({
+        text:
+          quitConfirmAction === "new-round"
+            ? "Your current matches, timer progress, hints, and wrong attempts will be lost if you start over."
+            : "Your current matches, timer progress, hints, and wrong attempts will be lost if you return to setup.",
+        x: panelX + 126,
+        y: panelY + 88,
+        maxCharsPerLine: 42,
+        maxLines: 3,
+        size: 13,
+        lineHeight: 18,
+        color: "#475569",
+        bold: true,
+      });
+
+      addButton({
+        x: panelX + 76,
+        y: panelY + 176,
+        width: 132,
+        height: 42,
+        label: "Cancel",
+        background: "#2563eb",
+        rollBackground: "#1d4ed8",
+        onClick: cancelQuitConfirmation,
+      });
+
+      addButton({
+        x: panelX + 232,
+        y: panelY + 176,
+        width: 148,
+        height: 42,
+        label: quitConfirmAction === "new-round" ? "Start Over" : "Quit Round",
+        background: "#dc2626",
+        rollBackground: "#b91c1c",
+        onClick: confirmQuitRound,
+      });
+
+      addLabel({
+        text: "Keys: Esc cancel · Enter confirm",
+        x: panelX + panelWidth / 2,
+        y: panelY + 228,
+        size: 11,
+        color: "#64748b",
+        bold: true,
+        align: "center",
       });
     }
 
@@ -3614,11 +4146,11 @@ export default createZimGame({
       /*
     Full Top Explorers screen
     -------------------------
-    This is the dedicated leaderboard scene.
+    Dedicated leaderboard scene for Meaning Bridge.
 
-    It is separate from:
+    This is separate from:
     - the small gameplay leaderboard strip
-    - the mini result leaderboard
+    - the mini leaderboard shown on the result overlay
   */
 
       addPanel({
@@ -3700,8 +4232,8 @@ export default createZimGame({
       });
 
       addLabel({
-        text: "Rounds",
-        x: 780,
+        text: "Round Points",
+        x: 770,
         y: 218,
         size: 13,
         color: "#64748b",
@@ -3757,9 +4289,14 @@ export default createZimGame({
             corner: 12,
           });
 
-          new zim.Circle(12, firstPlace ? "#facc15" : "#e2e8f0")
+          const rankCircle = new zim.Circle(
+            12,
+            firstPlace ? "#facc15" : "#e2e8f0",
+          )
             .addTo(stage)
             .loc(236, rowY + 14);
+
+          rankCircle.mouseEnabled = false;
 
           addLabel({
             text: `${index + 1}`,
@@ -3790,8 +4327,8 @@ export default createZimGame({
           });
 
           addLabel({
-            text: `${entry.roundPoints || entry.roundsPlayed || 0}`,
-            x: 792,
+            text: `${entry.roundPoints || 0}`,
+            x: 820,
             y: rowY + 7,
             size: 13,
             color: "#5b21b6",
@@ -3838,6 +4375,215 @@ export default createZimGame({
       });
     }
 
+    function drawRulesScreen() {
+      /*
+    Full How to Play / Rules screen
+    -------------------------------
+    This explains the game now that Meaning Bridge has moved beyond POC.
+
+    It is intentionally separate from the setup screen so players can learn
+    the rules without starting a round.
+  */
+
+      addPanel({
+        x: 110,
+        y: 58,
+        width: 880,
+        height: 604,
+        fill: "rgba(255,255,255,0.97)",
+        stroke: "#bfdbfe",
+        corner: 34,
+      });
+
+      addButton({
+        x: 142,
+        y: 90,
+        width: 102,
+        height: 36,
+        label: "Back",
+        background: "#2563eb",
+        rollBackground: "#1d4ed8",
+        onClick: closeRulesScreen,
+      });
+
+      addLabel({
+        text: "How to Play",
+        x: W / 2,
+        y: 88,
+        size: 38,
+        color: "#07164f",
+        bold: true,
+        align: "center",
+      });
+
+      addLabel({
+        text: "Build a bridge by matching word cards with their correct meanings.",
+        x: W / 2,
+        y: 140,
+        size: 15,
+        color: "#64748b",
+        bold: true,
+        align: "center",
+      });
+
+      const cards = [
+        {
+          title: "1. Choose a Challenge",
+          body: "Pick English → Sanskrit, Sanskrit → English, Word → Definition, Word → Synonym, or Word → Antonym.",
+          x: 150,
+          y: 190,
+          color: "#eff6ff",
+          stroke: "#bfdbfe",
+          titleColor: "#1d4ed8",
+        },
+        {
+          title: "2. Match the Cards",
+          body: "Select a word card, then select the meaning card that belongs with it. Correct matches build the bridge.",
+          x: 430,
+          y: 190,
+          color: "#ecfdf5",
+          stroke: "#a7f3d0",
+          titleColor: "#047857",
+        },
+        {
+          title: "3. Submit the Round",
+          body: "Submit when you are ready. Your score uses your matches, accuracy, time, hints, and wrong attempts.",
+          x: 710,
+          y: 190,
+          color: "#fff7ed",
+          stroke: "#fed7aa",
+          titleColor: "#c2410c",
+        },
+        {
+          title: "Practice Mode",
+          body: "Practice mode has no countdown. Use it to learn the words and improve your accuracy.",
+          x: 150,
+          y: 340,
+          color: "#f8fafc",
+          stroke: "#e2e8f0",
+          titleColor: "#334155",
+        },
+        {
+          title: "Timed Mode",
+          body: "Timed mode uses 2:00, 5:00, 10:00, or a custom timer. When time expires, the current round auto-submits.",
+          x: 430,
+          y: 340,
+          color: "#faf5ff",
+          stroke: "#ddd6fe",
+          titleColor: "#5b21b6",
+        },
+        {
+          title: "Perfect Bridge",
+          body: "A perfect round earns a round point. Wrong attempts and hints make it harder to earn a clean result.",
+          x: 710,
+          y: 340,
+          color: "#fffbeb",
+          stroke: "#fde68a",
+          titleColor: "#92400e",
+        },
+      ];
+
+      cards.forEach((card) => {
+        addPanel({
+          x: card.x,
+          y: card.y,
+          width: 230,
+          height: 118,
+          fill: card.color,
+          stroke: card.stroke,
+          corner: 22,
+        });
+
+        addLabel({
+          text: card.title,
+          x: card.x + 18,
+          y: card.y + 16,
+          size: 15,
+          color: card.titleColor,
+          bold: true,
+        });
+
+        addWrappedLabel({
+          text: card.body,
+          x: card.x + 18,
+          y: card.y + 44,
+          maxCharsPerLine: 27,
+          maxLines: 3,
+          size: 11,
+          lineHeight: 15,
+          color: "#475569",
+          bold: true,
+        });
+      });
+
+      /*
+    Keyboard shortcut strip
+  */
+      addPanel({
+        x: 150,
+        y: 492,
+        width: 790,
+        height: 72,
+        fill: "#f8fafc",
+        stroke: "#e2e8f0",
+        corner: 22,
+      });
+
+      addLabel({
+        text: "Keyboard Shortcuts",
+        x: 176,
+        y: 510,
+        size: 17,
+        color: "#07164f",
+        bold: true,
+      });
+
+      addWrappedLabel({
+        text: "Landing: Enter/Space start · Setup: P practice, T timed, 1/2/3 timers, C custom, E edit name · Gameplay: 1–6 cards, H hint, R reset, S submit, N new, M menu · Result: Enter/N next, L leaderboard · V mute",
+        x: 176,
+        y: 538,
+        maxCharsPerLine: 112,
+        maxLines: 2,
+        size: 11,
+        lineHeight: 15,
+        color: "#475569",
+        bold: true,
+      });
+
+      /*
+    Future feature note
+  */
+      addPanel({
+        x: 250,
+        y: 584,
+        width: 600,
+        height: 48,
+        fill: "#ecfeff",
+        stroke: "#a5f3fc",
+        corner: 20,
+      });
+
+      addLabel({
+        text: "Coming later: Bridge Battle multiplayer with 2:00, 5:00, and 10:00 race modes.",
+        x: W / 2,
+        y: 600,
+        size: 13,
+        color: "#0e7490",
+        bold: true,
+        align: "center",
+      });
+
+      addLabel({
+        text: "Keys: ? or / help · Esc/M back · Enter setup",
+        x: W / 2,
+        y: 646,
+        size: 11,
+        color: "#64748b",
+        bold: true,
+        align: "center",
+      });
+    }
+
     function renderScene() {
       stage.removeAllChildren();
 
@@ -3852,6 +4598,13 @@ export default createZimGame({
 
       if (screen === "leaderboard") {
         drawLeaderboardScreen();
+        publishDebugState();
+        stage.update();
+        return;
+      }
+
+      if (screen === "rules") {
+        drawRulesScreen();
         publishDebugState();
         stage.update();
         return;
@@ -3881,6 +4634,10 @@ export default createZimGame({
 
       if (!result) {
         drawLeaderboard();
+      }
+
+      if (quitConfirmVisible && !result) {
+        drawQuitConfirmationPanel();
       }
 
       if (result) {
