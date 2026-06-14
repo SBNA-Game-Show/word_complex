@@ -465,6 +465,16 @@ export default createZimGame({
     let audioContext = null;
     let lastTimerWarningSecond = null;
 
+    /*
+  Readability state
+  -----------------
+  Large Text mode improves readability without zooming the whole page/canvas.
+
+  This is better than relying on page zoom because it keeps hit areas and the
+  ZIMJS canvas layout stable.
+*/
+    let largeTextMode = false;
+
     function publishDebugState() {
       if (typeof window === "undefined") {
         return;
@@ -496,6 +506,7 @@ export default createZimGame({
         quitConfirmVisible,
         quitConfirmAction,
         soundMuted,
+        largeTextMode,
         leaderboard,
         leaderboardReturnScreen,
         rulesReturnScreen,
@@ -578,7 +589,7 @@ export default createZimGame({
     }) {
       const buttonLabel = new zim.Label({
         text: label,
-        size: 15,
+        size: largeTextMode ? 16 : 15,
         font: FONT,
         color,
         bold: true,
@@ -818,6 +829,59 @@ export default createZimGame({
       });
     }
 
+    function readableSize(baseSize, increase = 2) {
+      return largeTextMode ? baseSize + increase : baseSize;
+    }
+
+    function readableMaxChars(baseChars, reduction = 6) {
+      return largeTextMode ? Math.max(8, baseChars - reduction) : baseChars;
+    }
+
+    function getCardLayout() {
+      /*
+    Dynamic card layout
+    -------------------
+    Large Text mode slightly increases card height and text size while keeping
+    the cards inside the existing left/right panels.
+  */
+
+      if (!largeTextMode) {
+        return GAMEPLAY_LAYOUT.card;
+      }
+
+      return {
+        ...GAMEPLAY_LAYOUT.card,
+        height: 42,
+        step: 44,
+        yOffset: 52,
+      };
+    }
+
+    function toggleLargeTextMode({ playFeedbackSound = true } = {}) {
+      largeTextMode = !largeTextMode;
+
+      if (playFeedbackSound) {
+        playSound("button");
+      }
+
+      renderScene();
+    }
+
+    function drawTextModeToggle({ x, y, width = 116, height = 34 } = {}) {
+      addButton({
+        x,
+        y,
+        width,
+        height,
+        label: largeTextMode ? "Large Text" : "Text Normal",
+        background: largeTextMode ? "#7c3aed" : "#475569",
+        rollBackground: largeTextMode ? "#6d28d9" : "#334155",
+        onClick: () => {
+          toggleLargeTextMode({ playFeedbackSound: false });
+        },
+      });
+    }
+
     function preloadLandingImage() {
       if (typeof window === "undefined") {
         return;
@@ -945,9 +1009,18 @@ export default createZimGame({
       remainingRoundSeconds = timerSeconds;
       timerDeadlineAt = Date.now() + timerSeconds * 1000;
       timedRoundEnded = false;
+      lastTimerWarningSecond = null;
 
       roundTimerId = window.setInterval(() => {
         const remaining = updateRemainingRoundSeconds();
+
+        if (
+          [10, 5, 3, 2, 1].includes(remaining) &&
+          lastTimerWarningSecond !== remaining
+        ) {
+          lastTimerWarningSecond = remaining;
+          playSound("warning");
+        }
 
         if (remaining <= 0) {
           stopRoundTimer();
@@ -1167,6 +1240,15 @@ export default createZimGame({
       if (key === "v") {
         event.preventDefault();
         toggleSoundMuted();
+        return;
+      }
+
+      /*
+  Global readability toggle
+*/
+      if (key === "z") {
+        event.preventDefault();
+        toggleLargeTextMode();
         return;
       }
 
@@ -2329,6 +2411,13 @@ export default createZimGame({
         bold: true,
       });
 
+      drawTextModeToggle({
+        x: W - 272,
+        y: 76,
+        width: 116,
+        height: 34,
+      });
+
       drawSoundToggle({
         x: W - 150,
         y: 76,
@@ -2564,7 +2653,7 @@ export default createZimGame({
         text: "Setup Your Bridge",
         x: panel.x + 42,
         y: panel.y + 34,
-        size: 38,
+        size: readableSize(38, 2),
         color: "#07164f",
         bold: true,
       });
@@ -2573,7 +2662,7 @@ export default createZimGame({
         text: "Choose the rules for this round before starting.",
         x: panel.x + 44,
         y: panel.y + 80,
-        size: 15,
+        size: readableSize(15, 1),
         color: "#475569",
         bold: true,
       });
@@ -2587,7 +2676,7 @@ export default createZimGame({
         text: "Round Type",
         x: MENU_LAYOUT.roundType.x,
         y: MENU_LAYOUT.roundType.y - 30,
-        size: 18,
+        size: readableSize(18, 2),
         color: "#065f46",
         bold: true,
       });
@@ -2613,7 +2702,7 @@ export default createZimGame({
           text: entry.label,
           x: x + 18,
           y: y + 12,
-          size: 18,
+          size: readableSize(18, 2),
           color: selected ? "#047857" : "#07164f",
           bold: true,
         });
@@ -2622,7 +2711,7 @@ export default createZimGame({
           text: entry.description,
           x: x + 18,
           y: y + 40,
-          size: 11,
+          size: readableSize(11, 1),
           color: selected ? "#047857" : "#64748b",
           bold: true,
         });
@@ -2679,7 +2768,7 @@ export default createZimGame({
         text: "Timer",
         x: MENU_LAYOUT.timerPanel.x + 18,
         y: MENU_LAYOUT.timerPanel.y + 14,
-        size: 18,
+        size: readableSize(18, 2),
         color: roundType === "timed" ? "#5b21b6" : "#94a3b8",
         bold: true,
       });
@@ -2759,22 +2848,31 @@ export default createZimGame({
             : "Practice mode: no countdown",
         x: MENU_LAYOUT.timerPanel.x + 18,
         y: MENU_LAYOUT.timerPanel.y + 84,
-        size: 11,
+        size: readableSize(11, 1),
         color: roundType === "timed" ? "#5b21b6" : "#64748b",
         bold: true,
       });
 
       /*
-    Challenge mode section
-  */
+  Challenge mode section
+  ----------------------
+  Large Text mode also affects the setup challenge cards, not only the
+  gameplay cards.
+*/
       addLabel({
         text: "Challenge Mode",
         x: MENU_LAYOUT.modeTitle.x,
         y: MENU_LAYOUT.modeTitle.y,
-        size: 20,
+        size: readableSize(20, 2),
         color: "#1e3a8a",
         bold: true,
       });
+
+      const modeCardHeight = largeTextMode
+        ? 62
+        : MENU_LAYOUT.modeGrid.cardHeight;
+
+      const modeRowGap = largeTextMode ? 14 : MENU_LAYOUT.modeGrid.rowGap;
 
       MODES.forEach((entry, index) => {
         const selected = entry.value === mode;
@@ -2786,41 +2884,42 @@ export default createZimGame({
           col *
             (MENU_LAYOUT.modeGrid.cardWidth + MENU_LAYOUT.modeGrid.columnGap);
 
-        const y =
-          MENU_LAYOUT.modeGrid.y +
-          row * (MENU_LAYOUT.modeGrid.cardHeight + MENU_LAYOUT.modeGrid.rowGap);
+        const y = MENU_LAYOUT.modeGrid.y + row * (modeCardHeight + modeRowGap);
 
         addPanel({
           x,
           y,
           width: MENU_LAYOUT.modeGrid.cardWidth,
-          height: MENU_LAYOUT.modeGrid.cardHeight,
+          height: modeCardHeight,
           fill: selected ? "#eff6ff" : "#ffffff",
           stroke: selected ? "#2563eb" : "#dbeafe",
           corner: 18,
         });
 
         addLabel({
-          text: shortText(entry.label, 22),
+          text: shortText(entry.label, largeTextMode ? 20 : 22),
           x: x + 16,
-          y: y + 8,
-          size: 14,
+          y: y + (largeTextMode ? 7 : 8),
+          size: readableSize(14, 2),
           color: selected ? "#1d4ed8" : "#07164f",
           bold: true,
         });
 
         addLabel({
-          text: getModeDescription(entry.value),
+          text: shortText(
+            getModeDescription(entry.value),
+            largeTextMode ? 30 : 34,
+          ),
           x: x + 16,
-          y: y + 30,
-          size: 9,
+          y: y + (largeTextMode ? 35 : 30),
+          size: readableSize(9, 2),
           color: selected ? "#2563eb" : "#64748b",
           bold: true,
         });
 
         const clickLayer = new zim.Rectangle(
           MENU_LAYOUT.modeGrid.cardWidth,
-          MENU_LAYOUT.modeGrid.cardHeight,
+          modeCardHeight,
           "rgba(255,255,255,0.01)",
           null,
           0,
@@ -2841,7 +2940,7 @@ export default createZimGame({
         text: "Difficulty",
         x: MENU_LAYOUT.difficulty.labelX,
         y: MENU_LAYOUT.difficulty.labelY,
-        size: 16,
+        size: readableSize(16, 2),
         color: "#047857",
         bold: true,
         align: "center",
@@ -2876,7 +2975,7 @@ export default createZimGame({
         text: "Pairs",
         x: MENU_LAYOUT.pairs.labelX,
         y: MENU_LAYOUT.pairs.labelY,
-        size: 16,
+        size: readableSize(16, 2),
         color: "#5b21b6",
         bold: true,
         align: "center",
@@ -2901,6 +3000,13 @@ export default createZimGame({
             selectMenuPairCount(entry);
           },
         });
+      });
+
+      drawTextModeToggle({
+        x: 700,
+        y: MENU_LAYOUT.startButton.y + 5,
+        width: 122,
+        height: 38,
       });
 
       drawSoundToggle({
@@ -2964,7 +3070,7 @@ export default createZimGame({
         }`,
         x: W / 2,
         y: 648,
-        size: 12,
+        size: readableSize(12, 1),
         color: "#64748b",
         bold: true,
         align: "center",
@@ -3013,7 +3119,7 @@ export default createZimGame({
         text: passage.title,
         x: x + 90,
         y: y + 20,
-        size: 26,
+        size: readableSize(26, 3),
         color: "#07164f",
         bold: true,
       });
@@ -3031,16 +3137,18 @@ export default createZimGame({
         text: passage.text,
         x: x + 90,
         y: y + 58,
-        maxCharsPerLine: 96,
+        maxCharsPerLine: readableMaxChars(96, 12),
         maxLines: 2,
-        size: 13,
-        lineHeight: 17,
+        size: readableSize(13, 2),
+        lineHeight: largeTextMode ? 20 : 17,
         color: "#334155",
         bold: true,
       });
     }
 
     function drawCard({ item, side, x, y }) {
+      const cardLayout = getCardLayout();
+
       const matched =
         side === "left" ? isLeftMatched(item.id) : isRightMatched(item.id);
 
@@ -3073,12 +3181,9 @@ export default createZimGame({
         }
       }
 
-      /*
-    Card shadow.
-  */
       const shadow = new zim.Rectangle(
-        GAMEPLAY_LAYOUT.card.width,
-        GAMEPLAY_LAYOUT.card.height,
+        cardLayout.width,
+        cardLayout.height,
         "rgba(15,23,42,0.12)",
         null,
         0,
@@ -3089,12 +3194,9 @@ export default createZimGame({
 
       shadow.mouseEnabled = false;
 
-      /*
-    Card visual base.
-  */
       const base = new zim.Rectangle(
-        GAMEPLAY_LAYOUT.card.width,
-        GAMEPLAY_LAYOUT.card.height,
+        cardLayout.width,
+        cardLayout.height,
         fill,
         stroke,
         selected ? 4 : matched ? 3 : 2,
@@ -3105,9 +3207,6 @@ export default createZimGame({
 
       base.mouseEnabled = false;
 
-      /*
-    Left-side drag dots.
-  */
       for (let index = 0; index < 3; index += 1) {
         const dot = new zim.Circle(2.2, "#cbd5e1")
           .addTo(stage)
@@ -3116,10 +3215,14 @@ export default createZimGame({
         dot.mouseEnabled = false;
       }
 
-      /*
-    Icon tile.
-  */
-      const iconTile = new zim.Rectangle(36, 30, iconFill, null, 0, 10)
+      const iconTile = new zim.Rectangle(
+        36,
+        largeTextMode ? 34 : 30,
+        iconFill,
+        null,
+        0,
+        10,
+      )
         .addTo(stage)
         .loc(x + 28, y + 4);
 
@@ -3128,46 +3231,42 @@ export default createZimGame({
       addLabel({
         text: isLeft ? "A" : "M",
         x: x + 46,
-        y: y + 10,
-        size: 14,
+        y: y + (largeTextMode ? 12 : 10),
+        size: readableSize(14, 2),
         color: "#ffffff",
         bold: true,
         align: "center",
       });
 
       addLabel({
-        text: shortText(item.label, 23),
+        text: shortText(item.label, readableMaxChars(23, 5)),
         x: x + 78,
-        y: y + 6,
-        size: 14,
+        y: y + (largeTextMode ? 5 : 6),
+        size: readableSize(14, 2),
         color: textColor,
         bold: true,
       });
 
       addLabel({
-        text: shortText(item.sublabel, 27),
+        text: shortText(item.sublabel, readableMaxChars(27, 6)),
         x: x + 78,
-        y: y + 23,
-        size: 9,
+        y: y + (largeTextMode ? 25 : 23),
+        size: readableSize(9, 1),
         color: subTextColor,
         bold: true,
       });
 
-      /*
-    Speaker / status area.
-    Visual only for now. It can become audio support later.
-  */
       if (matched) {
         const matchedCircle = new zim.Circle(10, "#16a34a")
           .addTo(stage)
-          .loc(x + GAMEPLAY_LAYOUT.card.width - 22, y + 19);
+          .loc(x + cardLayout.width - 22, y + cardLayout.height / 2);
 
         matchedCircle.mouseEnabled = false;
 
         addLabel({
           text: "✓",
-          x: x + GAMEPLAY_LAYOUT.card.width - 22,
-          y: y + 10,
+          x: x + cardLayout.width - 22,
+          y: y + cardLayout.height / 2 - 9,
           size: 13,
           color: "#ffffff",
           bold: true,
@@ -3176,14 +3275,14 @@ export default createZimGame({
       } else if (selected) {
         const selectedCircle = new zim.Circle(10, "#2563eb")
           .addTo(stage)
-          .loc(x + GAMEPLAY_LAYOUT.card.width - 22, y + 19);
+          .loc(x + cardLayout.width - 22, y + cardLayout.height / 2);
 
         selectedCircle.mouseEnabled = false;
 
         addLabel({
           text: "●",
-          x: x + GAMEPLAY_LAYOUT.card.width - 22,
-          y: y + 10,
+          x: x + cardLayout.width - 22,
+          y: y + cardLayout.height / 2 - 9,
           size: 12,
           color: "#ffffff",
           bold: true,
@@ -3192,26 +3291,18 @@ export default createZimGame({
       } else {
         addLabel({
           text: "›",
-          x: x + GAMEPLAY_LAYOUT.card.width - 22,
-          y: y + 7,
-          size: 22,
+          x: x + cardLayout.width - 22,
+          y: y + (largeTextMode ? 8 : 7),
+          size: readableSize(22, 1),
           color: "#94a3b8",
           bold: true,
           align: "center",
         });
       }
 
-      /*
-    Reliable card hit area.
-    ----------------------
-    This transparent layer sits above labels/icons so every part of the card
-    responds to input.
-
-    We use mousedown because timed mode redraws the canvas every second.
-  */
       const hitLayer = new zim.Rectangle(
-        GAMEPLAY_LAYOUT.card.width + 12,
-        GAMEPLAY_LAYOUT.card.height + 10,
+        cardLayout.width + 12,
+        cardLayout.height + 10,
         "rgba(255,255,255,0.01)",
         null,
         0,
@@ -3227,7 +3318,7 @@ export default createZimGame({
       const puzzle = roundData?.puzzle;
       const left = GAMEPLAY_LAYOUT.leftPanel;
       const right = GAMEPLAY_LAYOUT.rightPanel;
-      const card = GAMEPLAY_LAYOUT.card;
+      const card = getCardLayout();
 
       /*
     Word card panel
@@ -3351,7 +3442,7 @@ export default createZimGame({
 
       const left = GAMEPLAY_LAYOUT.leftPanel;
       const right = GAMEPLAY_LAYOUT.rightPanel;
-      const card = GAMEPLAY_LAYOUT.card;
+      const card = getCardLayout();
 
       matches.forEach((match) => {
         const leftIndex = puzzle.leftItems.findIndex(
@@ -3403,7 +3494,6 @@ export default createZimGame({
         rightDot.mouseEnabled = false;
       });
     }
-
     function drawFeedbackPanel() {
       const fill =
         feedbackType === "success"
@@ -3452,11 +3542,11 @@ export default createZimGame({
       addWrappedLabel({
         text: feedback,
         x: x + 20,
-        y: y + 38,
-        maxCharsPerLine: 34,
+        y: y + 36,
+        maxCharsPerLine: readableMaxChars(34, 6),
         maxLines: 2,
-        size: 14,
-        lineHeight: 18,
+        size: readableSize(14, 2),
+        lineHeight: largeTextMode ? 20 : 18,
         color,
         bold: true,
       });
@@ -3557,10 +3647,12 @@ export default createZimGame({
       });
 
       addLabel({
-        text: "Keys: 1–6 cards · H hint · R reset · S submit · N new · M menu",
+        text: largeTextMode
+          ? "Keys: 1–6 cards · H hint · S submit · M menu"
+          : "Keys: 1–6 cards · H hint · R reset · S submit · N new · M menu · V mute · Z text",
         x: x + 146,
         y: GAMEPLAY_LAYOUT.controls.secondaryY + 60,
-        size: 11,
+        size: readableSize(11, 1),
         color: "#2563eb",
         bold: true,
         align: "center",
@@ -4539,7 +4631,7 @@ export default createZimGame({
       });
 
       addWrappedLabel({
-        text: "Landing: Enter/Space start · Setup: P practice, T timed, 1/2/3 timers, C custom, E edit name · Gameplay: 1–6 cards, H hint, R reset, S submit, N new, M menu · Result: Enter/N next, L leaderboard · V mute",
+        text: "Landing: Enter/Space start · Setup: P practice, T timed, 1/2/3 timers, C custom, E edit name · Gameplay: 1–6 cards, H hint, R reset, S submit, N new, M menu · Result: Enter/N next, L leaderboard · V mute · Z large text.",
         x: 176,
         y: 538,
         maxCharsPerLine: 112,
