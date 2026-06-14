@@ -1,296 +1,414 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
 import Chalk from "../UI/Chalk";
-import ZimContainer from "../../../zimcomponents/ZimContainer";
-
-import { retrieveEnglishVersion } from "../../../services/wordHuntService";
-import { emit } from "../../../scenes/sceneBus";
 
 class FindNounsGame {
   constructor(game) {
     this.game = game;
+
+    this.nouns = game.wordTypes.nouns;
+    this.verbs = game.wordTypes.verbs;
+    this.adjectives = game.wordTypes.adjectives;
+
     this.score = 0;
-    this.gameOver = false;
-
-    this.blackboard = null;
-    this.foundWordsContainer = null;
-
-    this.passage = null;
-    this.apiData = null;
-    this.tokenizedArray = null;
     this.foundWords = [];
-    this.totalNouns = 0;
+
+    this.data = this.getData();
   }
-  /**
-   *
-   * Main Handling function
-   */
 
-  async displayPassage() {
-    await this.loadData();
+  displayPassage() {
+    this.game.stage.canvas.style.cursor = "none";
 
-    this.createBlackboard();
-    this.createHeading();
-    this.createWords();
-    this.createChalk();
-    this.foundWordsDisplayContainer();
+    //-----------------------------------
+    // BOARD
+    //-----------------------------------
 
-    this.game.stage.update();
-
-    return this.blackboard;
-  }
-  /**
-   * Creating Blackboard
-   */
-
-  createBlackboard() {
     this.blackboard = new Blackboard(
       this.game,
-      this.game.width * 0.9,
-      this.game.height * 0.8,
+      1350,
+      760
     ).create();
 
-    this.blackboard.x = 80;
-    this.blackboard.y = 20;
-
+    this.blackboard.center(this.game.stage);
     this.blackboard.addTo(this.game.stage);
-  }
-  /**
-   * Creating a heading for the game
-   */
 
-  createHeading() {
+    //-----------------------------------
+    // TITLE
+    //-----------------------------------
+
     const heading = new ZimLabel(
       this.game,
-      "Search For All Nouns From the Passage",
-      32,
+      "Search For All Nouns From The Passage"
     ).createLabel();
 
+    heading.scale = 0.75;
     heading.color = "white";
-    heading.pos(300, 50);
 
+    heading.pos(40, 20);
     heading.addTo(this.blackboard);
-  }
 
-  /**
-   * converting the words array to lables
-   */
+    //-----------------------------------
+    // SCORE
+    //-----------------------------------
 
-  createWords() {
-    const margin = 120;
+    const progressLabel = new ZimLabel(
+      this.game,
+      `Found 0 / ${this.nouns.length} Verbs`
+    ).createLabel();
+
+    progressLabel.scale = 0.65;
+    progressLabel.color = "#00ff88";
+
+    progressLabel.pos(
+      this.blackboard.width - 330,
+      20
+    );
+
+    progressLabel.addTo(this.blackboard);
+
+    //-----------------------------------
+    // MESSAGE BAR
+    //-----------------------------------
+
+    const messageBar = new this.game.zim.Rectangle({
+      width: this.blackboard.width - 80,
+      height: 55,
+      color: "#274527",
+      corner: 8,
+    });
+
+    messageBar.pos(40, 70);
+    messageBar.addTo(this.blackboard);
+
+    const messageLabel = new this.game.zim.Label({
+      text: `Find all ${this.nouns.length} nouns`,
+      size: 28,
+      color: "#FFD700",
+    });
+
+    messageLabel.pos(60, 84);
+    messageLabel.addTo(this.blackboard);
+
+    //-----------------------------------
+    // FOUND VERBS BOX
+    //-----------------------------------
+
+    const foundBox = new this.game.zim.Rectangle({
+      width: this.blackboard.width - 80,
+      height: 160,
+      color: "#274527",
+      corner: 8,
+    });
+
+    foundBox.pos(
+      40,
+      this.blackboard.height - 190
+    );
+
+    foundBox.addTo(this.blackboard);
+
+    const foundTitle = new this.game.zim.Label({
+      text: "Found Nouns",
+      size: 30,
+      color: "#00ff88",
+    });
+
+    foundTitle.pos(
+      60,
+      this.blackboard.height - 180
+    );
+
+    foundTitle.addTo(this.blackboard);
+
+    const foundWordsLabel = new this.game.zim.Label({
+      text: "",
+      size: 24,
+      color: "white",
+      align: "left",
+      lineWidth: this.blackboard.width - 140,
+    });
+
+    foundWordsLabel.pos(
+      60,
+      this.blackboard.height - 130
+    );
+
+    foundWordsLabel.addTo(this.blackboard);
+
+    //-----------------------------------
+    // STORY
+    //-----------------------------------
+
+    const margin = 60;
+
     let x = margin;
-    let y = 150;
+    let y = 160;
 
-    const lineHeight = 60;
-    const maxWidth = this.blackboard.width - margin;
+    const lineHeight = 42;
 
-    this.passage.forEach((word) => {
-      const label = this.createWordLabel(word);
+    const maxWidth =
+      this.blackboard.width - 80;
+    
 
-      if (x + label.width > maxWidth) {
+    //-----------------------------------
+    // WORDS
+    //-----------------------------------
+
+    this.data.forEach((word) => {
+      const label = new this.game.zim.Label({
+        text: word,
+        size: 32,
+        color: "white",
+      });
+
+      if (
+        x + label.width >
+        maxWidth
+      ) {
         x = margin;
         y += lineHeight;
       }
 
       label.pos(x, y);
+
       label.addTo(this.blackboard);
 
-      x += label.width + 10;
-    });
-  }
+      x += label.width + 14;
 
-  /**
-   *
-   * Creating a single label object
-   */
-  // createWordLabel(word) {
-  //   const label = new ZimLabel(this.game, word, 24).createLabel();
+      //-----------------------------------
+      // CLICK
+      //-----------------------------------
 
-  //   let clicked = false;
+      label.tap(() => {
+        const cleanWord =
+          word
+            .toLowerCase()
+            .replace(/[^\w']/g, "");
+          console.log("CLICKED:", cleanWord);
+        //-----------------------------------
+        // CORRECT VERB
+        //-----------------------------------
 
-  //   label.tap(() => {
-  //     if (clicked) return;
+        if (
+          this.nouns.includes(cleanWord)
+        ) {
 
-  //     clicked = true;
+          if (
+            this.foundWords.includes(cleanWord)
+          ) {
+            messageLabel.text =
+              `${cleanWord} already found`;
 
-  //     this.handleWordClick(label, word);
-  //   });
+            this.game.stage.update();
+            return;
+          }
 
-  //   return label;
-  // }
+          // Prevent this label from firing again
+          label.mouseEnabled = false;
 
-  createWordLabel(word) {
-    const label = new ZimLabel(this.game, word, 24).createLabel();
+          this.foundWords.push(
+            cleanWord
+          );
+          console.log("FOUND =", this.foundWords);
 
-    label.color = "white";
+          this.score++;
+          console.log("SCORE =", this.score);
+          label.color = "#00ff88";
 
-    label.tap(() => {
-      this.handleWordClick(label, word);
-    });
+          progressLabel.text =
+            `Found ${this.score}/${this.nouns.length} Nouns`;
 
-    return label;
-  }
+          messageLabel.text =
+            `Great! "${cleanWord}" is a noun`;
 
-  /**
-   * Creating chalk object
-   */
+          foundWordsLabel.text =
+            this.foundWords.join(", ");
 
-  createChalk() {
-    this.chalk = new Chalk(this.game);
-    this.chalk.show();
-  }
-  /**
-   * creating found words Display container
-   */
+          this.checkWin(
+            messageLabel
+          );
+        }
 
-  foundWordsDisplayContainer() {
-    this.foundWordsContainer = new ZimContainer(this.game).createContainer();
+        //-----------------------------------
+        // NOUN
+        //-----------------------------------
 
-    this.foundWordsContainer.pos(110, 650);
+        else if (
+          this.verbs.includes(cleanWord)
+        ) {
+          label.color = "red";
 
-    // Heading
-    const title = new ZimLabel(this.game, "Found Nouns:", 24).createLabel();
+          messageLabel.text =
+            `Oops! "${cleanWord}" is a verb`;
+        }
 
-    title.color = "black";
-    title.pos(150, 625);
+        //-----------------------------------
+        // ADJECTIVE
+        //-----------------------------------
 
-    title.addTo(this.foundWordsContainer);
+        else if (
+          this.adjectives.includes(cleanWord)
+        ) {
+          label.color = "orange";
 
-    this.foundWordsContainer.addTo(this.game.stage);
+          messageLabel.text =
+            `Oops! "${cleanWord}" is an adjective`;
+        }
 
-    this.updateFoundWordsDisplay();
-  }
-  /**
-   * Updating Found words Display
-   */
-  updateFoundWordsDisplay() {
-    if (!this.foundWordsContainer) return;
+        //-----------------------------------
+        // OTHER
+        //-----------------------------------
 
-    // Remove everything except the title
-    while (this.foundWordsContainer.numChildren > 1) {
-      this.foundWordsContainer.removeChildAt(1);
-    }
+        else {
+          label.color = "#ff6666";
 
-    let x = 50;
-    const y = 650;
+          messageLabel.text =
+            `"${cleanWord}" is not a noun`;
+        }
 
-    this.foundWords.forEach((word) => {
-      const label = new ZimLabel(this.game, word, 24).createLabel();
-
-      label.color = "black";
-
-      label.pos(x, y);
-
-      label.addTo(this.foundWordsContainer);
-
-      x += label.width + 20;
-    });
-
-    this.game.stage.update();
-  }
-  /**
-   * Game Over Scenario
-   */
-
-  handleGameOver() {
-    console.log("Found:", this.foundWords.length, "Total:", this.totalNouns);
-
-    if (this.foundWords.length >= this.totalNouns) {
-      this.gameOver = true;
-
-      const gameOverLabel = new ZimLabel(
-        this.game,
-        "You Found All Nouns!",
-        40,
-      ).createLabel();
-
-      gameOverLabel.color = "red";
-      gameOverLabel.center(this.game.stage);
-
-      gameOverLabel.addTo(this.game.stage);
-
-      emit("complete");
-
-      console.log("Game Over!");
-    }
-  }
-
-  /**
-   * Handling the click function when a certain word is clicked
-   */
-
-  handleWordClick(label, word) {
-    if (this.gameOver) return;
-
-    const pos = this.getWordPOS(word);
-
-    if (pos !== "NOUN") {
-      emit("wrong");
-      return;
-    }
-
-    if (!label.isUnderlined) {
-      const underline = new this.game.zim.Line({
-        length: label.width,
-        thickness: 2,
-        color: "white",
+        this.game.stage.update();
       });
+    });
 
-      underline.pos(label.x + 80, label.y + label.height + 20);
+    //-----------------------------------
+    // CHALK
+    //-----------------------------------
 
-      underline.addTo(label.parent);
-
-      label.isUnderlined = true;
-    }
-
-    if (!this.foundWords.includes(word)) {
-      this.score++;
-      this.foundWords.push(word);
-
-      emit("correct");
-
-      this.updateFoundWordsDisplay();
-      this.handleGameOver();
-    }
+    new Chalk(this.game).show();
 
     this.game.stage.update();
+
+    return this.blackboard;
   }
 
-  /**
-   * Calling the service method to fetch data from backend
-   */
+  //-----------------------------------
+  // WIN
+  //-----------------------------------
 
-  async loadData() {
-    try {
-      const response = await retrieveEnglishVersion();
+  checkWin() {
 
-      this.apiData = response;
-      this.passage = response?.data?.passageArray || [];
-      this.tokenizedArray = response?.data?.tokenizedPassage || [];
+    if (
+      this.foundWords.length ===
+      this.nouns.length
+    ) {
 
-      const nounWords = this.tokenizedArray
-        .filter((item) => item.pos === "NOUN")
-        .map((item) => item.text);
+      const modal = document.createElement("div");
 
-      this.totalNouns = [...new Set(nounWords)].length;
+      modal.innerHTML = `
+        <div style="
+          position:fixed;
+          top:0;
+          left:0;
+          width:100%;
+          height:100%;
+          background:rgba(0,0,0,0.4);
+          display:flex;
+          justify-content:center;
+          align-items:center;
+          z-index:99999;
+        ">
+          <div style="
+            background:#FFF8F0;
+            padding:30px;
+            border-radius:20px;
+            border:4px solid #E9D8A6;
+            text-align:center;
+            min-width:400px;
+            box-shadow:0 8px 20px rgba(0,0,0,.25);
+          ">
 
-      console.log("Total unique nouns:", this.totalNouns);
+            <h1 style="
+              color:#7B2CBF;
+              margin-bottom:10px;
+              font-size:42px;
+            ">
+              🎉 Great Job!
+            </h1>
 
-      console.log("Total nouns:", this.totalNouns);
-    } catch (error) {
-      console.error(error);
+            <p style="
+              font-size:24px;
+              margin-bottom:25px;
+            ">
+              You found all Nouns!
+            </p>
+
+            <button
+              id="continueBtn"
+              style="
+                background:#9D6EFF;
+                color:white;
+                border:none;
+                padding:14px 26px;
+                border-radius:12px;
+                cursor:pointer;
+                margin-right:12px;
+                font-size:18px;
+              "
+            >
+              Continue to Verbs
+            </button>
+
+            <button
+              id="exitBtn"
+              style="
+                background:#FF8A80;
+                color:white;
+                border:none;
+                padding:14px 26px;
+                border-radius:12px;
+                cursor:pointer;
+                font-size:18px;
+              "
+            >
+              Exit Game
+            </button>
+
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      //-----------------------------------
+      // CONTINUE
+      //-----------------------------------
+
+      document.getElementById("continueBtn").onclick = () => {
+
+        modal.remove();
+
+        this.blackboard.removeFrom();
+
+        this.game.startVerbGame();
+
+        this.game.stage.update();
+      };
+
+      //-----------------------------------
+      // EXIT
+      //-----------------------------------
+
+      document.getElementById("exitBtn").onclick = () => {
+
+        modal.remove();
+
+        this.game.stage.removeAllChildren();
+
+        this.game.start();
+
+        this.game.stage.update();
+      };
     }
   }
 
-  /**
-   *
-   * Getting the Parts of speech of the selected word
-   */
+  //-----------------------------------
+  // DATA
+  //-----------------------------------
 
-  getWordPOS(word) {
-    const token = this.tokenizedArray.find((item) => item.text === word);
-
-    return token?.pos;
+  getData() {
+    return (
+      this.game.storyData.story.match(/\S+/g) || []
+    );
   }
 }
 
