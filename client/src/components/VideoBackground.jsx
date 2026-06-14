@@ -1,5 +1,3 @@
-import bgImage from "../../c6e25cf8-6974-49aa-9470-aac22b2a5d8f.png";
-
 export default function VideoBackground() {
   return (
     <div className="video-bg" aria-hidden="true">
@@ -18,7 +16,7 @@ export default function VideoBackground() {
 
       <img
         className="video-bg-media"
-        src={bgImage}
+        src="/scenes/house-hill.png"
         alt=""
       />
       <div className="video-bg-grain" />

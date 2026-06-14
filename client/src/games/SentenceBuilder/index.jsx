@@ -1,22 +1,5 @@
 import { createZimGame } from "../createZimGame";
-
-const rounds = [
-  {
-    sentence: "The brave prince entered the dark forest alone.",
-    chunks: ["entered", "alone", "The brave prince", "the dark forest"],
-    answer: ["The brave prince", "entered", "the dark forest", "alone"]
-  },
-  {
-    sentence: "A curious owl guarded the silver gate quietly.",
-    chunks: ["quietly", "the silver gate", "A curious owl", "guarded"],
-    answer: ["A curious owl", "guarded", "the silver gate", "quietly"]
-  },
-  {
-    sentence: "Tiny lanterns glowed beside the castle stairs.",
-    chunks: ["beside", "Tiny lanterns", "the castle stairs", "glowed"],
-    answer: ["Tiny lanterns", "glowed", "beside", "the castle stairs"]
-  }
-];
+import { getPassageReconstructionGame } from "../../services/passageReconstructionService";
 
 const zimFont = "Fredoka";
 
@@ -27,6 +10,7 @@ export default createZimGame({
   color: "#fff3d3",
   outerColor: "#151019",
   setup({ frame, stage, W, H, zim }) {
+    let rounds = [];
     let roundIndex = 0;
     let score = 0;
     let attemptsLeft = 3;
@@ -495,8 +479,26 @@ export default createZimGame({
       stage.update();
     }
 
-    // Start with the sentence preview so the player knows what to rebuild
-    showSentencePreview();
+    async function loadAndStart() {
+      stage.removeAllChildren();
+      new zim.Label("Loading story...", 28, zimFont, "#073b49").addTo(stage).center(stage);
+      stage.update();
+
+      const response = await getPassageReconstructionGame();
+
+      if (!response || !response.data || !response.data.rounds) {
+        stage.removeAllChildren();
+        new zim.Label("Failed to load story. Please refresh.", 22, zimFont, "#8a3a2d")
+          .addTo(stage).center(stage);
+        stage.update();
+        return;
+      }
+
+      rounds = response.data.rounds;
+      showSentencePreview();
+    }
+
+    loadAndStart();
   }
 });
 
