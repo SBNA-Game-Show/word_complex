@@ -18,7 +18,7 @@ export default createZimGame({
   setup({ stage, W, H, zim }) {
     const zimFont = "Fredoka";
 
-    let selectedWordType = "noun";
+    let selectedWordTypes = ["noun"];
     let selectedDifficulty = "easy";
 
     function showMenu() {
@@ -35,16 +35,20 @@ export default createZimGame({
         align: "center",
         valign: "center",
         bold: true,
-      }).addTo(stage).loc(W / 2, 80);
+      })
+        .addTo(stage)
+        .loc(W / 2, 80);
 
       new zim.Label({
-        text: "Choose your settings before you play",
+        text: "Choose one or more word types before you play",
         size: 24,
         font: zimFont,
         color: "#ffffff",
         align: "center",
         valign: "center",
-      }).addTo(stage).loc(W / 2, 130);
+      })
+        .addTo(stage)
+        .loc(W / 2, 130);
 
       new zim.Label({
         text: "Word Type",
@@ -52,26 +56,50 @@ export default createZimGame({
         font: zimFont,
         color: "#333333",
         bold: true,
-      }).addTo(stage).loc(190, 270);
+      })
+        .addTo(stage)
+        .loc(190, 270);
 
       ["noun", "verb", "adjective"].forEach((type, index) => {
+        const isSelected = selectedWordTypes.includes(type);
         const btnWidth = type === "adjective" ? 210 : 150;
 
-        const btn = new zim.Button({
+        const btn = new zim.Container().addTo(stage).loc(440 + index * 205, 255);
+
+        new zim.Rectangle({
           width: btnWidth,
           height: 50,
-          label: type.toUpperCase(),
-          backgroundColor: selectedWordType === type ? "#4f46d9" : "#ffffff",
-          rollBackgroundColor: "#ddd9ff",
-          color: selectedWordType === type ? "#ffffff" : "#333333",
+          color: isSelected ? "#4f46d9" : "#ffffff",
+          borderColor: "#4f46d9",
+          borderWidth: 2,
           corner: 12,
-        });
+        }).addTo(btn);
 
-        btn.label.size = type === "adjective" ? 28 : 34;
-        btn.addTo(stage).loc(440 + index * 205, 255);
+        new zim.Label({
+          text: type.toUpperCase(),
+          size: type === "adjective" ? 26 : 32,
+          font: zimFont,
+          color: isSelected ? "#ffffff" : "#333333",
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(btn)
+          .loc(btnWidth / 2, 25);
+
+        btn.cursor = "pointer";
 
         btn.on("click", () => {
-          selectedWordType = type;
+          if (selectedWordTypes.includes(type)) {
+            if (selectedWordTypes.length > 1) {
+              selectedWordTypes = selectedWordTypes.filter(
+                (wordType) => wordType !== type
+              );
+            }
+          } else {
+            selectedWordTypes = [...selectedWordTypes, type];
+          }
+
           showMenu();
         });
       });
@@ -82,14 +110,17 @@ export default createZimGame({
         font: zimFont,
         color: "#333333",
         bold: true,
-      }).addTo(stage).loc(190, 370);
+      })
+        .addTo(stage)
+        .loc(190, 370);
 
       ["easy", "medium", "hard"].forEach((level, index) => {
         const btn = new zim.Button({
           width: 150,
           height: 50,
           label: level.toUpperCase(),
-          backgroundColor: selectedDifficulty === level ? "#4f46d9" : "#ffffff",
+          backgroundColor:
+            selectedDifficulty === level ? "#4f46d9" : "#ffffff",
           rollBackgroundColor: "#ddd9ff",
           color: selectedDifficulty === level ? "#ffffff" : "#333333",
           corner: 12,
@@ -141,14 +172,18 @@ export default createZimGame({
         align: "center",
         valign: "center",
         bold: true,
-      }).addTo(stage).loc(W / 2, 85);
+      })
+        .addTo(stage)
+        .loc(W / 2, 85);
 
       new zim.Rectangle({
         width: 130,
         height: 45,
         color: "#7c7bea",
         corner: 22,
-      }).addTo(stage).loc(W / 2 - 65, 105);
+      })
+        .addTo(stage)
+        .loc(W / 2 - 65, 105);
 
       const scoreLabel = new zim.Label({
         text: "Score: 0",
@@ -158,7 +193,9 @@ export default createZimGame({
         align: "center",
         valign: "center",
         bold: true,
-      }).addTo(stage).loc(W / 2, 125);
+      })
+        .addTo(stage)
+        .loc(W / 2, 125);
 
       const paragraphY = 230;
       const blanks = [];
@@ -172,7 +209,9 @@ export default createZimGame({
           color: "#333333",
           align: "left",
           valign: "center",
-        }).addTo(stage).loc(x, y);
+        })
+          .addTo(stage)
+          .loc(x, y);
       }
 
       function makeBlank(x, y, index) {
@@ -197,7 +236,9 @@ export default createZimGame({
           align: "center",
           valign: "center",
           bold: true,
-        }).addTo(blank).loc(65, 24);
+        })
+          .addTo(blank)
+          .loc(65, 24);
 
         blanks.push(blank);
         return blank;
@@ -219,14 +260,18 @@ export default createZimGame({
       const correctAnswers = ["girl", "garden", "milk"];
 
       new zim.Label({
-        text: `AVAILABLE WORDS | ${selectedDifficulty.toUpperCase()} | ${selectedWordType.toUpperCase()}`,
+        text: `AVAILABLE WORDS | ${selectedDifficulty.toUpperCase()} | ${selectedWordTypes
+          .map((type) => type.toUpperCase())
+          .join(", ")}`,
         size: 20,
         font: zimFont,
         color: "#3b32b8",
         align: "center",
         valign: "center",
         bold: true,
-      }).addTo(stage).loc(W / 2, 470);
+      })
+        .addTo(stage)
+        .loc(W / 2, 470);
 
       const buttonWidths = words.map((w) => Math.max(110, w.length * 22));
       const totalWidth = buttonWidths.reduce((sum, width) => sum + width, 0);
@@ -301,7 +346,9 @@ export default createZimGame({
         width: W,
         height: 70,
         color: "#ffffff",
-      }).addTo(stage).loc(0, 664);
+      })
+        .addTo(stage)
+        .loc(0, 664);
 
       const feedbackLabel = new zim.Label({
         text: "",
@@ -311,7 +358,9 @@ export default createZimGame({
         align: "center",
         valign: "center",
         bold: true,
-      }).addTo(stage).loc(W / 2, 698);
+      })
+        .addTo(stage)
+        .loc(W / 2, 698);
 
       const resetButton = new zim.Button({
         width: 220,
