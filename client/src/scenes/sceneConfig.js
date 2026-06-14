@@ -55,6 +55,57 @@ export const sceneConfigs = {
     // Fallback character if the player hasn't picked one yet.
     defaultCharacterId: "tomely",
   },
+
+  // Meaning Bridge. Background is part of the same matched art set as Passage
+  // Reconstruction (1672 x 941), so it reuses the same aspect + character spot.
+  "meaning-bridge": {
+    background: "/scenes/meaning-bridge.png",
+    transitionMs: 750,
+    backgroundAspect: 1672 / 941,
+    canvas: { maxWidth: 1100, side: "left", offsetX: "8%" },
+    character: {
+      side: "right",
+      left: "82%",
+      bottom: "26%",
+      width: "17%",
+      scale: 1,
+    },
+    defaultCharacterId: "tomely",
+  },
+
+  // Context Cloze Quest. NOTE: the art file is named context-cloze.png while the
+  // game id is "context-cloze-quest".
+  "context-cloze-quest": {
+    background: "/scenes/context-cloze.png",
+    transitionMs: 750,
+    backgroundAspect: 1672 / 941,
+    canvas: { maxWidth: 1100, side: "left", offsetX: "8%" },
+    character: {
+      side: "right",
+      left: "82%",
+      bottom: "26%",
+      width: "17%",
+      scale: 1,
+    },
+    defaultCharacterId: "tomely",
+  },
+
+  // Word Hunt. Its ZIM canvas is 1280 x 720, so it gets a slightly wider canvas
+  // cap than the 1100-wide games.
+  "word-hunt": {
+    background: "/scenes/word-hunt.png",
+    transitionMs: 750,
+    backgroundAspect: 1672 / 941,
+    canvas: { maxWidth: 1200, side: "left", offsetX: "8%" },
+    character: {
+      side: "right",
+      left: "82%",
+      bottom: "26%",
+      width: "17%",
+      scale: 1,
+    },
+    defaultCharacterId: "tomely",
+  },
 };
 
 export function getSceneConfig(id) {

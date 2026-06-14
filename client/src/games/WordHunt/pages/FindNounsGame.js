@@ -4,6 +4,7 @@ import Chalk from "../UI/Chalk";
 import ZimContainer from "../../../zimcomponents/ZimContainer";
 
 import { retrieveEnglishVersion } from "../../../services/wordHuntService";
+import { emit } from "../../../scenes/sceneBus";
 
 class FindNounsGame {
   constructor(game) {
@@ -208,6 +209,8 @@ class FindNounsGame {
 
       gameOverLabel.addTo(this.game.stage);
 
+      emit("complete");
+
       console.log("Game Over!");
     }
   }
@@ -221,7 +224,10 @@ class FindNounsGame {
 
     const pos = this.getWordPOS(word);
 
-    if (pos !== "NOUN") return;
+    if (pos !== "NOUN") {
+      emit("wrong");
+      return;
+    }
 
     if (!label.isUnderlined) {
       const underline = new this.game.zim.Line({
@@ -240,6 +246,8 @@ class FindNounsGame {
     if (!this.foundWords.includes(word)) {
       this.score++;
       this.foundWords.push(word);
+
+      emit("correct");
 
       this.updateFoundWordsDisplay();
       this.handleGameOver();
