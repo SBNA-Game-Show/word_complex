@@ -2,6 +2,8 @@ import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
 import Chalk from "../UI/Chalk";
 
+import { emit } from "../../../scenes/sceneBus";
+
 class FindNounsGame {
   constructor(game) {
     this.game = game;
@@ -224,6 +226,8 @@ class FindNounsGame {
           foundWordsLabel.text =
             this.foundWords.join(", ");
 
+          emit("correct");
+
           this.checkWin(
             messageLabel
           );
@@ -240,6 +244,8 @@ class FindNounsGame {
 
           messageLabel.text =
             `Oops! "${cleanWord}" is a verb`;
+
+          emit("wrong");
         }
 
         //-----------------------------------
@@ -253,6 +259,8 @@ class FindNounsGame {
 
           messageLabel.text =
             `Oops! "${cleanWord}" is an adjective`;
+
+          emit("wrong");
         }
 
         //-----------------------------------
@@ -264,6 +272,8 @@ class FindNounsGame {
 
           messageLabel.text =
             `"${cleanWord}" is not a noun`;
+
+          emit("wrong");
         }
 
         this.game.stage.update();
