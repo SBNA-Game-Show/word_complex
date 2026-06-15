@@ -19,14 +19,16 @@ export default function CharacterHelper({ characterId, character, entered, speec
     scale = 1,
   } = character ?? {};
 
-  // Map the raw mood into a positive/negative reaction used for the bubble
-  // accent color and the little character "react" wiggle.
+  // Map the raw mood into a reaction used for the bubble accent color and the
+  // little character "react" wiggle.
   const reaction =
     speech?.mood === "correct" || speech?.mood === "complete"
       ? "happy"
-      : speech
-        ? "oops"
-        : null;
+      : speech?.mood === "hint"
+        ? "thinking"
+        : speech
+          ? "oops"
+          : null;
 
   return (
     <div

@@ -1233,10 +1233,10 @@ input {
 }
 
 .preview-card.art-meadow .preview-art {
-  background: rgba(211, 241, 196, 0.75);
+  background: rgba(207, 238, 255, 0.75);
 }
 .preview-card.art-sea .preview-art {
-  background: rgba(207, 238, 255, 0.75);
+  background: rgba(211, 241, 196, 0.75);
 }
 .preview-card.art-night .preview-art {
   background: rgba(216, 210, 255, 0.75);

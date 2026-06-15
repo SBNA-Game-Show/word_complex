@@ -1,6 +1,8 @@
 import { createZimGame } from "../createZimGame";
 import { getPassageReconstructionGame } from "../../services/passageReconstructionService";
 import { emit } from "../../scenes/sceneBus";
+import { createHintPolicy } from "../shared/hintPolicy";
+import { createHintButton } from "../shared/hintButton";
 
 const zimFont = "Fredoka";
 
@@ -36,6 +38,13 @@ export default createZimGame({
     let checks = 0;
     let correctChecks = 0;
     let feedbackActive = false; // blocks checkAnswer while a feedback popup is showing
+    // Hint system: 2 hints per round, each costs 25 points. The policy is shared,
+    // game-agnostic logic; the button is a shared in-canvas trigger; the buddy
+    // delivers the hint text via sceneBus (see applyHint).
+    const hintPolicy = createHintPolicy({ maxPerRound: 2, penalty: 25 });
+    let hintButton = null;
+    const hintedSlots = new Set(); // slots already pointed out this round, so a
+    // second hint moves on to a different phrase instead of repeating itself
     const tiles = [];
     const zones = [];
     const slotWidth = 200;
@@ -135,8 +144,22 @@ export default createZimGame({
         corner: 21
       }).addTo(controls).loc(148, 0);
       resetButton.on("click", () => renderRound());
+      // Total group width: Check (132) + gap (16) + Reset (132) + gap (16) + Hint (132) = 428
       controls.setBounds(0, 0, 280, 42);
-      controls.loc((W - 280) / 2, 674);
+      controls.loc((W - 428) / 2, 674);
+
+      // Shared in-canvas Hint button, placed just right of Reset. Rebuilt on every
+      // renderRound() like the other controls; the module-scoped `hintButton`
+      // always points at the live instance so applyHint's refresh() is never stale.
+      hintButton = createHintButton({
+        stage,
+        zim,
+        x: (W - 428) / 2 + 296,
+        y: 674,
+        policy: hintPolicy,
+        onUse: applyHint,
+        palette: { bg: palette.gold, rollBg: "#ffd97a", downBg: palette.goldDeep, color: palette.ink },
+      });
     }
 
     function makeTile(text, x, y) {
@@ -256,9 +279,50 @@ export default createZimGame({
       stage.update();
     }
 
+    // A hint doesn't touch the board — it just works out the next piece the player
+    // still needs and has the helper character "say" where it goes (via sceneBus).
+    // The player drags it themselves. This is the ONLY game-specific piece of the
+    // hint system; the policy and button are shared, reusable code.
+    function applyHint() {
+      if (feedbackActive) return; // same guard as checkAnswer
+      if (!hintPolicy.canUse()) return;
+
+      const answer = rounds[roundIndex].answer;
+
+      // Next slot to point at: one that needs a real (non-empty) phrase, doesn't
+      // have it yet, and hasn't already been pointed out this round — so pressing
+      // hint again moves on to a different phrase. Fall back to the first
+      // still-wrong slot if every wrong slot has already been hinted.
+      let target = -1;
+      let fallback = -1;
+      for (let i = 0; i < zones.length; i++) {
+        if (!answer[i]) continue; // empty answer slot — nothing useful to point at
+        if ((zones[i].tile?.chunk ?? null) === answer[i]) continue; // already correct
+        if (fallback === -1) fallback = i;
+        if (!hintedSlots.has(i)) {
+          target = i;
+          break;
+        }
+      }
+      if (target === -1) target = fallback;
+      if (target === -1) return; // nothing helpful left to say — don't spend a hint
+
+      // Spend the hint, apply the penalty, and let the buddy tell the player where
+      // this phrase belongs.
+      hintedSlots.add(target);
+      hintPolicy.use();
+      score = Math.max(0, score - hintPolicy.penalty);
+      if (hintButton) hintButton.refresh();
+      emit("hint", { text: `"${answer[target]}" goes in slot ${target + 1}.` });
+    }
+
     // Shows the full sentence for ~1.5s with a progress bar, then calls renderRound.
     // Mirrors the landing-screen behaviour from the proof of concept.
     function showSentencePreview() {
+      // Refill hints for the new round. Done here (not in renderRound) so the Reset
+      // button — which calls renderRound — keeps hints already spent this round.
+      hintPolicy.reset();
+      hintedSlots.clear();
       stage.removeAllChildren();
 
       // Sky → meadow background matching the scene art
@@ -516,10 +580,13 @@ export default createZimGame({
       stage.removeAllChildren();
       makeBackground();
       new zim.Rectangle(680, 360, "rgba(255,255,255,.82)", palette.goldDeep, 5, 28).loc(210, 166).addTo(stage);
-      addLabel("Quest Complete", 48, palette.ink, W / 2, 226, "center");
-      addLabel(`Final score: ${score}`, 30, "#3a5240", W / 2, 306, "center");
-      addLabel(`Accuracy: ${accuracy}%`, 30, "#3a5240", W / 2, 354, "center");
-      addLabel("You reconstructed all three story sentences.", 24, palette.inkSoft, W / 2, 414, "center");
+      const makecenteredLabel = (text, size, color, y) =>
+        new zim.Label({ text, size, font: zimFont, color, align: "center", valign: "top" })
+          .addTo(stage).loc(W / 2, y);
+      makecenteredLabel("Quest Complete", 48, palette.ink, 226);
+      makecenteredLabel(`Final score: ${score}`, 30, "#3a5240", 306);
+      makecenteredLabel(`Accuracy: ${accuracy}%`, 30, "#3a5240", 354);
+      makecenteredLabel("You reconstructed all three story sentences.", 24, palette.inkSoft, 414);
       const againLabel = new zim.Label("Play Again", 18, zimFont, "#ffffff");
       againLabel.fontOptions = "bold";
       const again = new zim.Button({

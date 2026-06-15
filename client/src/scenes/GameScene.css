@@ -224,6 +224,10 @@
   animation: character-react-oops 620ms ease-in-out both;
 }
 
+.character-helper.is-reacting.react-thinking .character-helper-pose {
+  animation: character-react-thinking 700ms ease-in-out both;
+}
+
 @keyframes character-react-happy {
   0% {
     transform: translateY(0) scale(1, 1);
@@ -252,6 +256,20 @@
   }
   80% {
     transform: translateX(-4px) rotate(-2deg);
+  }
+}
+
+/* Hint: a thoughtful little lean-and-nod rather than a celebration or a flinch. */
+@keyframes character-react-thinking {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  35% {
+    transform: translateY(-6px) rotate(3deg);
+  }
+  65% {
+    transform: translateY(-2px) rotate(-2deg);
   }
 }
 
@@ -306,6 +324,10 @@
 
 .character-speech.mood-oops {
   --bubble-accent: #e58e74;
+}
+
+.character-speech.mood-thinking {
+  --bubble-accent: #f4c45a;
 }
 
 .character-speech-tail {
@@ -468,6 +490,7 @@
 
   .character-helper.is-reacting.react-happy .character-helper-pose,
   .character-helper.is-reacting.react-oops .character-helper-pose,
+  .character-helper.is-reacting.react-thinking .character-helper-pose,
   .character-speech,
   .character-speech.is-leaving {
     animation: none;

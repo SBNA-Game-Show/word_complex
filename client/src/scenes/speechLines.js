@@ -30,6 +30,13 @@ export const SPEECH_LINES = {
     "You rebuilt every passage — amazing!",
     "Quest complete! I knew you could do it.",
   ],
+  // Player asked for a hint. Normally the game emits "hint" with a specific line in
+  // the payload (e.g. which cloud goes where); these are generic fallbacks.
+  hint: [
+    "Here's a little nudge!",
+    "Let me give you a hand.",
+    "Try this one next!",
+  ],
 };
 
 // Pick a random line for a mood, or null if the mood has none.

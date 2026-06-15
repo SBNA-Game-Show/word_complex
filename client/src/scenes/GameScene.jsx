@@ -9,6 +9,9 @@ import "./GameScene.css";
 
 // How long a speech bubble lingers before it starts leaving.
 const SPEECH_MS = 1600;
+// Hints carry an instruction the player has to read and act on, so they stay up
+// much longer than a quick "Nice!" reaction.
+const HINT_SPEECH_MS = 5000;
 // Duration of the pop-out animation (must match `speech-pop-out` in the CSS).
 const SPEECH_OUT_MS = 300;
 
@@ -60,22 +63,28 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
       speechTimersRef.current = [];
     };
 
-    const unsubscribe = subscribe((mood) => {
-      const text = pickLine(mood);
+    const unsubscribe = subscribe((mood, payload) => {
+      // A hint carries the exact line to speak in its payload; other moods pick a
+      // random line from the shared pool.
+      const text = payload?.text || pickLine(mood);
       if (!text) return;
       speechIdRef.current += 1;
       const id = speechIdRef.current;
       clearTimers();
       setSpeech({ id, text, mood, leaving: false });
+      // How long the bubble stays before it starts leaving. Hints get a long
+      // dwell so there's time to read and act on them; a game can also override
+      // per-message via `emit("hint", { text, holdMs })`.
+      const dwell = payload?.holdMs ?? (mood === "hint" ? HINT_SPEECH_MS : SPEECH_MS);
       // Phase 1: after the dwell time, flip to "leaving" so the bubble plays
       // its pop-out animation. Phase 2: unmount once that animation finishes.
       speechTimersRef.current.push(
         setTimeout(() => {
           setSpeech((prev) => (prev && prev.id === id ? { ...prev, leaving: true } : prev));
-        }, SPEECH_MS),
+        }, dwell),
         setTimeout(() => {
           setSpeech((prev) => (prev && prev.id === id ? null : prev));
-        }, SPEECH_MS + SPEECH_OUT_MS)
+        }, dwell + SPEECH_OUT_MS)
       );
     });
     return () => {
