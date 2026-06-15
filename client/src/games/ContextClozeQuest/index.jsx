@@ -1,5 +1,5 @@
 import { createZimGame } from "../createZimGame";
-import { getFillInBlanks } from "../../services/fillInTheBlankFrontendService";
+import { getFillInBlanks } from "../../services/FillInTheBlankFrontendService";
 
 export const meta = {
   id: "context-cloze-quest",
