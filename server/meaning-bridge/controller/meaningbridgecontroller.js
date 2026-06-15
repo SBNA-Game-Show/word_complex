@@ -1,9 +1,9 @@
 const {
   generatePuzzleFromTokenizedStory,
-  generateSynonymMatchPuzzle,
-  generateAntonymMatchPuzzle,
-  generateWordDefinitionPuzzle,
+  generateWordTransliterationPuzzle,
+  generateEnglishToSanskritPuzzle,
   generateSentenceMatchPuzzle,
+  generateSentenceToEnglishPuzzle,
 } = require("../service/generatepuzzle");
 const { saveRoundFallback, getRoundFallback } = require("../service/roundstore");
 const { saveScoreFallback, getPlayerLeaderboardFallback } = require("../service/scorestore");
@@ -11,6 +11,17 @@ const { scoreMeaningBridgeRound } = require("../service/scoreround");
 const { retrieveRandomStory } = require("../../raw-data-connect/retrieveTokenizedStoryById");
 
 const SUPPORTED_PAIR_COUNTS = new Set([4, 5, 6]);
+
+const SUPPORTED_MODES = new Set([
+  "english-to-sanskrit",
+  "sanskrit-to-english",
+  "word-to-definition",
+  "word-to-synonym",
+  "word-to-antonym",
+  "sentence-match",
+  "sentence-to-transliteration",
+  "sentence-to-english",
+]);
 
 const getMeaningBridgeHealth = async (req, res) => {
   return res.status(200).json({
@@ -60,17 +71,23 @@ const debugStoryStructure = async (req, res) => {
   }
 };
 
-// Picks the right puzzle generator based on mode
 function buildPuzzle({ story, mode, pairCount }) {
   switch (mode) {
-    case "word-to-synonym":
-      return generateSynonymMatchPuzzle({ story, pairCount });
-    case "word-to-antonym":
-      return generateAntonymMatchPuzzle({ story, pairCount });
+    case "english-to-sanskrit":
+      return generateEnglishToSanskritPuzzle({ story, pairCount });
+    case "sanskrit-to-english":
+      return generateSentenceToEnglishPuzzle({ story, pairCount });
     case "word-to-definition":
-      return generateWordDefinitionPuzzle({ story, pairCount });
+      return generatePuzzleFromTokenizedStory({ story, pairCount });
+    case "word-to-synonym":
+    case "sentence-match":
+    case "sentence-to-transliteration":
+      return generateSentenceMatchPuzzle({ story, pairCount });
+    case "word-to-antonym":
+      return generateWordTransliterationPuzzle({ story, pairCount });
+    case "sentence-to-english":
+      return generateSentenceToEnglishPuzzle({ story, pairCount });
     default:
-      // english-to-sanskrit, sanskrit-to-english → Sanskrit root form matching
       return generatePuzzleFromTokenizedStory({ story, pairCount });
   }
 }
@@ -79,6 +96,13 @@ const generateMeaningBridgeRound = async (req, res) => {
   try {
     const { pairCount = 4, mode = "english-to-sanskrit" } = req.body || {};
     const normalizedPairCount = Number(pairCount);
+
+    if (!SUPPORTED_MODES.has(mode)) {
+      return res.status(400).json({
+        success: false, ok: false,
+        error: "Unsupported Meaning Bridge mode.",
+      });
+    }
 
     if (!SUPPORTED_PAIR_COUNTS.has(normalizedPairCount)) {
       return res.status(400).json({
@@ -95,10 +119,12 @@ const generateMeaningBridgeRound = async (req, res) => {
     return res.status(200).json({
       success: true, ok: true,
       puzzle,
-      story: {
-        id: story._id,
-        title: story.title?.englishversion || story.title?.sanskritversion || "Untitled Story",
-        origin: story.category || null,
+      passage: {
+        passageId: String(story._id),
+        title: story.title && story.title.englishversion ? story.title.englishversion : story.title && story.title.sanskritversion ? story.title.sanskritversion : "Untitled Story",
+        text: (story.englishVersion || "").slice(0, 300),
+        difficulty: "medium",
+        theme: story.category || "Story",
       },
     });
   } catch (error) {
@@ -120,10 +146,12 @@ const generateSentenceMatchRound = async (req, res) => {
     return res.status(200).json({
       success: true, ok: true,
       puzzle,
-      story: {
-        id: story._id,
-        title: story.title?.englishversion || story.title?.sanskritversion || "Untitled Story",
-        origin: story.category || null,
+      passage: {
+        passageId: String(story._id),
+        title: story.title && story.title.englishversion ? story.title.englishversion : story.title && story.title.sanskritversion ? story.title.sanskritversion : "Untitled Story",
+        text: (story.englishVersion || "").slice(0, 300),
+        difficulty: "medium",
+        theme: story.category || "Story",
       },
     });
   } catch (error) {
@@ -145,7 +173,7 @@ const submitMeaningBridgeRound = async (req, res) => {
     if (!Array.isArray(matches)) return res.status(400).json({ success: false, ok: false, error: "matches must be an array." });
 
     const storedRound = getRoundFallback(roundId);
-    if (!storedRound) return res.status(404).json({ success: false, ok: false, error: "Round not found or expired." });
+    if (!storedRound) return res.status(404).json({ success: false, ok: false, error: "Round was not found or has expired." });
 
     const { puzzle } = storedRound;
     const scoreResult = scoreMeaningBridgeRound({
@@ -169,11 +197,14 @@ const submitMeaningBridgeRound = async (req, res) => {
       timeSeconds: Number(timeSeconds) || 0,
       hintsUsed: Number(hintsUsed) || 0,
       wrongAttempts: Number(wrongAttempts) || 0,
+      correctMatches: scoreResult.correctMatches,
+      totalMatches: scoreResult.totalMatches,
+      roundPoints: scoreResult.roundPoints,
       perfectRound: scoreResult.perfectRound,
       createdAt,
     };
 
-    saveScoreFallback(scoreRecord);
+    const updatedPlayer = saveScoreFallback(scoreRecord);
 
     return res.status(200).json({
       success: true, ok: true,
@@ -181,11 +212,17 @@ const submitMeaningBridgeRound = async (req, res) => {
       playerName: scoreRecord.playerName,
       score: scoreResult.score,
       accuracy: scoreResult.accuracy,
+      correctMatches: scoreResult.correctMatches,
+      totalMatches: scoreResult.totalMatches,
+      wrongAttempts: scoreResult.wrongAttempts,
+      hintsUsed: Number(hintsUsed) || 0,
+      timeSeconds: Number(timeSeconds) || 0,
       roundPoints: scoreResult.roundPoints,
-      bonusPoints: scoreResult.bonusPoints,
       perfectRound: scoreResult.perfectRound,
-      breakdown: scoreResult.breakdown,
+      message: scoreResult.message,
       createdAt,
+      scoreRecord,
+      playerRecord: updatedPlayer,
     });
   } catch (error) {
     return res.status(500).json({

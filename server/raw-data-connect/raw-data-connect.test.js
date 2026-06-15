@@ -5,7 +5,7 @@ jest.mock("../config/dataConnectConfig", () => jest.fn());
 
 const connectTokenizedStories = require("../config/dataConnectConfig");
 const retrieveAllStories = require("./retrieveAllTokenizedStories");
-const retrieveStoryById = require("./retrieveTokenizedStoryById");
+const { retrieveStoryById } = require("./retrieveTokenizedStoryById");
 
 const dbManager = new DBManager();
 

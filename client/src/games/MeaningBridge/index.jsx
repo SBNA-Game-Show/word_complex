@@ -185,7 +185,7 @@ const GAMEPLAY_LAYOUT = {
   },
   controls: {
     y: 488,
-    secondaryY: 536,
+    secondaryY: 548,
   },
   card: {
     width: 252,
@@ -2282,46 +2282,7 @@ const ZimGame = createZimGame({
         }
       }
 
-      // Progress badge.
-      addPanel({
-        x: bridgeX + 78,
-        y: bridgeY + 132,
-        width: 136,
-        height: 78,
-        fill: "rgba(255,255,255,0.96)",
-        stroke: "#fde68a",
-        corner: 24,
-      });
-
-      addLabel({
-        text: `${completedPairs} / ${totalPairs}`,
-        x: bridgeX + 146,
-        y: bridgeY + 146,
-        size: 26,
-        color: "#92400e",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "pairs matched",
-        x: bridgeX + 146,
-        y: bridgeY + 180,
-        size: 11,
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: `${progress}% complete`,
-        x: bridgeX + 146,
-        y: bridgeY + 196,
-        size: 11,
-        color: "#2563eb",
-        bold: true,
-        align: "center",
-      });
+      // Progress badge removed — same info already shown in Round Summary panel above.
     }
 
     function drawHeader() {
@@ -2419,17 +2380,17 @@ const ZimGame = createZimGame({
       });
 
       drawTextModeToggle({
-        x: W - 272,
-        y: 76,
-        width: 116,
-        height: 34,
+        x: 28,
+        y: 68,
+        width: 110,
+        height: 30,
       });
 
       drawSoundToggle({
-        x: W - 150,
-        y: 76,
-        width: 110,
-        height: 34,
+        x: 144,
+        y: 68,
+        width: 104,
+        height: 30,
       });
     }
 
@@ -3318,7 +3279,7 @@ const ZimGame = createZimGame({
 
       hitLayer.addTo(stage).loc(x - 6, y - 5);
       hitLayer.cursor = "pointer";
-      hitLayer.on("mousedown", activateCard);
+      hitLayer.on("click", activateCard);
     }
 
     function drawCards() {
@@ -3561,7 +3522,7 @@ const ZimGame = createZimGame({
       addLabel({
         text: `Hints ${hintsUsed} · Wrong ${wrongAttempts}`,
         x: x + 20,
-        y: y + 74,
+        y: y + 66,
         size: 11,
         color: "#475569",
         bold: true,

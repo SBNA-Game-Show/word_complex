@@ -17,8 +17,6 @@ const SKIP_POS = new Set(["SPACE","PUNCT","DET","PRON","ADP","CCONJ","SCONJ","PA
 const MEANINGFUL_UPOS = new Set(["NOUN","ADJ","VERB","NUM"]);
 const SENT_END = new Set([".", "?", "!", "।", "॥"]);
 
-// ── Sanskrit root-form matching ───────────────────────────────────────────────
-
 function extractTokenPairs(story) {
   const sentences = story.tokenized_sanskrit_version || [];
   const pairs = [];
@@ -93,8 +91,6 @@ function generatePuzzleFromTokenizedStory({ story, pairCount = 4 }) {
   };
 }
 
-// ── Synonym matching ──────────────────────────────────────────────────────────
-
 function generateSynonymMatchPuzzle({ story, pairCount = 4 }) {
   const tokens = story.tokenized_english_version || [];
   const pairs = [], seen = new Set();
@@ -122,8 +118,6 @@ function generateSynonymMatchPuzzle({ story, pairCount = 4 }) {
     scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
   };
 }
-
-// ── Antonym matching ──────────────────────────────────────────────────────────
 
 function generateAntonymMatchPuzzle({ story, pairCount = 4 }) {
   const tokens = story.tokenized_english_version || [];
@@ -153,8 +147,6 @@ function generateAntonymMatchPuzzle({ story, pairCount = 4 }) {
   };
 }
 
-// ── Word → Definition ─────────────────────────────────────────────────────────
-
 function generateWordDefinitionPuzzle({ story, pairCount = 4 }) {
   const tokens = story.tokenized_english_version || [];
   const pairs = [], seen = new Set();
@@ -183,46 +175,9 @@ function generateWordDefinitionPuzzle({ story, pairCount = 4 }) {
   };
 }
 
-// ── Sentence matching ─────────────────────────────────────────────────────────
-
-function reconstructSanskritSentences(tokenizedSanskrit) {
-  if (!Array.isArray(tokenizedSanskrit) || tokenizedSanskrit.length === 0) return [];
-  const firstItem = tokenizedSanskrit[0];
-
-  if (Array.isArray(firstItem)) {
-    // Nested structure: [[token, token, ...], [...], ...]
-    return tokenizedSanskrit
-      .map((arr) => arr.map((t) => (t.text || "")).filter(Boolean).join(" ").trim())
-      .filter((s) => s.split(/\s+/).filter(Boolean).length >= 3);
-  }
-
-  if (firstItem && typeof firstItem === "object" && firstItem.text !== undefined) {
-    // Flat structure: [{text, lemma, upos}, ...] — segment by Devanagari sentence-end markers
-    const sentences = [];
-    let current = [];
-    for (const token of tokenizedSanskrit) {
-      const text = (token.text || "").trim();
-      if (!text) continue;
-      if (SENT_END.has(text)) {
-        if (current.length >= 3) sentences.push(current.join(" "));
-        current = [];
-      } else {
-        current.push(text);
-      }
-    }
-    if (current.length >= 3) sentences.push(current.join(" "));
-    return sentences;
-  }
-
-  return [];
-}
-
 function generateSentenceMatchPuzzle({ story, pairCount = 3 }) {
-  // sanskritVersion and transliteratedVersion are already paired arrays of full sentences
   const rawSanskrit = story.sanskritVersion || [];
   const rawTranslit = story.transliteratedVersion || [];
-
-  // Zip them and keep only pairs where both sides have at least 2 words
   const validPairs = [];
   const len = Math.min(rawSanskrit.length, rawTranslit.length);
   for (let i = 0; i < len; i++) {
@@ -235,17 +190,12 @@ function generateSentenceMatchPuzzle({ story, pairCount = 3 }) {
       validPairs.push({ sanskrit: san, transliterated: trans });
     }
   }
-
   const maxPairs = Math.min(pairCount, validPairs.length);
-
-  console.log(`[DEBUG] Sentence match — valid pairs: ${validPairs.length}, using: ${maxPairs}`);
-
+  console.log(`[DEBUG] Sentence match - valid pairs: ${validPairs.length}, using: ${maxPairs}`);
   if (maxPairs < 2) {
     throw new Error(`Not enough sentence pairs. Found ${validPairs.length} valid pairs.`);
   }
-
   const pairs = shuffle(validPairs).slice(0, maxPairs);
-
   const leftItems = pairs.map((p, i) => ({ id: `left_${i}`, label: p.sanskrit, sublabel: "Sanskrit" }));
   const rightItemsOrdered = pairs.map((p, i) => ({ id: `right_${i}`, label: p.transliterated, sublabel: "transliteration" }));
   const answerKey = Object.fromEntries(leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id]));
@@ -253,7 +203,6 @@ function generateSentenceMatchPuzzle({ story, pairCount = 3 }) {
     const first3 = pairs[i].transliterated.split(/\s+/).slice(0, 3).join(" ");
     return [l.id, `This sentence starts with "${first3}..." in transliteration.`];
   }));
-
   return {
     gameId: "meaning_bridge", roundId: createRoundId(), mode: "sentence-match",
     instruction: "Match each Sanskrit sentence to its transliteration.",
@@ -262,10 +211,203 @@ function generateSentenceMatchPuzzle({ story, pairCount = 3 }) {
   };
 }
 
+function generateWordTransliterationPuzzle({ story, pairCount = 4 }) {
+  const pairs = extractTransliterationPairs(story);
+  if (pairs.length < 2) throw new Error("Not enough transliteration word pairs in this story.");
+  const candidates = shuffle(pairs).slice(0, pairCount);
+  const leftItems = candidates.map((p, i) => ({
+    id: `left_${i}`, label: p.form, sublabel: "Sanskrit word",
+  }));
+  const rightItemsOrdered = candidates.map((p, i) => ({
+    id: `right_${i}`, label: p.lemma, sublabel: "transliteration",
+  }));
+  const answerKey = Object.fromEntries(leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id]));
+  const hints = Object.fromEntries(leftItems.map((l, i) => [
+    l.id, `"${candidates[i].form}" is written as "${candidates[i].lemma}" in Roman script.`,
+  ]));
+  return {
+    gameId: "meaning_bridge", roundId: createRoundId(), mode: "word-to-antonym",
+    instruction: "Match each Sanskrit word to its Roman transliteration.",
+    leftItems, rightItems: shuffle(rightItemsOrdered), answerKey, hints,
+    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
+  };
+}
+
+function generateEnglishToSanskritPuzzle({ story, pairCount = 4 }) {
+  const rawSanskrit = story.sanskritVersion || [];
+  const englishSentences = (story.englishVersion || "")
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(s => s.split(/\s+/).filter(Boolean).length >= 3);
+  const validPairs = [];
+  const len = Math.min(rawSanskrit.length, englishSentences.length);
+  for (let i = 0; i < len; i++) {
+    const san = String(rawSanskrit[i] || "").trim();
+    const eng = String(englishSentences[i] || "").trim();
+    if (
+      san.split(/\s+/).filter(Boolean).length >= 2 &&
+      eng.split(/\s+/).filter(Boolean).length >= 2
+    ) {
+      validPairs.push({ sanskrit: san, english: eng });
+    }
+  }
+  const maxPairs = Math.min(pairCount, validPairs.length);
+  if (maxPairs < 2) {
+    throw new Error(`Not enough sentence pairs for English to Sanskrit mode. Found ${validPairs.length}.`);
+  }
+  const pairs = shuffle(validPairs).slice(0, maxPairs);
+  const leftItems = pairs.map((p, i) => ({
+    id: `left_${i}`, label: p.english, sublabel: "English",
+  }));
+  const rightItemsOrdered = pairs.map((p, i) => ({
+    id: `right_${i}`, label: p.sanskrit, sublabel: "Sanskrit",
+  }));
+  const answerKey = Object.fromEntries(leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id]));
+  const hints = Object.fromEntries(leftItems.map((l, i) => [
+    l.id, "This English phrase translates to the Sanskrit on the right.",
+  ]));
+  return {
+    gameId: "meaning_bridge", roundId: createRoundId(), mode: "english-to-sanskrit",
+    instruction: "Match each English phrase to its Sanskrit equivalent.",
+    leftItems, rightItems: shuffle(rightItemsOrdered), answerKey, hints,
+    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
+  };
+}
+
+function generateSentenceToEnglishPuzzle({ story, pairCount = 3 }) {
+  const rawSanskrit = story.sanskritVersion || [];
+  const englishSentences = (story.englishVersion || "")
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(s => s.split(/\s+/).filter(Boolean).length >= 3);
+  const validPairs = [];
+  const len = Math.min(rawSanskrit.length, englishSentences.length);
+  for (let i = 0; i < len; i++) {
+    const san = String(rawSanskrit[i] || "").trim();
+    const eng = String(englishSentences[i] || "").trim();
+    if (
+      san.split(/\s+/).filter(Boolean).length >= 2 &&
+      eng.split(/\s+/).filter(Boolean).length >= 2
+    ) {
+      validPairs.push({ sanskrit: san, english: eng });
+    }
+  }
+  const maxPairs = Math.min(pairCount, validPairs.length);
+  if (maxPairs < 2) {
+    throw new Error(`Not enough sentence pairs for Sanskrit to English mode. Found ${validPairs.length}.`);
+  }
+  const pairs = shuffle(validPairs).slice(0, maxPairs);
+  const leftItems = pairs.map((p, i) => ({
+    id: `left_${i}`, label: p.sanskrit, sublabel: "Sanskrit",
+  }));
+  const rightItemsOrdered = pairs.map((p, i) => ({
+    id: `right_${i}`, label: p.english, sublabel: "English",
+  }));
+  const answerKey = Object.fromEntries(
+    leftItems.map((left, i) => [left.id, rightItemsOrdered[i].id])
+  );
+  const hints = Object.fromEntries(
+    leftItems.map((left, i) => [
+      left.id,
+      `This Sanskrit sentence means: "${pairs[i].english.slice(0, 60)}..."`,
+    ])
+  );
+  return {
+    gameId: "meaning_bridge",
+    roundId: createRoundId(),
+    mode: "sentence-to-english",
+    instruction: "Match each Sanskrit sentence to its English meaning.",
+    leftItems,
+    rightItems: shuffle(rightItemsOrdered),
+    answerKey,
+    hints,
+    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
+  };
+}
+
+// ── Dictionary-based puzzle generators ───────────────────────────────────────
+
+function extractCandidateEntries(passageText, dictionary) {
+  const wordSet = new Set(
+    String(passageText || "").toLowerCase().split(/\W+/).filter(Boolean)
+  );
+  return dictionary.filter((entry) => wordSet.has(entry.english.toLowerCase()));
+}
+
+function generateMeaningBridgePuzzle({ passage, dictionary, mode, difficulty, pairCount }) {
+  mode = mode || "english-to-sanskrit";
+  difficulty = difficulty || "easy";
+  pairCount = pairCount || 4;
+
+  let entries = extractCandidateEntries(passage.text, dictionary);
+
+  if (mode === "word-to-antonym") {
+    entries = entries.filter((e) => Array.isArray(e.antonyms) && e.antonyms.length > 0);
+    if (entries.length < 2) throw new Error("Not enough antonym data. Found " + entries.length + " entries with antonyms.");
+  } else if (mode === "word-to-synonym") {
+    entries = entries.filter((e) => Array.isArray(e.synonyms) && e.synonyms.length > 0);
+    if (entries.length < 2) throw new Error("Not enough synonym data. Found " + entries.length + " entries with synonyms.");
+  } else {
+    if (entries.length < 2) throw new Error("Not enough dictionary matches in this passage.");
+  }
+
+  const candidates = shuffle(entries).slice(0, pairCount);
+
+  var leftItems, rightItemsOrdered;
+
+  if (mode === "word-to-antonym") {
+    leftItems = candidates.map((e, i) => ({ id: "left_" + i, label: e.english, sublabel: e.category || "word" }));
+    rightItemsOrdered = candidates.map((e, i) => ({ id: "right_" + i, label: e.antonyms[0], sublabel: "antonym" }));
+  } else if (mode === "word-to-synonym") {
+    leftItems = candidates.map((e, i) => ({ id: "left_" + i, label: e.english, sublabel: e.category || "word" }));
+    rightItemsOrdered = candidates.map((e, i) => ({ id: "right_" + i, label: e.synonyms[0], sublabel: "synonym" }));
+  } else if (mode === "word-to-definition") {
+    leftItems = candidates.map((e, i) => ({ id: "left_" + i, label: e.english, sublabel: e.category || "word" }));
+    rightItemsOrdered = candidates.map((e, i) => ({ id: "right_" + i, label: e.definition, sublabel: "definition" }));
+  } else {
+    leftItems = candidates.map((e, i) => ({ id: "left_" + i, label: e.english, sublabel: "English" }));
+    rightItemsOrdered = candidates.map((e, i) => ({ id: "right_" + i, label: e.sanskrit, sublabel: "Sanskrit" }));
+  }
+
+  const answerKey = Object.fromEntries(leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id]));
+  const hints = Object.fromEntries(leftItems.map((l, i) => [
+    l.id,
+    "\"" + candidates[i].english + "\" in Sanskrit is \"" + candidates[i].sanskrit + "\" (" + candidates[i].transliteration + ").",
+  ]));
+
+  var instruction;
+  if (mode === "word-to-antonym") {
+    instruction = "Match each word to its opposite (antonym).";
+  } else if (mode === "word-to-synonym") {
+    instruction = "Match each word to one of its synonyms.";
+  } else if (mode === "word-to-definition") {
+    instruction = "Match each word to its definition.";
+  } else {
+    instruction = "Match each English word to its Sanskrit equivalent.";
+  }
+
+  return {
+    gameId: "meaning_bridge",
+    roundId: createRoundId(),
+    mode: mode,
+    instruction: instruction,
+    leftItems: leftItems,
+    rightItems: shuffle(rightItemsOrdered),
+    answerKey: answerKey,
+    hints: hints,
+    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
+  };
+}
+
 module.exports = {
   generatePuzzleFromTokenizedStory,
+  generateWordTransliterationPuzzle,
+  generateEnglishToSanskritPuzzle,
   generateSynonymMatchPuzzle,
-  generateAntonymMatchPuzzle,  generateWordDefinitionPuzzle,
+  generateAntonymMatchPuzzle,
+  generateWordDefinitionPuzzle,
   generateSentenceMatchPuzzle,
+  generateSentenceToEnglishPuzzle,
+  extractCandidateEntries,
+  generateMeaningBridgePuzzle,
 };
-
