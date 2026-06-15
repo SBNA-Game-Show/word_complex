@@ -1,8 +1,6 @@
 import BackgroundDecor from "./BackgroundDecor";
 import { useAuth } from "../auth/AuthContext";
 import UserBadge from "./UserBadge";
-import { useEffect } from "react";
-import { getFillInBlanks } from "../services/api";
 import { games } from "../games/index.js";
 
 export default function Launcher({
@@ -13,12 +11,6 @@ export default function Launcher({
   isZooming = false,
 }) {
   const { logout, user } = useAuth();
-
-  useEffect(() => {
-  getFillInBlanks()
-    .then(console.log)
-    .catch(console.error);
-  }, []);
 
   function startDefaultGame() {
     onStart("sentence-builder");
