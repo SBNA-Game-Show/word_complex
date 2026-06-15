@@ -164,19 +164,19 @@ const GAMEPLAY_LAYOUT = {
   },
   leftPanel: {
     x: 70,
-    y: 286,
+    y: 276,
     width: 306,
     height: 330,
   },
   rightPanel: {
     x: 724,
-    y: 286,
+    y: 276,
     width: 306,
     height: 330,
   },
   centerPanel: {
     x: 404,
-    y: 286,
+    y: 276,
     width: 292,
   },
   feedback: {
@@ -188,11 +188,11 @@ const GAMEPLAY_LAYOUT = {
     secondaryY: 548,
   },
   card: {
-    width: 252,
-    height: 38,
-    step: 45,
-    xOffset: 27,
-    yOffset: 58,
+    width: 258,
+    height: 44,
+    step: 52,
+    xOffset: 24,
+    yOffset: 42,
   },
   leaderboard: {
     x: 120,
@@ -852,9 +852,9 @@ const ZimGame = createZimGame({
 
       return {
         ...GAMEPLAY_LAYOUT.card,
-        height: 42,
-        step: 44,
-        yOffset: 52,
+        height: 48,
+        step: 56,
+        yOffset: 42,
       };
     }
 
@@ -3114,7 +3114,7 @@ const ZimGame = createZimGame({
       });
     }
 
-    function drawCard({ item, side, x, y }) {
+    function drawCard({ item, side, x, y, index = 0 }) {
       const cardLayout = getCardLayout();
 
       const matched =
@@ -3124,22 +3124,20 @@ const ZimGame = createZimGame({
 
       const isLeft = side === "left";
 
-      const fill = matched ? "#dcfce7" : selected ? "#dbeafe" : "#ffffff";
-      const stroke = matched ? "#16a34a" : selected ? "#2563eb" : "#e5e7eb";
-      const textColor = matched ? "#064e3b" : selected ? "#1e3a8a" : "#111827";
-      const subTextColor = matched
-        ? "#15803d"
+      // State-driven colours — cards are white/near-white so they pop off the coloured panels
+      const fill = matched
+        ? "#f0fdf4"
         : selected
-          ? "#2563eb"
-          : "#64748b";
+          ? (isLeft ? "#eff6ff" : "#f0fdf4")
+          : "#ffffff";
+      const stroke  = matched ? "#22c55e" : selected ? (isLeft ? "#3b82f6" : "#22c55e") : "rgba(255,255,255,0.9)";
+      const strokeW = matched ? 2.5 : selected ? 2.5 : 1.5;
+      const textColor    = matched ? "#14532d" : selected ? "#1e3a8a" : "#1e293b";
+      const subTextColor = matched ? "#16a34a" : selected ? "#3b82f6" : "#64748b";
 
-      const iconFill = isLeft
-        ? selected
-          ? "#2563eb"
-          : "#3b82f6"
-        : matched
-          ? "#16a34a"
-          : "#10b981";
+      const accentColor = isLeft
+        ? (selected ? "#1d4ed8" : "#2563eb")
+        : (matched  ? "#15803d" : "#059669");
 
       function activateCard() {
         if (side === "left") {
@@ -3149,135 +3147,111 @@ const ZimGame = createZimGame({
         }
       }
 
+      // Drop shadow
       const shadow = new zim.Rectangle(
-        cardLayout.width,
-        cardLayout.height,
-        "rgba(15,23,42,0.12)",
-        null,
-        0,
-        14,
-      )
-        .addTo(stage)
-        .loc(x + 3, y + 4);
-
+        cardLayout.width, cardLayout.height,
+        "rgba(15,23,42,0.10)", null, 0, 14,
+      ).addTo(stage).loc(x + 2, y + 3);
       shadow.mouseEnabled = false;
 
+      // Card base
       const base = new zim.Rectangle(
-        cardLayout.width,
-        cardLayout.height,
-        fill,
-        stroke,
-        selected ? 4 : matched ? 3 : 2,
-        14,
-      )
-        .addTo(stage)
-        .loc(x, y);
-
+        cardLayout.width, cardLayout.height,
+        fill, stroke, strokeW, 14,
+      ).addTo(stage).loc(x, y);
       base.mouseEnabled = false;
 
-      for (let index = 0; index < 3; index += 1) {
-        const dot = new zim.Circle(2.2, "#cbd5e1")
-          .addTo(stage)
-          .loc(x + 14, y + 13 + index * 7);
+      // Shine strip — top highlight gives a glossy feel
+      const shine = new zim.Rectangle(
+        cardLayout.width - 10, Math.floor(cardLayout.height * 0.38),
+        "rgba(255,255,255,0.62)", null, 0, [12, 12, 0, 0],
+      ).addTo(stage).loc(x + 5, y + 2);
+      shine.mouseEnabled = false;
 
-        dot.mouseEnabled = false;
-      }
+      // Left accent bar (replaces dots)
+      const accent = new zim.Rectangle(4, cardLayout.height - 12, accentColor, null, 0, 2)
+        .addTo(stage).loc(x + 10, y + 6);
+      accent.mouseEnabled = false;
 
-      const iconTile = new zim.Rectangle(
-        36,
-        largeTextMode ? 34 : 30,
-        iconFill,
-        null,
-        0,
-        10,
-      )
-        .addTo(stage)
-        .loc(x + 28, y + 4);
-
-      iconTile.mouseEnabled = false;
+      // Icon pill
+      const pillH = cardLayout.height - 10;
+      const iconPill = new zim.Rectangle(32, pillH, accentColor, null, 0, 10)
+        .addTo(stage).loc(x + 22, y + 5);
+      iconPill.mouseEnabled = false;
 
       addLabel({
         text: isLeft ? "A" : "M",
-        x: x + 46,
-        y: y + (largeTextMode ? 12 : 10),
-        size: readableSize(14, 2),
+        x: x + 38,
+        y: y + (cardLayout.height - 18) / 2,
+        size: readableSize(13, 2),
         color: "#ffffff",
         bold: true,
         align: "center",
       });
 
+      // Main label
       addLabel({
-        text: shortText(item.label, readableMaxChars(23, 5)),
-        x: x + 78,
-        y: y + (largeTextMode ? 5 : 6),
-        size: readableSize(14, 2),
+        text: shortText(item.label, readableMaxChars(22, 4)),
+        x: x + 64,
+        y: y + 7,
+        size: readableSize(13, 2),
         color: textColor,
         bold: true,
       });
 
+      // Sub label
       addLabel({
-        text: shortText(item.sublabel, readableMaxChars(27, 6)),
-        x: x + 78,
-        y: y + (largeTextMode ? 25 : 23),
-        size: readableSize(9, 1),
+        text: shortText(item.sublabel, readableMaxChars(26, 5)),
+        x: x + 64,
+        y: y + 26,
+        size: readableSize(10, 1),
         color: subTextColor,
-        bold: true,
+        bold: false,
       });
 
+      // Right indicator
       if (matched) {
-        const matchedCircle = new zim.Circle(10, "#16a34a")
-          .addTo(stage)
-          .loc(x + cardLayout.width - 22, y + cardLayout.height / 2);
-
-        matchedCircle.mouseEnabled = false;
-
+        const mc = new zim.Circle(11, "#22c55e").addTo(stage)
+          .loc(x + cardLayout.width - 20, y + cardLayout.height / 2 - 11);
+        mc.mouseEnabled = false;
         addLabel({
-          text: "✓",
-          x: x + cardLayout.width - 22,
+          text: "✓", x: x + cardLayout.width - 20,
           y: y + cardLayout.height / 2 - 9,
-          size: 13,
-          color: "#ffffff",
-          bold: true,
-          align: "center",
+          size: 13, color: "#ffffff", bold: true, align: "center",
         });
       } else if (selected) {
-        const selectedCircle = new zim.Circle(10, "#2563eb")
-          .addTo(stage)
-          .loc(x + cardLayout.width - 22, y + cardLayout.height / 2);
-
-        selectedCircle.mouseEnabled = false;
-
+        const sc = new zim.Circle(11, "#3b82f6").addTo(stage)
+          .loc(x + cardLayout.width - 20, y + cardLayout.height / 2 - 11);
+        sc.mouseEnabled = false;
         addLabel({
-          text: "●",
-          x: x + cardLayout.width - 22,
+          text: "●", x: x + cardLayout.width - 20,
           y: y + cardLayout.height / 2 - 9,
-          size: 12,
-          color: "#ffffff",
-          bold: true,
-          align: "center",
+          size: 11, color: "#ffffff", bold: true, align: "center",
         });
       } else {
         addLabel({
           text: "›",
-          x: x + cardLayout.width - 22,
-          y: y + (largeTextMode ? 8 : 7),
-          size: readableSize(22, 1),
-          color: "#94a3b8",
+          x: x + cardLayout.width - 18,
+          y: y + (cardLayout.height - 24) / 2,
+          size: readableSize(22, 2),
+          color: "#cbd5e1",
           bold: true,
           align: "center",
         });
       }
 
-      const hitLayer = new zim.Rectangle(
-        cardLayout.width + 12,
-        cardLayout.height + 10,
-        "rgba(255,255,255,0.01)",
-        null,
-        0,
-        16,
-      );
+      // Slide-in animation — staggered per card
+      const animWait = index * 70;
+      [shadow, base, shine, accent, iconPill].forEach((obj) => {
+        obj.alpha = 0;
+        obj.animate({ props: { alpha: 1 }, time: 220, wait: animWait, ease: "quadOut" });
+      });
 
-      hitLayer.addTo(stage).loc(x - 6, y - 5);
+      // Hit layer
+      const hitLayer = new zim.Rectangle(
+        cardLayout.width + 12, cardLayout.height + 8,
+        "rgba(255,255,255,0.01)", null, 0, 16,
+      ).addTo(stage).loc(x - 6, y - 4);
       hitLayer.cursor = "pointer";
       hitLayer.on("click", activateCard);
     }
@@ -3296,30 +3270,24 @@ const ZimGame = createZimGame({
         y: left.y,
         width: left.width,
         height: left.height,
-        fill: "rgba(239,246,255,0.96)",
-        stroke: "#60a5fa",
+        fill: "#93c5fd",
+        stroke: "#1d4ed8",
         corner: 28,
       });
 
-      new zim.Rectangle(178, 42, "#2563eb", "#1d4ed8", 2, 16)
+      // Left panel inner glow strip
+      new zim.Rectangle(left.width - 8, left.height - 8, "rgba(255,255,255,0.28)", null, 0, 24)
+        .addTo(stage).loc(left.x + 4, left.y + 4);
+
+      new zim.Rectangle(left.width, 34, "#2563eb", null, 0, [28, 28, 0, 0])
         .addTo(stage)
-        .loc(left.x + 54, left.y - 22);
+        .loc(left.x, left.y);
 
       addLabel({
-        text: "Word Cards",
-        x: left.x + 154,
-        y: left.y - 10,
-        size: 18,
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "A",
-        x: left.x + 74,
-        y: left.y - 11,
-        size: 16,
+        text: "A  Word Cards",
+        x: left.x + left.width / 2,
+        y: left.y + 8,
+        size: 15,
         color: "#ffffff",
         bold: true,
         align: "center",
@@ -3333,30 +3301,24 @@ const ZimGame = createZimGame({
         y: right.y,
         width: right.width,
         height: right.height,
-        fill: "rgba(240,253,244,0.96)",
-        stroke: "#4ade80",
+        fill: "#bbf7d0",
+        stroke: "#22c55e",
         corner: 28,
       });
 
-      new zim.Rectangle(196, 42, "#059669", "#047857", 2, 16)
+      // Right panel inner glow strip
+      new zim.Rectangle(right.width - 8, right.height - 8, "rgba(255,255,255,0.28)", null, 0, 24)
+        .addTo(stage).loc(right.x + 4, right.y + 4);
+
+      new zim.Rectangle(right.width, 34, "#059669", null, 0, [28, 28, 0, 0])
         .addTo(stage)
-        .loc(right.x + 48, right.y - 22);
+        .loc(right.x, right.y);
 
       addLabel({
-        text: "Meaning Cards",
-        x: right.x + 160,
-        y: right.y - 10,
-        size: 18,
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "📖",
-        x: right.x + 74,
-        y: right.y - 14,
-        size: 18,
+        text: "📖  Meaning Cards",
+        x: right.x + right.width / 2,
+        y: right.y + 8,
+        size: 15,
         color: "#ffffff",
         bold: true,
         align: "center",
@@ -3379,6 +3341,7 @@ const ZimGame = createZimGame({
         drawCard({
           item,
           side: "left",
+          index,
           x: left.x + card.xOffset,
           y: left.y + card.yOffset + index * card.step,
         });
@@ -3388,6 +3351,7 @@ const ZimGame = createZimGame({
         drawCard({
           item,
           side: "right",
+          index,
           x: right.x + card.xOffset,
           y: right.y + card.yOffset + index * card.step,
         });
