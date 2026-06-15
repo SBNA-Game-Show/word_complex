@@ -25,15 +25,35 @@ function getAnswers(tokenizedWords, wordTypes = ["NOUN"], numberOfBlanks = 3) {
 }
 
 function getDistractors(tokenizedWords, answers, wordTypes = ["NOUN"], count = 3) {
-  const filteredWords = tokenizedWords
+  // First try to get distractors from the selected word types
+  const preferredWords = tokenizedWords
     .filter((word) => wordTypes.includes(word.pos || word.upos))
     .map((word) => word.text);
 
-  const uniqueWords = [...new Set(filteredWords)];
+  const preferredUniqueWords = [...new Set(preferredWords)];
 
-  const distractorPool = uniqueWords.filter(
+  let distractorPool = preferredUniqueWords.filter(
     (word) => !answers.includes(word)
   );
+
+  // If not enough distractors, use other word types as backup
+  if (distractorPool.length < count) {
+    const backupWords = tokenizedWords
+      .map((word) => word.text);
+
+    const backupUniqueWords = [...new Set(backupWords)];
+
+    const backupDistractors = backupUniqueWords.filter(
+      (word) =>
+        !answers.includes(word) &&
+        !distractorPool.includes(word)
+    );
+
+    distractorPool = [
+      ...distractorPool,
+      ...backupDistractors,
+    ];
+  }
 
   return shuffleArray(distractorPool).slice(0, count);
 }
@@ -42,17 +62,26 @@ function getDistractors(tokenizedWords, answers, wordTypes = ["NOUN"], count = 3
 function createFillInBlankGame(storyId, originalParagraph, answers, distractors) {
   let paragraphWithBlanks = originalParagraph;
 
-  answers.forEach((answer) => {
+  const answersInParagraphOrder = answers
+    .map((answer) => ({
+      word: answer,
+      index: originalParagraph.indexOf(answer),
+    }))
+    .filter((item) => item.index !== -1)
+    .sort((a, b) => a.index - b.index)
+    .map((item) => item.word);
+
+  answersInParagraphOrder.forEach((answer) => {
     paragraphWithBlanks = paragraphWithBlanks.replace(answer, "_____");
   });
 
-  const wordBank = shuffleArray([...answers, ...distractors]);
+  const wordBank = shuffleArray([...answersInParagraphOrder, ...distractors]);
 
   return {
     id: storyId,
     originalParagraph,
     paragraph: paragraphWithBlanks,
-    answers,
+    answers: answersInParagraphOrder,
     wordBank,
   };
 }

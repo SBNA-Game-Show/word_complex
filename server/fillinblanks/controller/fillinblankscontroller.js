@@ -4,7 +4,7 @@ const { getAnswers, getNumberOfBlanks, createFillInBlankGame, getDistractors } =
 
 async function initializeGame(req, res) {
   try {
-    const storyId = "28f08412-fa1c-4aac-b374-f53038f84344";
+    const storyId = "292f2009-96bb-4a3c-b856-e04214e852f8";
 
     const story = await retrieveStoryById(storyId);
 
