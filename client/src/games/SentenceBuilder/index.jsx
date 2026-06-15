@@ -1,14 +1,35 @@
 import { createZimGame } from "../createZimGame";
 import { getPassageReconstructionGame } from "../../services/passageReconstructionService";
+import { emit } from "../../scenes/sceneBus";
+import { createHintPolicy } from "../shared/hintPolicy";
+import { createHintButton } from "../shared/hintButton";
 
 const zimFont = "Fredoka";
+
+// Meadow / storybook-sky palette (matches passage-reconstruction.png):
+//   sky blues, soft meadow greens, sandy "path stone" cream, lantern gold.
+const palette = {
+  skyTop: "#bfe3f5",
+  skyMid: "#dcf0f7",
+  meadow: "#cfe7b0",
+  stone: "#f1e3bd",
+  stoneEdge: "#d8c48f",
+  stoneShadow: "rgba(120,100,60,0.16)",
+  ink: "#1f4a5c",
+  inkSoft: "#3d5a74",
+  gold: "#f4c45a",
+  goldDeep: "#caa24a",
+  cloud: "#ffffff",
+  cloudEdge: "#9cc9ec",
+  cloudShadow: "#cfe6f8",
+};
 
 export default createZimGame({
   id: "zim-sentence-game",
   width: 1100,
   height: 720,
-  color: "#fff3d3",
-  outerColor: "#151019",
+  color: "#cfe9f7",
+  outerColor: "#0e2233",
   setup({ frame, stage, W, H, zim }) {
     let rounds = [];
     let roundIndex = 0;
@@ -17,6 +38,13 @@ export default createZimGame({
     let checks = 0;
     let correctChecks = 0;
     let feedbackActive = false; // blocks checkAnswer while a feedback popup is showing
+    // Hint system: 2 hints per round, each costs 25 points. The policy is shared,
+    // game-agnostic logic; the button is a shared in-canvas trigger; the buddy
+    // delivers the hint text via sceneBus (see applyHint).
+    const hintPolicy = createHintPolicy({ maxPerRound: 2, penalty: 25 });
+    let hintButton = null;
+    const hintedSlots = new Set(); // slots already pointed out this round, so a
+    // second hint moves on to a different phrase instead of repeating itself
     const tiles = [];
     const zones = [];
     const slotWidth = 200;
@@ -32,21 +60,55 @@ export default createZimGame({
     }
 
     function makeBackground() {
-      new zim.Rectangle(W, H, "#ffffff").addTo(stage);
+      // Vertical storybook sky → meadow gradient so the canvas blends into the
+      // illustrated background behind it.
+      const sky = new zim.GradientColor(
+        [palette.skyTop, palette.skyMid, palette.meadow],
+        [0, 0.62, 1],
+        0, 0, 0, H
+      );
+      new zim.Rectangle(W, H, sky).addTo(stage);
+
+      // Soft meadow ground band with a gentle rolling top edge.
+      const ground = new zim.Shape().addTo(stage);
+      ground.f(palette.meadow)
+        .mt(0, H - 96)
+        .bt(W * 0.25, H - 124, W * 0.55, H - 78, W, H - 110)
+        .lt(W, H).lt(0, H).cp();
+      ground.alpha = 0.55;
+
+      // A few drifting clouds for depth (decorative, behind the play area).
+      makeSkyCloud(150, 150, 150, 0.55);
+      makeSkyCloud(W - 230, 120, 190, 0.45);
+      makeSkyCloud(W / 2 + 40, 96, 120, 0.35);
+    }
+
+    // Lightweight decorative cloud puff for the sky (no interaction).
+    function makeSkyCloud(x, y, width, alpha) {
+      const cloud = makeCloudShape(palette.cloud, palette.cloud, 0, width).addTo(stage).loc(x, y);
+      cloud.alpha = alpha;
+      return cloud;
     }
 
     function makeStatus(message) {
       const hud = new zim.Container().addTo(stage);
-      const round = new zim.Label(`Round ${roundIndex + 1}/${rounds.length}`, 18, zimFont, "#7d8a93").addTo(hud).loc(0, 0);
-      const scoreLabel = new zim.Label(`Score ${score}`, 18, zimFont, "#7d8a93").addTo(hud).loc(round.width + 16, 0);
-      new zim.Label(`Attempts ${attemptsLeft}`, 18, zimFont, "#7d8a93").addTo(hud).loc(round.width + scoreLabel.width + 32, 0);
+      const round = new zim.Label(`Round ${roundIndex + 1}/${rounds.length}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(0, 0);
+      const scoreLabel = new zim.Label(`Score ${score}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(round.width + 16, 0);
+      new zim.Label(`Attempts ${attemptsLeft}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(round.width + scoreLabel.width + 32, 0);
       hud.setBounds(0, 0, round.width + scoreLabel.width + hud.getChildAt(2).width + 32, 24);
+
+      // Soft rounded "card" behind the HUD so it reads against the sky.
+      const pad = 16;
+      new zim.Rectangle(hud.width + pad * 2, 34, "rgba(255,255,255,0.66)", palette.cloudEdge, 1.5, 17)
+        .addTo(stage).loc((W - hud.width) / 2 - pad, 28);
+      hud.top();
       hud.loc((W - hud.width) / 2, 34);
+
       new zim.Label({
         text: message,
         size: 18,
         font: zimFont,
-        color: "#0d3d4a",
+        color: palette.ink,
         align: "center",
         valign: "center"
       }).addTo(stage).loc(W / 2, 651);
@@ -54,36 +116,50 @@ export default createZimGame({
 
     function makeBottomControls() {
       const controls = new zim.Container().addTo(stage);
-      const checkLabel = new zim.Label("Check", 18, zimFont, "#073b49");
+      const checkLabel = new zim.Label("Check", 18, zimFont, "#ffffff");
       checkLabel.fontOptions = "bold";
       const checkButton = new zim.Button({
         width: 132,
         height: 42,
         label: checkLabel,
-        backgroundColor: "#ffffff",
-        rollBackgroundColor: "#eff8ff",
-        color: "#073b49",
-        borderColor: "#86c7ff",
-        borderWidth: 2,
-        corner: 20
+        backgroundColor: palette.goldDeep,
+        rollBackgroundColor: palette.gold,
+        downBackgroundColor: "#b58c33",
+        color: "#ffffff",
+        corner: 21
       }).addTo(controls).loc(0, 0);
       checkButton.on("click", checkAnswer);
-      const resetLabel = new zim.Label("Reset", 18, zimFont, "#073b49");
+      const resetLabel = new zim.Label("Reset", 18, zimFont, palette.ink);
       resetLabel.fontOptions = "bold";
       const resetButton = new zim.Button({
         width: 132,
         height: 42,
         label: resetLabel,
         backgroundColor: "#ffffff",
-        rollBackgroundColor: "#eff8ff",
-        color: "#073b49",
-        borderColor: "#86c7ff",
+        rollBackgroundColor: "#eaf6ff",
+        downBackgroundColor: "#d6ecfb",
+        color: palette.ink,
+        borderColor: palette.cloudEdge,
         borderWidth: 2,
-        corner: 20
+        corner: 21
       }).addTo(controls).loc(148, 0);
       resetButton.on("click", () => renderRound());
+      // Total group width: Check (132) + gap (16) + Reset (132) + gap (16) + Hint (132) = 428
       controls.setBounds(0, 0, 280, 42);
-      controls.loc((W - 280) / 2, 674);
+      controls.loc((W - 428) / 2, 674);
+
+      // Shared in-canvas Hint button, placed just right of Reset. Rebuilt on every
+      // renderRound() like the other controls; the module-scoped `hintButton`
+      // always points at the live instance so applyHint's refresh() is never stale.
+      hintButton = createHintButton({
+        stage,
+        zim,
+        x: (W - 428) / 2 + 296,
+        y: 674,
+        policy: hintPolicy,
+        onUse: applyHint,
+        palette: { bg: palette.gold, rollBg: "#ffd97a", downBg: palette.goldDeep, color: palette.ink },
+      });
     }
 
     function makeTile(text, x, y) {
@@ -97,16 +173,16 @@ export default createZimGame({
       tile.setBounds(0, 0, tileWidth, 118);
       tile.mouseChildren = false;
 
-      const shadow = makeCloudShape("#d8f0ff", "#d8f0ff", 0, tileWidth).addTo(tile).loc(0, 8);
-      shadow.alpha = 0.95;
-      makeCloudShape("#ffffff", "#86c7ff", 3, tileWidth).addTo(tile);
+      const shadow = makeCloudShape(palette.cloudShadow, palette.cloudShadow, 0, tileWidth).addTo(tile).loc(0, 9);
+      shadow.alpha = 0.9;
+      makeCloudShape(palette.cloud, palette.cloudEdge, 3, tileWidth).addTo(tile);
 
       const labelSize = text.length > 15 ? 18 : text.length > 12 ? 19 : 21;
       const label = new zim.Label({
         text,
         size: labelSize,
         font: zimFont,
-        color: "#073b49",
+        color: palette.ink,
         align: "center",
         valign: "center",
         bold: true
@@ -125,18 +201,23 @@ export default createZimGame({
       zone.widthValue = slotWidth;
       zone.heightValue = slotHeight;
 
-      const box = new zim.Shape().addTo(zone);
-      box.s("#9aa8b1").ss(2).sd([6, 5]).rr(0, 0, slotWidth, slotHeight, 12);
-      box.setBounds(0, 0, slotWidth, slotHeight);
+      // Sandy "story stone" slot that echoes the path/stones in the background.
+      new zim.Rectangle(slotWidth, 12, palette.stoneShadow, palette.stoneShadow, 0, 14)
+        .addTo(zone).loc(0, slotHeight - 6);
 
-      new zim.Rectangle(slotWidth - 28, 4, "#26343b").addTo(zone).loc(14, 152);
-      new zim.Rectangle(slotWidth - 28, 5, "rgba(38,52,59,.14)").addTo(zone).loc(14, 156);
+      const tablet = new zim.Rectangle(slotWidth, slotHeight, "rgba(241,227,189,0.62)", palette.stoneEdge, 2, 14)
+        .addTo(zone);
+      tablet.setBounds(0, 0, slotWidth, slotHeight);
+
+      // Dashed inner guide so empty slots read as "drop here".
+      const guide = new zim.Shape().addTo(zone);
+      guide.s(palette.stoneEdge).ss(2).sd([7, 6]).rr(12, 12, slotWidth - 24, slotHeight - 24, 10);
 
       new zim.Label({
         text: String(index + 1),
         size: 42,
         font: zimFont,
-        color: "#7a858d",
+        color: palette.goldDeep,
         align: "center",
         valign: "center",
         bold: true
@@ -198,13 +279,54 @@ export default createZimGame({
       stage.update();
     }
 
+    // A hint doesn't touch the board — it just works out the next piece the player
+    // still needs and has the helper character "say" where it goes (via sceneBus).
+    // The player drags it themselves. This is the ONLY game-specific piece of the
+    // hint system; the policy and button are shared, reusable code.
+    function applyHint() {
+      if (feedbackActive) return; // same guard as checkAnswer
+      if (!hintPolicy.canUse()) return;
+
+      const answer = rounds[roundIndex].answer;
+
+      // Next slot to point at: one that needs a real (non-empty) phrase, doesn't
+      // have it yet, and hasn't already been pointed out this round — so pressing
+      // hint again moves on to a different phrase. Fall back to the first
+      // still-wrong slot if every wrong slot has already been hinted.
+      let target = -1;
+      let fallback = -1;
+      for (let i = 0; i < zones.length; i++) {
+        if (!answer[i]) continue; // empty answer slot — nothing useful to point at
+        if ((zones[i].tile?.chunk ?? null) === answer[i]) continue; // already correct
+        if (fallback === -1) fallback = i;
+        if (!hintedSlots.has(i)) {
+          target = i;
+          break;
+        }
+      }
+      if (target === -1) target = fallback;
+      if (target === -1) return; // nothing helpful left to say — don't spend a hint
+
+      // Spend the hint, apply the penalty, and let the buddy tell the player where
+      // this phrase belongs.
+      hintedSlots.add(target);
+      hintPolicy.use();
+      score = Math.max(0, score - hintPolicy.penalty);
+      if (hintButton) hintButton.refresh();
+      emit("hint", { text: `"${answer[target]}" goes in slot ${target + 1}.` });
+    }
+
     // Shows the full sentence for ~1.5s with a progress bar, then calls renderRound.
     // Mirrors the landing-screen behaviour from the proof of concept.
     function showSentencePreview() {
+      // Refill hints for the new round. Done here (not in renderRound) so the Reset
+      // button — which calls renderRound — keeps hints already spent this round.
+      hintPolicy.reset();
+      hintedSlots.clear();
       stage.removeAllChildren();
 
-      // Warm background matching the game palette
-      new zim.Rectangle(W, H, "#fff7e6").addTo(stage);
+      // Sky → meadow background matching the scene art
+      makeBackground();
 
       // HUD so the player can see which round they're on
       makeStatus("Memorise the sentence — then arrange the clouds!");
@@ -215,7 +337,7 @@ export default createZimGame({
       const panelX = (W - panelW) / 2;
       const panelY = H / 2 - panelH / 2 - 50;
 
-      new zim.Rectangle(panelW, panelH, "rgba(255,255,255,0.9)", "rgba(255,255,255,0.95)", 3, 28)
+      new zim.Rectangle(panelW, panelH, "rgba(255,255,255,0.92)", "#ffffff", 4, 28)
         .addTo(stage).loc(panelX, panelY);
 
       // Eyebrow label
@@ -223,7 +345,7 @@ export default createZimGame({
         text: "REMEMBER THIS SENTENCE",
         size: 14,
         font: zimFont,
-        color: "#4859a0",
+        color: palette.inkSoft,
         align: "center",
         valign: "center"
       }).addTo(stage).loc(W / 2, panelY + 32);
@@ -233,7 +355,7 @@ export default createZimGame({
         text: rounds[roundIndex].sentence,
         size: 30,
         font: zimFont,
-        color: "#1d2b66",
+        color: palette.ink,
         align: "center",
         valign: "center",
         bold: true,
@@ -246,11 +368,11 @@ export default createZimGame({
       const barX = (W - barW) / 2;
       const barY = panelY + panelH + 44;
 
-      new zim.Rectangle(barW, barH, "#e8ddd0", "#e8ddd0", 0, barH / 2)
+      new zim.Rectangle(barW, barH, "#e7e2d0", "#e7e2d0", 0, barH / 2)
         .addTo(stage).loc(barX, barY);
 
       // Fill bar — starts scaled to near-zero, animates to full width over 1.5s
-      const barFill = new zim.Rectangle(barW, barH, "#ff9a3c", "#ff9a3c", 0, barH / 2)
+      const barFill = new zim.Rectangle(barW, barH, palette.gold, palette.gold, 0, barH / 2)
         .addTo(stage).loc(barX, barY);
       barFill.scaleX = 0.001;
 
@@ -308,6 +430,7 @@ export default createZimGame({
     }
 
     function showWrong() {
+      emit("wrong");
       const panelW = 520;
       const panelH = 170;
       const panelX = (W - panelW) / 2;
@@ -382,7 +505,8 @@ export default createZimGame({
     }
 
     function showCorrect() {
-      const pane = new zim.Rectangle(570, 160, "#fff8df", "#76a05d", 5, 24).loc(265, 356).addTo(stage);
+      emit("correct");
+      const pane = new zim.Rectangle(570, 160, "#eef7df", "#7fae5a", 5, 24).loc(265, 356).addTo(stage);
       const success = new zim.Container().addTo(stage);
       new zim.Label({
         text: "Wonderful ordering!",
@@ -396,7 +520,7 @@ export default createZimGame({
         text: "You rebuilt the sentence like a careful reader.",
         size: 22,
         font: zimFont,
-        color: "#4a3924",
+        color: "#456b3f",
         align: "center",
         valign: "center"
       }).addTo(success).loc(0, 55);
@@ -407,9 +531,9 @@ export default createZimGame({
         width: 150,
         height: 44,
         label: nextButtonLabel,
-        backgroundColor: "#3f7e55",
-        rollBackgroundColor: "#4d9465",
-        downBackgroundColor: "#36714a",
+        backgroundColor: "#5a9a4f",
+        rollBackgroundColor: "#6aae5d",
+        downBackgroundColor: "#4d8a44",
         color: "#ffffff",
         corner: 20
       }).addTo(success).loc(-75, 74);
@@ -429,6 +553,7 @@ export default createZimGame({
     }
 
     function showRoundOver() {
+      emit("roundOver");
       addLabel("No attempts left. The story magic resets this round.", 23, "#8a3a2d", W / 2, 360, "center");
       const retryLabel = new zim.Label("Try Again", 18, zimFont, "#ffffff");
       retryLabel.fontOptions = "bold";
@@ -436,8 +561,9 @@ export default createZimGame({
         width: 150,
         height: 52,
         label: retryLabel,
-        backgroundColor: "#8a5a3d",
-        rollBackgroundColor: "#986748",
+        backgroundColor: palette.goldDeep,
+        rollBackgroundColor: palette.gold,
+        downBackgroundColor: "#b58c33",
         color: "#ffffff",
         corner: 20
       }).loc(475, 398).addTo(stage);
@@ -449,22 +575,27 @@ export default createZimGame({
     }
 
     function showComplete() {
+      emit("complete");
       const accuracy = checks ? Math.round((correctChecks / checks) * 100) : 100;
       stage.removeAllChildren();
       makeBackground();
-      new zim.Rectangle(680, 360, "rgba(255,255,255,.76)", "#c98c52", 5, 28).loc(210, 166).addTo(stage);
-      addLabel("Quest Complete", 48, "#56351f", W / 2, 226, "center");
-      addLabel(`Final score: ${score}`, 30, "#3f2a1a", W / 2, 306, "center");
-      addLabel(`Accuracy: ${accuracy}%`, 30, "#3f2a1a", W / 2, 354, "center");
-      addLabel("You reconstructed all three story sentences.", 24, "#684527", W / 2, 414, "center");
+      new zim.Rectangle(680, 360, "rgba(255,255,255,.82)", palette.goldDeep, 5, 28).loc(210, 166).addTo(stage);
+      const makecenteredLabel = (text, size, color, y) =>
+        new zim.Label({ text, size, font: zimFont, color, align: "center", valign: "top" })
+          .addTo(stage).loc(W / 2, y);
+      makecenteredLabel("Quest Complete", 48, palette.ink, 226);
+      makecenteredLabel(`Final score: ${score}`, 30, "#3a5240", 306);
+      makecenteredLabel(`Accuracy: ${accuracy}%`, 30, "#3a5240", 354);
+      makecenteredLabel("You reconstructed all three story sentences.", 24, palette.inkSoft, 414);
       const againLabel = new zim.Label("Play Again", 18, zimFont, "#ffffff");
       againLabel.fontOptions = "bold";
       const again = new zim.Button({
         width: 190,
         height: 56,
         label: againLabel,
-        backgroundColor: "#7f4f37",
-        rollBackgroundColor: "#946043",
+        backgroundColor: palette.goldDeep,
+        rollBackgroundColor: palette.gold,
+        downBackgroundColor: "#b58c33",
         color: "#ffffff",
         corner: 20
       }).loc(455, 452).addTo(stage);

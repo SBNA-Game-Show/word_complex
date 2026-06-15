@@ -9,6 +9,7 @@ export default function Launcher({
   onHowToPlay,
   onChooseCharacter,
   isZooming = false,
+  isLaunching = false,
 }) {
   const { logout, user } = useAuth();
 
@@ -48,7 +49,12 @@ export default function Launcher({
             earn shiny stars on every magical round.
           </p>
           <div className="hero-actions">
-            <button className="btn-primary" type="button" onClick={startDefaultGame}>
+            <button
+              className="btn-primary"
+              type="button"
+              onClick={startDefaultGame}
+              disabled={isLaunching}
+            >
               Play now
               <span className="btn-arrow" aria-hidden="true">&rarr;</span>
             </button>
@@ -71,7 +77,12 @@ export default function Launcher({
                 <h2>{game.title}</h2>
                 <p>{game.description}</p>
                 <div className="preview-actions">
-                  <button className="preview-cta" type="button" onClick={() => onStart(game.id)}>
+                  <button
+                    className="preview-cta"
+                    type="button"
+                    onClick={() => onStart(game.id)}
+                    disabled={isLaunching}
+                  >
                     Start playing
                     <span className="btn-arrow" aria-hidden="true">&rarr;</span>
                   </button>

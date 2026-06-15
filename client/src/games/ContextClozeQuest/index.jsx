@@ -1,4 +1,5 @@
 import { createZimGame } from "../createZimGame";
+import { emit } from "../../scenes/sceneBus";
 import { getFillInBlanks } from "../../services/FillInTheBlankFrontendService";
 
 export const meta = {
@@ -504,10 +505,12 @@ export default createZimGame({
             feedbackBar.color = "#d7f3dc";
             feedbackLabel.text = "🎉 Excellent! You got it right!";
             feedbackLabel.color = "#0b5c24";
+            emit("complete");
           } else {
             feedbackBar.color = "#ffe1e1";
             feedbackLabel.text = "❌ Not quite. Try again!";
             feedbackLabel.color = "#a61b1b";
+            emit("wrong");
           }
 
           stage.update();
