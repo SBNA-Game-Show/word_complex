@@ -12,12 +12,6 @@ async function readJsonResponse(response, fallbackMessage) {
   return data;
 }
 
-export async function getFillInBlanks() {
-  const response = await fetch(`${API_BASE}/fillInBlanks`);
-
-  return readJsonResponse(response, "Failed to fetch game");
-}
-
 export async function generateMeaningBridgeRound(options = {}) {
   const response = await fetch(`${API_BASE}/meaningBridge/generate`, {
     method: "POST",
