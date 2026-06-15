@@ -255,7 +255,17 @@ export default createZimGame({
     })
       .addTo(stage)
       .loc(W / 2, 450);
-    getFillInBlanks({difficulty: selectedDifficulty, wordType: selectedWordTypes}).then((result) => {
+
+    const wordTypeMap = {
+      noun: "NOUN",
+      verb: "VERB",
+      adjective: "ADJ",
+    };
+
+    getFillInBlanks({
+      difficulty: selectedDifficulty,
+      wordTypes: selectedWordTypes.map((type) => wordTypeMap[type]),
+    }).then((result) => {
       const gameData = result.data;
 
       words = gameData.wordBank;
