@@ -24,7 +24,7 @@ export function createZimGame({
   color = "#fff3d3",
   outerColor = "#151019",
   scaling,
-  setup
+  setup,
 }) {
   // Function to create the Zim game component
   function ZimGameComponent() {
@@ -46,7 +46,7 @@ export function createZimGame({
             stage: frame.stage,
             W: frame.width,
             H: frame.height,
-            zim
+            zim,
           });
         };
 
@@ -64,7 +64,7 @@ export function createZimGame({
         color,
         outerColor,
         ready,
-        allowDefault: true
+        allowDefault: true,
       });
       // Function to dispose the Zim game component
       return () => {
@@ -74,7 +74,15 @@ export function createZimGame({
       };
     }, []);
     // Return the Zim game component
-    return <div ref={holderRef} id={id} className="zim-holder" />;
+    return (
+      <div
+        ref={holderRef}
+        id={id}
+        className="zim-holder"
+        data-testid={id}
+        data-zim-game-id={id}
+      />
+    );
   }
   // Set the display name of the Zim game component
   ZimGameComponent.displayName = `ZimGame(${id})`;
