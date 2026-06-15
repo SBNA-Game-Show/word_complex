@@ -13,7 +13,7 @@ export function createZimGame({
   color = "#fff3d3",
   outerColor = "#151019",
   scaling,
-  setup
+  setup,
 }) {
   function ZimGameComponent() {
     const holderRef = useRef(null);
@@ -67,6 +67,7 @@ export function createZimGame({
         console.error("[ZimGame] Frame creation failed:", err);
       }
 
+
       return () => {
         disposed = true;
         initializedRef.current = false;
@@ -82,7 +83,15 @@ export function createZimGame({
       };
     }, []);
 
-    return <div ref={holderRef} id={id} className="zim-holder" />;
+    return (
+      <div
+        ref={holderRef}
+        id={id}
+        className="zim-holder"
+        data-testid={id}
+        data-zim-game-id={id}
+      />
+    );
   }
 
   ZimGameComponent.displayName = `ZimGame(${id})`;

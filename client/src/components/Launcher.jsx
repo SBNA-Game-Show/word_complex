@@ -15,9 +15,7 @@ export default function Launcher({
   const { logout, user } = useAuth();
 
   useEffect(() => {
-  getFillInBlanks()
-    .then(console.log)
-    .catch(console.error);
+    getFillInBlanks().then(console.log).catch(console.error);
   }, []);
 
   function startDefaultGame() {
@@ -25,7 +23,10 @@ export default function Launcher({
   }
 
   return (
-    <main className={`launcher${isZooming ? " is-zooming" : ""}`}>
+    <main
+      className={`launcher${isZooming ? " is-zooming" : ""}`}
+      data-testid="launcher-page"
+    >
       <BackgroundDecor />
 
       <header className="topbar">
@@ -35,9 +36,15 @@ export default function Launcher({
         </div>
         <div className="topbar-actions">
           <div className="streak-pills" aria-label="Today">
-            <span className="streak-pill sun"><span className="dot" /> 5 day streak</span>
-            <span className="streak-pill"><span className="dot" /> {user?.role ?? "Reader"}</span>
-            <span className="streak-pill alt"><span className="dot" /> {user?.stars ?? 0} stars</span>
+            <span className="streak-pill sun">
+              <span className="dot" /> 5 day streak
+            </span>
+            <span className="streak-pill">
+              <span className="dot" /> {user?.role ?? "Reader"}
+            </span>
+            <span className="streak-pill alt">
+              <span className="dot" /> {user?.stars ?? 0} stars
+            </span>
           </div>
           <UserBadge user={user} onLogout={logout} />
         </div>
@@ -56,14 +63,26 @@ export default function Launcher({
             earn shiny stars on every magical round.
           </p>
           <div className="hero-actions">
-            <button className="btn-primary" type="button" onClick={startDefaultGame}>
+            <button
+              className="btn-primary"
+              type="button"
+              onClick={startDefaultGame}
+            >
               Play now
-              <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+              <span className="btn-arrow" aria-hidden="true">
+                &rarr;
+              </span>
             </button>
-            <button className="btn-ghost" type="button" onClick={onChooseCharacter}>
+            <button
+              className="btn-ghost"
+              type="button"
+              onClick={onChooseCharacter}
+            >
               Choose character
             </button>
-            <button className="btn-ghost" type="button" onClick={onAbout}>About</button>
+            <button className="btn-ghost" type="button" onClick={onAbout}>
+              About
+            </button>
           </div>
         </div>
       </section>
@@ -71,7 +90,11 @@ export default function Launcher({
       <section className="games-row" aria-label="Game previews">
         {games.map((game) =>
           game.Component ? (
-            <article className={`preview-card ${game.cardArt ?? ""}`} key={game.id}>
+            <article
+              className={`preview-card ${game.cardArt ?? ""}`}
+              data-testid={`game-card-${game.id}`}
+              key={game.id}
+            >
               <span className="card-number">{game.cardNumber}</span>
               <div className="preview-art" aria-hidden="true" />
               <div className="preview-content">
@@ -79,19 +102,36 @@ export default function Launcher({
                 <h2>{game.title}</h2>
                 <p>{game.description}</p>
                 <div className="preview-actions">
-                  <button className="preview-cta" type="button" onClick={() => onStart(game.id)}>
+                  <button
+                    className="preview-cta"
+                    data-testid={`game-start-${game.id}`}
+                    type="button"
+                    onClick={() => onStart(game.id)}
+                  >
                     Start playing
-                    <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+                    <span className="btn-arrow" aria-hidden="true">
+                      &rarr;
+                    </span>
                   </button>
-                  <button className="preview-help" type="button" onClick={() => onHowToPlay(game.id)}>
+                  <button
+                    className="preview-help"
+                    data-testid={`game-help-${game.id}`}
+                    type="button"
+                    onClick={() => onHowToPlay(game.id)}
+                  >
                     How to play
                   </button>
                 </div>
               </div>
             </article>
           ) : (
-            <article className={`preview-card preview-card-locked ${game.cardArt ?? ""}`} key={game.id}>
-              <span className="lock-badge"><span className="lock" /> Soon</span>
+            <article
+              className={`preview-card preview-card-locked ${game.cardArt ?? ""}`}
+              key={game.id}
+            >
+              <span className="lock-badge">
+                <span className="lock" /> Soon
+              </span>
               <span className="card-number">{game.cardNumber}</span>
               <div className="preview-art" aria-hidden="true" />
               <div className="preview-content">
@@ -100,7 +140,7 @@ export default function Launcher({
                 <p>{game.description}</p>
               </div>
             </article>
-          )
+          ),
         )}
       </section>
     </main>
