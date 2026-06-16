@@ -1,6 +1,7 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
 import Chalk from "../UI/Chalk";
+import BackButton from "../../../zimcomponents/BackButton";
 
 class FindNounsGame {
   constructor(game) {
@@ -32,6 +33,12 @@ class FindNounsGame {
     this.blackboard.center(this.game.stage);
     this.blackboard.addTo(this.game.stage);
 
+    // Add Back Button
+    new BackButton(
+      this.game,
+      this.blackboard
+    ).create();
+
     //-----------------------------------
     // TITLE
     //-----------------------------------
@@ -44,7 +51,7 @@ class FindNounsGame {
     heading.scale = 0.75;
     heading.color = "white";
 
-    heading.pos(40, 20);
+    heading.pos(180, 20);
     heading.addTo(this.blackboard);
 
     //-----------------------------------
