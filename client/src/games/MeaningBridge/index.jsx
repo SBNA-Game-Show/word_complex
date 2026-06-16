@@ -1678,25 +1678,11 @@ const ZimGame = createZimGame({
         difficulty = options.difficulty || difficulty;
         pairCount = options.pairCount || pairCount;
 
-        // These modes are not yet connected to real data — show waiting flash
+        // These modes are not yet connected to real data — show waiting state in panels
         if (mode === "english-to-sanskrit" || mode === "sanskrit-to-english") {
           status = "Coming soon";
-          setFeedback(
-            "⏳ This mode is being prepared. Data pipeline coming soon...",
-            "neutral",
-          );
+          setFeedback("Select a different mode to play.", "neutral");
           renderScene();
-          // Pulse the feedback label to draw attention
-          const flashEl = stage.getChildAt(stage.numChildren - 1);
-          if (flashEl && flashEl.animate) {
-            flashEl.animate({
-              props: { alpha: 0.3 },
-              time: 600,
-              rewind: true,
-              loop: true,
-              ease: "sineInOut",
-            });
-          }
           return;
         }
 
@@ -3370,15 +3356,30 @@ const ZimGame = createZimGame({
       });
 
       if (!puzzle) {
-        addLabel({
-          text: "Loading cards...",
-          x: W / 2,
-          y: 456,
-          size: 20,
-          color: "#475569",
-          bold: true,
-          align: "center",
-        });
+        const isComingSoon = status === "Coming soon";
+        const panelMsg = isComingSoon ? "⏳ Coming Soon" : "Loading...";
+        const panelSub = isComingSoon ? "Data pipeline pending" : "Please wait";
+
+        // Left panel message
+        const leftCx = left.x + left.width / 2;
+        const leftCy = left.y + left.height / 2;
+        const leftBox = new zim.Rectangle(left.width - 32, 70, "rgba(255,255,255,0.55)", "#2563eb", 2, 14)
+          .addTo(stage).loc(left.x + 16, leftCy - 35);
+        leftBox.mouseEnabled = false;
+        addLabel({ text: panelMsg, x: leftCx, y: leftCy - 22, size: 16, color: "#1e3a8a", bold: true, align: "center" });
+        addLabel({ text: panelSub, x: leftCx, y: leftCy + 4, size: 12, color: "#3b82f6", bold: false, align: "center" });
+        leftBox.animate({ props: { alpha: 0.4 }, time: 700, rewind: true, loop: true, ease: "sineInOut" });
+
+        // Right panel message
+        const rightCx = right.x + right.width / 2;
+        const rightCy = right.y + right.height / 2;
+        const rightBox = new zim.Rectangle(right.width - 32, 70, "rgba(255,255,255,0.55)", "#059669", 2, 14)
+          .addTo(stage).loc(right.x + 16, rightCy - 35);
+        rightBox.mouseEnabled = false;
+        addLabel({ text: panelMsg, x: rightCx, y: rightCy - 22, size: 16, color: "#14532d", bold: true, align: "center" });
+        addLabel({ text: panelSub, x: rightCx, y: rightCy + 4, size: 12, color: "#059669", bold: false, align: "center" });
+        rightBox.animate({ props: { alpha: 0.4 }, time: 700, rewind: true, loop: true, ease: "sineInOut" });
+
         return;
       }
 
