@@ -32,7 +32,7 @@ describe("Meaning Bridge API routes", () => {
     const response = await request(app)
       .post("/api/v1/meaningBridge/generate")
       .send({
-        mode: "english-to-sanskrit",
+        mode: "word-to-synonym",
         difficulty: "easy",
         pairCount: 4,
       })
@@ -72,7 +72,7 @@ describe("Meaning Bridge API routes", () => {
     const generateResponse = await request(app)
       .post("/api/v1/meaningBridge/generate")
       .send({
-        mode: "english-to-sanskrit",
+        mode: "word-to-synonym",
         difficulty: "easy",
         pairCount: 4,
       })
@@ -135,7 +135,7 @@ describe("Meaning Bridge API routes", () => {
     const generateResponse = await request(app)
       .post("/api/v1/meaningBridge/generate")
       .send({
-        mode: "english-to-sanskrit",
+        mode: "word-to-synonym",
         difficulty: "easy",
         pairCount: 4,
       })
@@ -186,7 +186,7 @@ describe("Meaning Bridge API routes", () => {
     const response = await request(app)
       .post("/api/v1/meaningBridge/generate")
       .send({
-        mode: "english-to-sanskrit",
+        mode: "word-to-synonym",
         difficulty: "easy",
         pairCount: 4,
       })
@@ -205,7 +205,7 @@ describe("Meaning Bridge API routes", () => {
     const response = await request(app)
       .post("/api/v1/meaningBridge/generate")
       .send({
-        mode: "english-to-sanskrit",
+        mode: "word-to-synonym",
         difficulty: "easy",
         pairCount: 4,
       })
@@ -226,7 +226,7 @@ describe("Meaning Bridge API routes", () => {
       .post("/api/v1/meaningBridge/generate")
       .set(API_KEY_HEADER, "wrong-key")
       .send({
-        mode: "english-to-sanskrit",
+        mode: "word-to-synonym",
         difficulty: "easy",
         pairCount: 4,
       })
@@ -247,7 +247,7 @@ describe("Meaning Bridge API routes", () => {
       .post("/api/v1/meaningBridge/generate")
       .set(API_KEY_HEADER, "test-secret-key")
       .send({
-        mode: "english-to-sanskrit",
+        mode: "word-to-synonym",
         difficulty: "easy",
         pairCount: 4,
       })

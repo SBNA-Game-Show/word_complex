@@ -189,10 +189,10 @@ const GAMEPLAY_LAYOUT = {
   },
   card: {
     width: 258,
-    height: 44,
-    step: 52,
+    height: 40,
+    step: 46,
     xOffset: 24,
-    yOffset: 42,
+    yOffset: 36,
   },
   leaderboard: {
     x: 120,
@@ -374,7 +374,7 @@ const ZimGame = createZimGame({
     let isEditingPlayerName = false;
     let replacePlayerNameOnNextInput = false;
 
-    let mode = "english-to-sanskrit";
+    let mode = "word-to-synonym";
     let difficulty = "easy";
     let pairCount = 4;
     let roundType = "practice";
@@ -404,6 +404,7 @@ const ZimGame = createZimGame({
     let matches = [];
     let hintsUsed = 0;
     let wrongAttempts = 0;
+    let cardFlash = null; // { type: "correct"|"wrong", leftId, rightId }
     let result = null;
     let status = "Loading Meaning Bridge...";
     let feedback = "Generating your first bridge round...";
@@ -852,9 +853,9 @@ const ZimGame = createZimGame({
 
       return {
         ...GAMEPLAY_LAYOUT.card,
-        height: 48,
-        step: 56,
-        yOffset: 42,
+        height: 44,
+        step: 50,
+        yOffset: 38,
       };
     }
 
@@ -1677,6 +1678,28 @@ const ZimGame = createZimGame({
         difficulty = options.difficulty || difficulty;
         pairCount = options.pairCount || pairCount;
 
+        // These modes are not yet connected to real data — show waiting flash
+        if (mode === "english-to-sanskrit" || mode === "sanskrit-to-english") {
+          status = "Coming soon";
+          setFeedback(
+            "⏳ This mode is being prepared. Data pipeline coming soon...",
+            "neutral",
+          );
+          renderScene();
+          // Pulse the feedback label to draw attention
+          const flashEl = stage.getChildAt(stage.numChildren - 1);
+          if (flashEl && flashEl.animate) {
+            flashEl.animate({
+              props: { alpha: 0.3 },
+              time: 600,
+              rewind: true,
+              loop: true,
+              ease: "sineInOut",
+            });
+          }
+          return;
+        }
+
         const response = await generateMeaningBridgeRound({
           mode,
           difficulty,
@@ -1803,6 +1826,8 @@ const ZimGame = createZimGame({
       const expectedRightId = puzzle.answerKey[selectedLeftId];
 
       if (expectedRightId === item.id) {
+        const matchedLeftId = selectedLeftId;
+
         matches = [
           ...matches,
           {
@@ -1812,7 +1837,7 @@ const ZimGame = createZimGame({
         ];
 
         playSound("correct");
-
+        cardFlash = { type: "correct", leftId: matchedLeftId, rightId: item.id };
         selectedLeftId = null;
 
         const completed = matches.length === puzzle.leftItems.length;
@@ -1823,13 +1848,17 @@ const ZimGame = createZimGame({
             : "Correct match! Keep building the bridge.",
           "success",
         );
+
+        renderScene();
+        setTimeout(() => { cardFlash = null; renderScene(); }, 700);
       } else {
         wrongAttempts += 1;
         playSound("wrong");
+        cardFlash = { type: "wrong", leftId: selectedLeftId, rightId: item.id };
         setFeedback("Not quite. Try another meaning card.", "error");
+        renderScene();
+        setTimeout(() => { cardFlash = null; renderScene(); }, 700);
       }
-
-      renderScene();
     }
 
     function activateGameplayNumberShortcut(cardNumber) {
@@ -3193,8 +3222,8 @@ const ZimGame = createZimGame({
       addLabel({
         text: shortText(item.label, readableMaxChars(22, 4)),
         x: x + 64,
-        y: y + 7,
-        size: readableSize(13, 2),
+        y: y + 6,
+        size: readableSize(14, 2),
         color: textColor,
         bold: true,
       });
@@ -3203,29 +3232,31 @@ const ZimGame = createZimGame({
       addLabel({
         text: shortText(item.sublabel, readableMaxChars(26, 5)),
         x: x + 64,
-        y: y + 26,
-        size: readableSize(10, 1),
+        y: y + 25,
+        size: readableSize(11, 1),
         color: subTextColor,
         bold: false,
       });
 
-      // Right indicator
+      // Right indicator — circle centered on card mid-line
+      const indX   = x + cardLayout.width - 22;
+      const indY   = y + cardLayout.height / 2;   // true vertical centre of card
       if (matched) {
-        const mc = new zim.Circle(11, "#22c55e").addTo(stage)
-          .loc(x + cardLayout.width - 20, y + cardLayout.height / 2 - 11);
+        const matchColor = isLeft ? "#1d4ed8" : "#15803d";
+        const mc = new zim.Circle(13, matchColor).addTo(stage).loc(indX, indY);
         mc.mouseEnabled = false;
+        // label y: circle centre minus ~half a cap-height so ✓ sits in the middle
         addLabel({
-          text: "✓", x: x + cardLayout.width - 20,
-          y: y + cardLayout.height / 2 - 9,
+          text: "✓", x: indX,
+          y: indY - 8,
           size: 13, color: "#ffffff", bold: true, align: "center",
         });
       } else if (selected) {
-        const sc = new zim.Circle(11, "#3b82f6").addTo(stage)
-          .loc(x + cardLayout.width - 20, y + cardLayout.height / 2 - 11);
+        const sc = new zim.Circle(13, "#2563eb").addTo(stage).loc(indX, indY);
         sc.mouseEnabled = false;
         addLabel({
-          text: "●", x: x + cardLayout.width - 20,
-          y: y + cardLayout.height / 2 - 9,
+          text: "●", x: indX,
+          y: indY - 7,
           size: 11, color: "#ffffff", bold: true, align: "center",
         });
       } else {
@@ -3246,6 +3277,20 @@ const ZimGame = createZimGame({
         obj.alpha = 0;
         obj.animate({ props: { alpha: 1 }, time: 220, wait: animWait, ease: "quadOut" });
       });
+
+      // Correct / wrong flash overlay
+      if (cardFlash && (cardFlash.leftId === item.id || cardFlash.rightId === item.id)) {
+        const isCorrectFlash = cardFlash.type === "correct";
+        const flashFill  = isCorrectFlash ? "rgba(34,197,94,0.40)"  : "rgba(239,68,68,0.40)";
+        const flashBorder = isCorrectFlash ? "#22c55e" : "#ef4444";
+        const flashOverlay = new zim.Rectangle(
+          cardLayout.width + 10, cardLayout.height + 10,
+          flashFill, flashBorder, 3, 16,
+        ).addTo(stage).loc(x - 5, y - 5);
+        flashOverlay.mouseEnabled = false;
+        flashOverlay.alpha = 1;
+        flashOverlay.animate({ props: { alpha: 0 }, time: 680, ease: "quadOut" });
+      }
 
       // Hit layer
       const hitLayer = new zim.Rectangle(

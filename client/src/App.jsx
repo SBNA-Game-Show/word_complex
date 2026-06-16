@@ -62,18 +62,20 @@ function AuthenticatedApp() {
   }
 
   return (
-    <div className={`app${transitionPhase === "zoom-in" ? " is-zooming-house" : ""}`}>
+    <div
+      className={`app${transitionPhase === "zoom-in" ? " is-zooming-house" : ""}`}
+    >
       <VideoBackground />
       {!isAuthenticated ? (
         <LoginPage />
       ) : screen === "launcher" ? (
-          <Launcher
-            onStart={openGame}
-            onAbout={() => setScreen("about")}
-            onHowToPlay={openHowToPlay}
-            onChooseCharacter={openCharacters}
-            isZooming={transitionPhase === "zoom-in"}
-          />
+        <Launcher
+          onStart={openGame}
+          onAbout={() => setScreen("about")}
+          onHowToPlay={openHowToPlay}
+          onChooseCharacter={openCharacters}
+          isZooming={transitionPhase === "zoom-in"}
+        />
       ) : screen === "characters" ? (
         <CharacterSelect
           selectedId={selectedCharacterId}
@@ -92,7 +94,10 @@ function AuthenticatedApp() {
           onPlay={() => openGame(activeGameId)}
         />
       ) : (
-        <GameScreen gameId={activeGameId} onBack={() => setScreen("launcher")} />
+        <GameScreen
+          gameId={activeGameId}
+          onBack={() => setScreen("launcher")}
+        />
       )}
     </div>
   );

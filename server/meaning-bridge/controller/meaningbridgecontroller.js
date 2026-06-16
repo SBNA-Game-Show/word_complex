@@ -1,14 +1,17 @@
 const {
   generatePuzzleFromTokenizedStory,
   generateWordTransliterationPuzzle,
-  generateEnglishToSanskritPuzzle,
   generateSentenceMatchPuzzle,
-  generateSentenceToEnglishPuzzle,
+  generateSynonymMatchPuzzle,
+  generateAntonymMatchPuzzle,
+  generateWordDefinitionPuzzle,
 } = require("../service/generatepuzzle");
 const { saveRoundFallback, getRoundFallback } = require("../service/roundstore");
 const { saveScoreFallback, getPlayerLeaderboardFallback } = require("../service/scorestore");
 const { scoreMeaningBridgeRound } = require("../service/scoreround");
-const { retrieveRandomStory } = require("../../raw-data-connect/retrieveTokenizedStoryById");
+const { retrieveStoryById } = require("../../raw-data-connect/retrieveTokenizedStoryById");
+
+const HARDCODED_STORY_ID = "292f2009-96bb-4a3c-b856-e04214e852f8";
 
 const SUPPORTED_PAIR_COUNTS = new Set([4, 5, 6]);
 
@@ -33,7 +36,7 @@ const getMeaningBridgeHealth = async (req, res) => {
 
 const debugStoryStructure = async (req, res) => {
   try {
-    const story = await retrieveRandomStory();
+    const story = await retrieveStoryById(HARDCODED_STORY_ID);
     const topLevelKeys = Object.keys(story);
     const tokenizedVersion = story.tokenized_sanskrit_version;
     let tokenSample = null;
@@ -74,19 +77,17 @@ const debugStoryStructure = async (req, res) => {
 function buildPuzzle({ story, mode, pairCount }) {
   switch (mode) {
     case "english-to-sanskrit":
-      return generateEnglishToSanskritPuzzle({ story, pairCount });
     case "sanskrit-to-english":
-      return generateSentenceToEnglishPuzzle({ story, pairCount });
+      throw new Error("COMING_SOON");
     case "word-to-definition":
-      return generatePuzzleFromTokenizedStory({ story, pairCount });
+      return generateWordDefinitionPuzzle({ story, pairCount });
     case "word-to-synonym":
+      return generateSynonymMatchPuzzle({ story, pairCount });
+    case "word-to-antonym":
+      return generateAntonymMatchPuzzle({ story, pairCount });
     case "sentence-match":
     case "sentence-to-transliteration":
       return generateSentenceMatchPuzzle({ story, pairCount });
-    case "word-to-antonym":
-      return generateWordTransliterationPuzzle({ story, pairCount });
-    case "sentence-to-english":
-      return generateSentenceToEnglishPuzzle({ story, pairCount });
     default:
       return generatePuzzleFromTokenizedStory({ story, pairCount });
   }
@@ -94,7 +95,7 @@ function buildPuzzle({ story, mode, pairCount }) {
 
 const generateMeaningBridgeRound = async (req, res) => {
   try {
-    const { pairCount = 4, mode = "english-to-sanskrit" } = req.body || {};
+    const { pairCount = 4, mode = "word-to-synonym" } = req.body || {};
     const normalizedPairCount = Number(pairCount);
 
     if (!SUPPORTED_MODES.has(mode)) {
@@ -111,7 +112,7 @@ const generateMeaningBridgeRound = async (req, res) => {
       });
     }
 
-    const story = await retrieveRandomStory();
+    const story = await retrieveStoryById(HARDCODED_STORY_ID);
     const puzzle = buildPuzzle({ story, mode, pairCount: normalizedPairCount });
 
     saveRoundFallback(puzzle);
@@ -138,7 +139,7 @@ const generateMeaningBridgeRound = async (req, res) => {
 const generateSentenceMatchRound = async (req, res) => {
   try {
     const { pairCount = 3 } = req.body || {};
-    const story = await retrieveRandomStory();
+    const story = await retrieveStoryById(HARDCODED_STORY_ID);
     const puzzle = generateSentenceMatchPuzzle({ story, pairCount: Number(pairCount) });
 
     saveRoundFallback(puzzle);
