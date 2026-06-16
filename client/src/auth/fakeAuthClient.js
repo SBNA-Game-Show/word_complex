@@ -17,6 +17,19 @@ const demoUsers = [
     role: "Story Builder",
     stars: 180,
   },
+  // TEMPORARY admin account — needs to be deleted later once real auth (Firebase)
+  // is fetching the admin claim. The `isAdmin` flag is what gates the admin panel;
+  // in production it comes from the auth token, not a hardcoded user.
+  {
+    id: "admin-1",
+    name: "Admin",
+    nickname: "Admin",
+    username: "admin",
+    password: "password",
+    role: "ADMIN",
+    isAdmin: true,
+    stars: 0,
+  },
 ];
 
 function toPublicUser(user) {
@@ -26,6 +39,7 @@ function toPublicUser(user) {
     nickname: user.nickname,
     username: user.username,
     role: user.role,
+    isAdmin: Boolean(user.isAdmin),
     stars: user.stars,
   };
 }
@@ -86,4 +100,10 @@ export async function signUpWithPassword({ name, nickname, username, password })
 export const demoLoginHint = {
   username: demoUsers[0].username,
   password: demoUsers[0].password,
+};
+
+// TEMPORARY — remove with the hardcoded admin account once real auth is wired.
+export const adminLoginHint = {
+  username: "admin",
+  password: "password",
 };

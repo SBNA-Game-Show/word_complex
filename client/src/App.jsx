@@ -8,6 +8,7 @@ import HowToPlay from "./components/HowToPlay";
 import AboutPage from "./components/AboutPage";
 import CharacterSelect from "./components/CharacterSelect";
 import GameScene from "./scenes/GameScene";
+import AdminPanel from "./admin";
 import { getSceneConfig } from "./scenes/sceneConfig";
 import "./App.css";
 
@@ -22,7 +23,7 @@ export default function App() {
 }
 
 function AuthenticatedApp() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const [screen, setScreen] = useState("launcher");
   const [activeGameId, setActiveGameId] = useState("sentence-builder");
   const [selectedCharacterId, setSelectedCharacterId] = useState(() => {
@@ -37,8 +38,12 @@ function AuthenticatedApp() {
   useEffect(() => {
     if (!isAuthenticated) {
       setScreen("launcher");
+    } else if (isAdmin) {
+      // Admins land on the admin panel after login (they can switch to games
+      // from there). Non-admins keep the normal launcher flow.
+      setScreen("admin");
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isAdmin]);
 
   function openGame(gameId) {
     setActiveGameId(gameId);
@@ -94,6 +99,8 @@ function AuthenticatedApp() {
       <VideoBackground />
       {!isAuthenticated ? (
         <LoginPage />
+      ) : screen === "admin" ? (
+        <AdminPanel onExit={() => setScreen("launcher")} />
       ) : screen === "scene" ? (
         <GameScene
           gameId={activeGameId}
@@ -106,6 +113,8 @@ function AuthenticatedApp() {
             onAbout={() => setScreen("about")}
             onHowToPlay={openHowToPlay}
             onChooseCharacter={openCharacters}
+            onOpenAdmin={() => setScreen("admin")}
+            isAdmin={isAdmin}
             isZooming={transitionPhase === "zoom-in"}
             isLaunching={launchPhase !== "idle"}
           />

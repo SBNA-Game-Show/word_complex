@@ -8,6 +8,8 @@ export default function Launcher({
   onAbout,
   onHowToPlay,
   onChooseCharacter,
+  onOpenAdmin,
+  isAdmin = false,
   isZooming = false,
   isLaunching = false,
 }) {
@@ -62,6 +64,11 @@ export default function Launcher({
               Choose character
             </button>
             <button className="btn-ghost" type="button" onClick={onAbout}>About</button>
+            {isAdmin && (
+              <button className="btn-ghost" type="button" onClick={onOpenAdmin}>
+                Admin panel
+              </button>
+            )}
           </div>
         </div>
       </section>

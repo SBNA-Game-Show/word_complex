@@ -56,6 +56,7 @@ export function AuthProvider({ children }) {
     () => ({
       error,
       isAuthenticated: Boolean(user),
+      isAdmin: Boolean(user?.isAdmin),
       isLoading: status === "loading",
       clearError,
       login,

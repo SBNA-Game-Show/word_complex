@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { demoLoginHint } from "../auth/fakeAuthClient";
+import { demoLoginHint, adminLoginHint } from "../auth/fakeAuthClient";
 import { useAuth } from "../auth/AuthContext";
 import BackgroundDecor from "./BackgroundDecor";
 
@@ -31,6 +31,14 @@ export default function LoginPage() {
     clearError();
     setUsername(demoLoginHint.username);
     setPassword(demoLoginHint.password);
+  }
+
+  // TEMPORARY — fills the hardcoded admin credentials. Remove once real auth.
+  function fillAdminLogin() {
+    setMode("signin");
+    clearError();
+    setUsername(adminLoginHint.username);
+    setPassword(adminLoginHint.password);
   }
 
   function switchMode(nextMode) {
@@ -173,9 +181,20 @@ export default function LoginPage() {
 
           <div className="auth-footer" key={`footer-${mode}`}>
           {!isSignUp ? (
-            <button className="btn-ghost login-demo-fill" type="button" onClick={fillDemoLogin}>
-              Use demo login
-            </button>
+            <>
+              <button className="btn-ghost login-demo-fill" type="button" onClick={fillDemoLogin}>
+                Use demo login
+              </button>
+              {/* TEMPORARY admin shortcut — remove once real auth is wired. */}
+              <button
+                className="btn-ghost login-demo-fill"
+                type="button"
+                onClick={fillAdminLogin}
+                style={{ marginTop: 8 }}
+              >
+                Use admin
+              </button>
+            </>
           ) : (
             <p className="signup-note">
               Temporary only. Refreshing the browser removes this prototype account.
