@@ -1,12 +1,8 @@
 const express = require("express");
 const passageReconstructionRouter = express.Router();
 
-const {
-  initializeGame,
-} = require("../controller/passagereconstructioncontroller");
+const { getGame } = require("../controller/passagereconstructioncontroller");
 
-//API Routes
-
-passageReconstructionRouter.get("/", initializeGame);
+passageReconstructionRouter.get("/game", getGame);
 
 module.exports = passageReconstructionRouter;

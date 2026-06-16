@@ -1,4 +1,5 @@
 import { createZimGame } from "../createZimGame";
+import { emit } from "../../scenes/sceneBus";
 import {
   generateMeaningBridgeRound,
   getMeaningBridgeLeaderboard,
@@ -653,6 +654,8 @@ export default createZimGame({
 
         const completed = matches.length === puzzle.leftItems.length;
 
+        emit(completed ? "complete" : "correct");
+
         setFeedback(
           completed
             ? "All pairs matched. Submit your bridge!"
@@ -661,6 +664,7 @@ export default createZimGame({
         );
       } else {
         wrongAttempts += 1;
+        emit("wrong");
         setFeedback("Not quite. Try another meaning card.", "error");
       }
 

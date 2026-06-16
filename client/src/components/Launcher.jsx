@@ -1,8 +1,6 @@
 import BackgroundDecor from "./BackgroundDecor";
 import { useAuth } from "../auth/AuthContext";
 import UserBadge from "./UserBadge";
-import { useEffect } from "react";
-import { getFillInBlanks } from "../services/api";
 import { games } from "../games/index.js";
 
 export default function Launcher({
@@ -11,14 +9,9 @@ export default function Launcher({
   onHowToPlay,
   onChooseCharacter,
   isZooming = false,
+  isLaunching = false,
 }) {
   const { logout, user } = useAuth();
-
-  useEffect(() => {
-  getFillInBlanks()
-    .then(console.log)
-    .catch(console.error);
-  }, []);
 
   function startDefaultGame() {
     onStart("sentence-builder");
@@ -56,7 +49,12 @@ export default function Launcher({
             earn shiny stars on every magical round.
           </p>
           <div className="hero-actions">
-            <button className="btn-primary" type="button" onClick={startDefaultGame}>
+            <button
+              className="btn-primary"
+              type="button"
+              onClick={startDefaultGame}
+              disabled={isLaunching}
+            >
               Play now
               <span className="btn-arrow" aria-hidden="true">&rarr;</span>
             </button>
@@ -79,7 +77,12 @@ export default function Launcher({
                 <h2>{game.title}</h2>
                 <p>{game.description}</p>
                 <div className="preview-actions">
-                  <button className="preview-cta" type="button" onClick={() => onStart(game.id)}>
+                  <button
+                    className="preview-cta"
+                    type="button"
+                    onClick={() => onStart(game.id)}
+                    disabled={isLaunching}
+                  >
                     Start playing
                     <span className="btn-arrow" aria-hidden="true">&rarr;</span>
                   </button>

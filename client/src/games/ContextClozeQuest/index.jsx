@@ -1,4 +1,6 @@
 import { createZimGame } from "../createZimGame";
+import { emit } from "../../scenes/sceneBus";
+import { getFillInBlanks } from "../../services/FillInTheBlankFrontendService";
 
 export const meta = {
   id: "context-cloze-quest",
@@ -11,29 +13,161 @@ export const meta = {
 export default createZimGame({
   id: "zim-context-cloze-quest",
   width: 1100,
-  height: 720,
+  height: 800,
   color: "#f4f3ec",
   outerColor: "#ffffff",
 
   setup({ stage, W, H, zim }) {
     const zimFont = "Fredoka";
+    let selectedWordTypes = ["noun"];
+    let selectedDifficulty = "easy";
+
+    function showMenu() {
+      stage.removeAllChildren();
+
+      new zim.Rectangle(W, H, "#ffffff").addTo(stage);
+      new zim.Rectangle(W, 170, "#4f46d9").addTo(stage).loc(0, 0);
+
+      new zim.Label({
+        text: "📚 Context Cloze Quest",
+        size: 44,
+        font: zimFont,
+        color: "#ffffff",
+        align: "center",
+        valign: "center",
+        bold: true,
+      }).addTo(stage).loc(W / 2, 80);
+
+      new zim.Label({
+        text: "Choose one or more word types before you play",
+        size: 24,
+        font: zimFont,
+        color: "#ffffff",
+        align: "center",
+        valign: "center",
+      }).addTo(stage).loc(W / 2, 130);
+
+      new zim.Label({
+        text: "Word Type:",
+        size: 28,
+        font: zimFont,
+        color: "#333333",
+        bold: true,
+      }).addTo(stage).loc(160, 270);
+
+      ["noun", "verb", "adjective"].forEach((type, index) => {
+        const isSelected = selectedWordTypes.includes(type);
+        const btnWidth = type === "adjective" ? 210 : 150;
+
+        const btn = new zim.Container().addTo(stage).loc(360 + index * 205, 255);
+
+        new zim.Rectangle({
+          width: btnWidth,
+          height: 50,
+          color: isSelected ? "#4f46d9" : "#ffffff",
+          borderColor: "#4f46d9",
+          borderWidth: 2,
+          corner: 12,
+        }).addTo(btn);
+
+        new zim.Label({
+          text: type.toUpperCase(),
+          size: type === "adjective" ? 26 : 32,
+          font: zimFont,
+          color: isSelected ? "#ffffff" : "#333333",
+          align: "center",
+          valign: "center",
+          bold: true,
+        }).addTo(btn).loc(btnWidth / 2, 25);
+
+        btn.cursor = "pointer";
+
+        btn.on("click", () => {
+          if (selectedWordTypes.includes(type)) {
+            if (selectedWordTypes.length > 1) {
+              selectedWordTypes = selectedWordTypes.filter(
+                (wordType) => wordType !== type
+              );
+            }
+          } else {
+            selectedWordTypes = [...selectedWordTypes, type];
+          }
+
+          showMenu();
+        });
+      });
+
+      new zim.Label({
+        text: "Difficulty:",
+        size: 28,
+        font: zimFont,
+        color: "#333333",
+        bold: true,
+      }).addTo(stage).loc(160, 370);
+
+      ["easy", "medium", "hard"].forEach((level, index) => {
+        const btn = new zim.Button({
+          width: 150,
+          height: 50,
+          label: level.toUpperCase(),
+          backgroundColor: selectedDifficulty === level ? "#4f46d9" : "#ffffff",
+          rollBackgroundColor: "#ddd9ff",
+          color: selectedDifficulty === level ? "#ffffff" : "#333333",
+          corner: 12,
+        });
+
+        btn.label.size = level === "medium" ? 28 : 34;
+        btn.addTo(stage).loc(360 + index * 205, 355);
+
+        btn.on("click", () => {
+          selectedDifficulty = level;
+          showMenu();
+        });
+      });
+
+      const playButton = new zim.Button({
+        width: 260,
+        height: 60,
+        label: "▶ Play Game",
+        backgroundColor: "#18b853",
+        rollBackgroundColor: "#12a448",
+        corner: 18,
+      });
+
+      playButton.label.size = 24;
+      playButton.addTo(stage).loc(W / 2 - 130, 520);
+
+      playButton.on("click", () => {
+        startGame();
+      });
+
+      stage.update();
+    }
+
+    function startGame() {
+      stage.removeAllChildren();
 
     new zim.Rectangle(W, H, "#ffffff").addTo(stage);
 
     // purple header
-    new zim.Rectangle(W, 170, "#4f46d9").addTo(stage).loc(0, 0);
+    new zim.Rectangle(W, 140, "#4f46d9").addTo(stage).loc(0, 0);
 
     // reading area
-    new zim.Rectangle(W, 260, "#f7f9fc").addTo(stage).loc(0, 170);
+    new zim.Rectangle(W, 340, "#f7f9fc").addTo(stage).loc(0, 140);
+
+    // paragraph card
+    new zim.Rectangle({width: 1020, height: 280, color: "#ffffff", corner: 18,})
+      .addTo(stage)
+      .loc(40, 150);
 
     // word bank area
-    new zim.Rectangle(W, 130, "#ffffff").addTo(stage).loc(0, 430);
+    new zim.Rectangle(W, 170, "#ffffff").addTo(stage).loc(0, 430);
 
     // button area
-    new zim.Rectangle(W, 90, "#f7f9fc").addTo(stage).loc(0, 560);
+    new zim.Rectangle(W, 130, "#f7f9fc").addTo(stage).loc(0, 620);
 
     new zim.Label({
-      text: "📚 Context Cloze Quest",
+      text: "Context Cloze Quest",
       size: 42,
       font: zimFont,
       color: "#000000",
@@ -42,7 +176,7 @@ export default createZimGame({
       bold: true,
     })
       .addTo(stage)
-      .loc(W / 2, 85);
+      .loc(W / 2, 60);
     
    new zim.Rectangle({
     width: 130,
@@ -51,7 +185,7 @@ export default createZimGame({
     corner: 22,
   })
   .addTo(stage)
-  .loc(W / 2 - 65, 105);
+  .loc(W / 2 - 65, 85);
 
     const scoreLabel = new zim.Label({
       text: "Score: 0",
@@ -63,7 +197,7 @@ export default createZimGame({
       bold: true,
     })
       .addTo(stage)
-      .loc(W / 2, 125);
+      .loc(W / 2, 108);
 
     const paragraphY = 230;
     const blanks = [];
@@ -72,7 +206,7 @@ export default createZimGame({
     function makeText(text, x, y) {
       return new zim.Label({
         text,
-        size: 24,
+        size: 22,
         font: zimFont,
         color: "#333333",
         align: "left",
@@ -85,8 +219,8 @@ export default createZimGame({
       blank.index = index;
 
       new zim.Rectangle({
-        width: 130,
-        height: 48,
+        width: 95,
+        height: 28,
         color: "#fff5f5",
         borderColor: "#8f7cff",
         borderWidth: 3,
@@ -102,26 +236,14 @@ export default createZimGame({
         align: "center",
         valign: "center",
         bold: true,
-      }).addTo(blank).loc(65, 24);
+      }).addTo(blank).loc(47.5, 14);
 
       blanks.push(blank);
       return blank;
     }
 
-    makeText("The little", 190, paragraphY);
-    makeBlank(330, paragraphY - 24, 0);
-    makeText("woke up early in the morning.", 480, paragraphY);
-
-    makeText("She watered the plants in the", 190, paragraphY + 80);
-    makeBlank(540, paragraphY + 56, 1);
-    makeText(".", 690, paragraphY + 80);
-
-    makeText("Later, she enjoyed a bowl of warm", 190, paragraphY + 160);
-    makeBlank(590, paragraphY + 136, 2);
-    makeText(".", 740, paragraphY + 160);
-
-    const words = ["girl", "garden", "milk", "animals", "day"];
-    const correctAnswers = ["girl", "garden", "milk"];
+    let words = ["girl", "garden", "milk", "animals", "day"];
+    let correctAnswers = ["girl", "garden", "milk"];
 
     new zim.Label({
       text: "AVAILABLE WORDS",
@@ -133,83 +255,169 @@ export default createZimGame({
       bold: true,
     })
       .addTo(stage)
-      .loc(W / 2, 470);
+      .loc(W / 2, 450);
 
-    const buttonWidths = words.map((w) => Math.max(110, w.length * 22));
-    const totalWidth = buttonWidths.reduce((sum, width) => sum + width, 0);
-    const spacing = 25;
-    const totalSpacing = spacing * (words.length - 1);
-    const rowWidth = totalWidth + totalSpacing;
+    const wordTypeMap = {
+      noun: "NOUN",
+      verb: "VERB",
+      adjective: "ADJ",
+    };
 
-    let currentX = (W - rowWidth) / 2;
+    getFillInBlanks({
+      difficulty: selectedDifficulty,
+      wordTypes: selectedWordTypes.map((type) => wordTypeMap[type]),
+    }).then((result) => {
+      const gameData = result.data;
 
-    words.forEach((word, i) => {
-    const buttonWidth = Math.max(110, word.length * 22);
-    const wordButton = new zim.Button({
-      width: buttonWidth,
-      height: 45,
-      label: word,
-      backgroundColor: "#6c5ce7",
-      rollBackgroundColor: "#5b4ee6",
-      downBackgroundColor: "#4c40d8",
-      corner: 10,
-    });
+      words = gameData.wordBank;
+      correctAnswers = gameData.answers;
+      function drawParagraphWithInlineBlanks(paragraph) {
+        const parts = paragraph.split("_____");
 
-      wordButton.addTo(stage);
-      wordButton.loc(currentX, 500);
-      wordButton.homeX = currentX;
-      wordButton.homeY = 500;
-      wordButtons.push(wordButton);
-      currentX += buttonWidth + spacing;
+        let x = 90;
+        let y = 165;
+        const maxX = 1030;
+        const lineHeight = 34;
+        let blankIndex = 0;
 
-      wordButton.word = word;
-      wordButton.drag();
-      wordButton.on("pressup", () => {
-        let matchedBlank = null;
+        parts.forEach((part, partIndex) => {
+          const wordsInPart = part.split(" ");
 
-        blanks.forEach((blank) => {
-          const centerX = wordButton.x + 60;
-          const centerY = wordButton.y + 25;
+          wordsInPart.forEach((word) => {
+            if (!word) return;
 
-          const insideX = centerX > blank.x && centerX < blank.x + 130;
-          const insideY = centerY > blank.y && centerY < blank.y + 48;
+            const wordWidth = word.length * 12.5;
 
-          if (insideX && insideY) {
-            matchedBlank = blank;
+            if (x + wordWidth > maxX) {
+              x = 90;
+              y += lineHeight;
+            }
+
+            makeText(word, x, y);
+            x += wordWidth + 12;
+          });
+
+          if (partIndex < parts.length - 1) {
+            if (x + 140 > maxX) {
+              x = 90;
+              y += lineHeight;
+            }
+
+            makeBlank(x, y - 18, blankIndex);
+            x += 105;
+            blankIndex++;
           }
         });
-
-      if (matchedBlank) {
-        wordButton.animate({
-          props: {
-            x: matchedBlank.x + 5,
-            y: matchedBlank.y - 1,
-          },
-          time: 0.2,
-        });
-
-        wordButton.blankIndex = matchedBlank.index;
-      } else {
-        wordButton.blankIndex = undefined;
-
-        wordButton.animate({
-          props: {
-            x: wordButton.homeX,
-            y: wordButton.homeY,
-          },
-          time: 0.25,
-        });
       }
-        stage.update();
+      drawParagraphWithInlineBlanks(gameData.paragraph);
+
+    const wordsPerRow = 6;
+    const spacingX = 160;
+    const spacingY = 43;
+    const startX = 70;
+    const startY = 470;
+
+    words.forEach((word, i) => {
+      const row = Math.floor(i / wordsPerRow);
+      const col = i % wordsPerRow;
+
+      const buttonWidth = 145;
+
+      const currentX = startX + col * spacingX;
+      const currentY = startY + row * spacingY;
+      const wordButton = new zim.Button({
+        width: buttonWidth,
+        height: 40,
+        label: word,
+        backgroundColor: "#6c5ce7",
+        rollBackgroundColor: "#5b4ee6",
+        downBackgroundColor: "#4c40d8",
+        corner: 10,
       });
-    });
+        wordButton.label.size = 24;
+        wordButton.addTo(stage);
+        wordButton.loc(currentX, currentY);
+        wordButton.homeX = currentX;
+        wordButton.homeY = currentY;
+        wordButtons.push(wordButton);
+
+        wordButton.word = word;
+        wordButton.drag();
+        wordButton.on("pressup", () => {
+          let matchedBlank = null;
+
+          blanks.forEach((blank) => {
+            const centerX = wordButton.x + 60;
+            const centerY = wordButton.y + 25;
+
+            const insideX = centerX > blank.x && centerX < blank.x + 95;
+            const insideY = centerY > blank.y && centerY < blank.y + 28;
+
+            if (insideX && insideY) {
+              matchedBlank = blank;
+            }
+          });
+
+        if (matchedBlank) {
+          if (matchedBlank.filledWord) {
+            const existingButton = wordButtons.find(
+              (button) => button.word === matchedBlank.filledWord
+            );
+
+            if (existingButton) {
+              existingButton.blankIndex = undefined;
+
+              existingButton.animate({
+                props: {
+                  x: existingButton.homeX,
+                  y: existingButton.homeY,
+                  scaleX: 1,
+                  scaleY: 1,
+                },
+                time: 0.25,
+              });
+            }
+          }
+           wordButton.animate({
+            props: {
+              x: matchedBlank.x,
+              y: matchedBlank.y,
+              scaleX: 95 / wordButton.width,
+              scaleY: 28 / wordButton.height,
+            },
+            time: 0.2,
+          });
+          if (wordButton.blankIndex !== undefined) {
+           blanks[wordButton.blankIndex].filledWord = undefined;
+        }
+          wordButton.blankIndex = matchedBlank.index;
+          matchedBlank.filledWord = wordButton.word;
+        } else {
+          wordButton.blankIndex = undefined;
+
+          wordButton.animate({
+            props: {
+              x: wordButton.homeX,
+              y: wordButton.homeY,
+              scaleX: 1,
+              scaleY: 1,
+            },
+            time: 0.25,
+          });
+        }
+          stage.update();
+        });
+      });
+      stage.update();
+    
+   
     const feedbackBar = new zim.Rectangle({
       width: W,
       height: 70,
       color: "#ffffff",
     })
       .addTo(stage)
-      .loc(0, 664);
+      .loc(0, 724);
 
     const feedbackLabel = new zim.Label({
       text: "",
@@ -221,7 +429,22 @@ export default createZimGame({
       bold: true,
     })
       .addTo(stage)
-      .loc(W / 2, 698);
+      .loc(W / 2, 758);
+        const menuButton = new zim.Button({
+          width: 180,
+          height: 52,
+          label: "← Menu",
+          backgroundColor: "#ffffff",
+          rollBackgroundColor: "#f3f4f6",
+          color: "#4f46d9",
+          corner: 12,
+        });
+
+        menuButton.label.size = 22;
+        menuButton.addTo(stage).loc(40, 40);
+        menuButton.on("click", () => {
+          showMenu();
+        });
         const resetButton = new zim.Button({
           width: 220,
           height: 52,
@@ -232,7 +455,7 @@ export default createZimGame({
         });
           resetButton.label.size = 22;
 
-        resetButton.addTo(stage).loc(300, 580);
+        resetButton.addTo(stage).loc(300, 640);
         resetButton.on("click", () => {
           wordButtons.forEach((button) => {
             button.blankIndex = undefined;
@@ -240,16 +463,22 @@ export default createZimGame({
               props: {
                 x: button.homeX,
                 y: button.homeY,
+                scaleX: 1,
+                scaleY: 1,
               },
               time: 0.25,
             });
           });
+          blanks.forEach((blank) => {
+            blank.filledWord = undefined;
+          });
 
-  scoreLabel.text = "Score: 0";
-  feedbackBar.color = "#ffffff";
-  feedbackLabel.text = "";
-  stage.update();
-});
+
+        scoreLabel.text = "Score: 0";
+        feedbackBar.color = "#ffffff";
+        feedbackLabel.text = "";
+        stage.update();
+      });
 
         const checkButton = new zim.Button({
           width: 260,
@@ -261,31 +490,37 @@ export default createZimGame({
         });
         checkButton.label.size = 22;
 
-        checkButton.addTo(stage).loc(550, 580);
+        checkButton.addTo(stage).loc(550, 640);
         checkButton.on("click", () => {
           let score = 0;
 
-          stage.loop((obj) => {
-            if (obj.word && obj.blankIndex !== undefined) {
-              if (obj.word === correctAnswers[obj.blankIndex]) {
-                score++;
-              }
-            }
-          });
+        blanks.forEach((blank) => {
+          if (blank.filledWord === correctAnswers[blank.index]) {
+            score++;
+          }
+        });
 
           scoreLabel.text = `Score: ${score}`;
-          if (score === 3) {
+          if (score === correctAnswers.length) {
             feedbackBar.color = "#d7f3dc";
             feedbackLabel.text = "🎉 Excellent! You got it right!";
             feedbackLabel.color = "#0b5c24";
+            emit("complete");
           } else {
             feedbackBar.color = "#ffe1e1";
             feedbackLabel.text = "❌ Not quite. Try again!";
             feedbackLabel.color = "#a61b1b";
+            emit("wrong");
           }
 
           stage.update();
         });
-    stage.update();
+
+        stage.update();
+      });
+          
+    }
+
+    showMenu();
   },
 });
