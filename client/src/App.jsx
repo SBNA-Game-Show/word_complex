@@ -9,6 +9,7 @@ import AboutPage from "./components/AboutPage";
 import CharacterSelect from "./components/CharacterSelect";
 import GameScene from "./scenes/GameScene";
 import { getSceneConfig } from "./scenes/sceneConfig";
+import { usePreloadImages } from "./preloadImages";
 import "./App.css";
 
 const CHARACTER_STORAGE_KEY = "wc:selectedCharacter";
@@ -33,6 +34,10 @@ function AuthenticatedApp() {
   // "idle" while on the menu, "swiping" during the menu swipe-out before a
   // scene-based game mounts. Used to disable launch buttons and drive the swipe.
   const [launchPhase, setLaunchPhase] = useState("idle");
+
+  // Warm the character + scene art in the background once the user is in, so it
+  // is already cached by the time they open Choose Character or launch a game.
+  usePreloadImages(undefined, isAuthenticated);
 
   useEffect(() => {
     if (!isAuthenticated) {

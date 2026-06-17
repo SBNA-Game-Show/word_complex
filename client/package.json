@@ -3,14 +3,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "optimize:images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "vite": "^6.0.7",
     "zimjs": "^17.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "sharp": "^0.33.5"
+  }
 }
