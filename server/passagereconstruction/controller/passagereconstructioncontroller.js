@@ -1,6 +1,6 @@
 const { getPassageReconstructionGame } = require("../service/passageReconstructionService");
 
-const STORY_ID = "292f2009-96bb-4a3c-b856-e04214e852f8";
+const STORY_ID = "64980961-31e5-4794-a104-54807f6e96d0";
 
 const getGame = async (req, res) => {
   try {
