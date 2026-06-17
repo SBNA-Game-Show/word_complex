@@ -19,8 +19,6 @@ export const retrieveEnglishVersion = async (storyId) => {
     }
 
     const result = await response.json();
-    console.log("Word Hunt Data: ", result);
-
     return result.data;
   } catch (error) {
     console.error("Failed to fetch English version:", error);

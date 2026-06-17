@@ -12,7 +12,10 @@ class Game {
     this.height = setup.H;
     this.zim = setup.zim;
 
-    this.storyData = setup.storyData;
+    this.data = null;
+    this.passageArray = null;
+    this.tokenizedArray = null;
+    this.storyData = null;
     this.wordTypes = setup.wordTypes;
 
     this.landingPage = null;
@@ -26,10 +29,10 @@ class Game {
   // START GAME
   //----------------------------------
 
-  start() {
+  async start() {
     this.landingPage = new LandingPage(this).createLandingPage();
-
-    this.getPassageById();
+    this.data = await this.getPassageById();
+    this.processData();
 
     this.landingPage.button.tap(() => {
       console.log("Button Tapped");
@@ -83,16 +86,24 @@ class Game {
     try {
       const storyId = "04e9ae48-5570-4cd0-8968-a2179353164b";
 
-      console.log("Calling API with id: ", storyId);
-
       const response = await retrieveEnglishVersion(storyId);
 
       console.log("RESPONSE:", response);
 
-      this.storyData = response;
+      return response;
     } catch (error) {
       console.error("Failed to load story:", error);
     }
+  }
+
+  processData() {
+    this.storyData = {
+      story: this.data.passage,
+    };
+
+    this.passageArray = this.data.passageArray;
+    this.tokenizedArray = this.data.tokenizedPassage;
+    console.log("Tokenized Array : ",this.tokenizedArray);
   }
 }
 
