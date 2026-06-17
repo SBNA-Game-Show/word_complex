@@ -1,6 +1,7 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
 import Chalk from "../UI/Chalk";
+import BackButton from "../../../zimcomponents/BackButton";
 
 import { emit } from "../../../scenes/sceneBus";
 
@@ -16,6 +17,7 @@ class FindVerbGame {
     this.foundWords = [];
 
     this.data = this.getData();
+    console.log("VERB DATA:", this.data);
   }
 
   displayPassage() {
@@ -303,12 +305,6 @@ class FindVerbGame {
   checkWin() {
     
       emit("complete");
-
-      setTimeout(() => {
-        alert(
-          "🎉 Congratulations! You found all 15 verbs!"
-        );
-      }, 300);
 
     if (
       this.foundWords.length ===
