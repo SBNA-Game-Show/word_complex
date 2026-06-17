@@ -155,6 +155,7 @@
 }
 
 .scene-canvas-frame {
+  position: relative;
   width: min(100%, var(--scene-canvas-max-width, 760px));
   padding: clamp(0.5rem, 1.2vw, 1rem);
   background: rgba(255, 255, 255, 0.72);
@@ -162,6 +163,12 @@
   border: 4px solid rgba(255, 255, 255, 0.9);
   border-radius: 26px;
   box-shadow: 0 24px 48px rgba(20, 28, 60, 0.32);
+  /* Manual zoom from the +/- controls scales the whole panel. Anchored to the
+     left edge so the panel grows/shrinks toward the right (the canvas sits on
+     the left of the scene) instead of drifting away from the left. */
+  transform: scale(var(--canvas-zoom, 1));
+  transform-origin: left center;
+  transition: transform 160ms ease;
 }
 
 /* The game component renders a `.zim-holder` (see createZimGame); keep it

@@ -1796,6 +1796,15 @@ input {
   height: 100%;
 }
 
+/* GameScreen fallback: zoom the panel via the holder (the shell itself runs an
+   entrance animation that would override a transform). Scene games scale
+   .scene-canvas-frame instead — see GameScene.css. */
+.canvas-shell .zim-holder {
+  transform: scale(var(--canvas-zoom, 1));
+  transform-origin: center center;
+  transition: transform 160ms ease;
+}
+
 /* Meaning Bridge migrated canvas containment */
 
 /*
@@ -1874,22 +1883,16 @@ input {
   box-shadow: 0 12px 24px rgba(45, 60, 130, 0.14);
 }
 
-/*
-  Actual ZIM canvas zoom:
-  This is the only thing affected by the zoom buttons.
-*/
 .canvas-shell-meaning-bridge .zim-holder canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
-  transform: scale(var(--meaning-bridge-canvas-zoom, 1));
-  transform-origin: center center;
-  transition: transform 160ms ease;
 }
 
-/* Header zoom controls shown only for Meaning Bridge. */
+/* Canvas zoom controls, shown for every game. Live in the fixed top bar so they
+   never scale with the panel and stay visible at any zoom level. */
 
-.meaning-bridge-zoom-controls {
+.canvas-zoom-controls {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1900,8 +1903,8 @@ input {
   box-shadow: 0 4px 0 rgba(29, 43, 102, 0.08);
 }
 
-.meaning-bridge-zoom-controls button,
-.meaning-bridge-zoom-controls span {
+.canvas-zoom-controls button,
+.canvas-zoom-controls span {
   min-width: 34px;
   min-height: 28px;
   padding: 0.25rem 0.55rem;
@@ -1912,19 +1915,24 @@ input {
   border-radius: 999px;
 }
 
-.meaning-bridge-zoom-controls span {
+.canvas-zoom-controls span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: #ffffff;
 }
 
-.meaning-bridge-zoom-controls button:hover {
+.canvas-zoom-controls button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-.meaning-bridge-zoom-controls button:active {
+.canvas-zoom-controls button:active:not(:disabled) {
   transform: translateY(1px);
+}
+
+.canvas-zoom-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 @media (max-width: 900px) {
@@ -1941,11 +1949,6 @@ input {
   }
 }
 
-@media (max-width: 760px) {
-  .meaning-bridge-zoom-controls {
-    display: none;
-  }
-}
 
 /* about */
 
