@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { AuthProvider, LoginPage, useAuth } from "./auth";
 import VideoBackground from "./components/VideoBackground";
-import LoginPage from "./components/LoginPage";
 import Launcher from "./components/Launcher";
 import GameScreen from "./components/GameScreen";
 import HowToPlay from "./components/HowToPlay";
@@ -22,7 +21,7 @@ export default function App() {
 }
 
 function AuthenticatedApp() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
   const [screen, setScreen] = useState("launcher");
   const [activeGameId, setActiveGameId] = useState("sentence-builder");
   const [selectedCharacterId, setSelectedCharacterId] = useState(() => {
@@ -92,7 +91,12 @@ function AuthenticatedApp() {
       }`}
     >
       <VideoBackground />
-      {!isAuthenticated ? (
+      {isInitializing ? (
+        <div className="auth-splash" role="status" aria-live="polite">
+          <span className="auth-splash-logo" aria-hidden="true">W</span>
+          <p>Loading...</p>
+        </div>
+      ) : !isAuthenticated ? (
         <LoginPage />
       ) : screen === "scene" ? (
         <GameScene
