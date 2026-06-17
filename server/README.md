@@ -43,7 +43,7 @@ npm start        # production
 npm test         # Jest test suite
 ```
 
-Runs at `http://localhost:3000`
+Runs at `http://localhost:5000`
 
 ## Running with Docker
 

@@ -31,7 +31,7 @@ cd server
 npm install
 npm run dev
 ```
-Runs at `http://localhost:3000`
+Runs at `http://localhost:5000`
 
 **Full stack with Docker:**
 ```bash
