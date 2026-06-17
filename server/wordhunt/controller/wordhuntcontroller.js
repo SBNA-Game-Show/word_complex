@@ -2,7 +2,7 @@ const findNounVerbAndAdjEnglish = require("../service/findNounsVerbsAndAdjective
 
 const findPOSEnglish = async (req, res) => {
   try {
-    const storyId = "292f2009-96bb-4a3c-b856-e04214e852f8";
+    const storyId = "04e9ae48-5570-4cd0-8968-a2179353164b";
     const story = await findNounVerbAndAdjEnglish(storyId);
 
     if (!story) {
