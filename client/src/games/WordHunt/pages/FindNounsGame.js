@@ -26,20 +26,13 @@ class FindNounsGame {
     // BOARD
     //-----------------------------------
 
-    this.blackboard = new Blackboard(
-      this.game,
-      1350,
-      760
-    ).create();
+    this.blackboard = new Blackboard(this.game, 1350, 760).create();
 
     this.blackboard.center(this.game.stage);
     this.blackboard.addTo(this.game.stage);
 
     // Add Back Button
-    new BackButton(
-      this.game,
-      this.blackboard
-    ).create();
+    new BackButton(this.game, this.blackboard).create();
 
     //-----------------------------------
     // TITLE
@@ -47,7 +40,7 @@ class FindNounsGame {
 
     const heading = new ZimLabel(
       this.game,
-      "Search For All Nouns From The Passage"
+      "Search For All Nouns From The Passage",
     ).createLabel();
 
     heading.scale = 0.75;
@@ -62,16 +55,13 @@ class FindNounsGame {
 
     const progressLabel = new ZimLabel(
       this.game,
-      `Found 0 / ${this.nouns.length} Verbs`
+      `Found 0 / ${this.nouns.length} Verbs`,
     ).createLabel();
 
     progressLabel.scale = 0.65;
     progressLabel.color = "#00ff88";
 
-    progressLabel.pos(
-      this.blackboard.width - 330,
-      20
-    );
+    progressLabel.pos(this.blackboard.width - 330, 20);
 
     progressLabel.addTo(this.blackboard);
 
@@ -109,10 +99,7 @@ class FindNounsGame {
       corner: 8,
     });
 
-    foundBox.pos(
-      40,
-      this.blackboard.height - 190
-    );
+    foundBox.pos(40, this.blackboard.height - 190);
 
     foundBox.addTo(this.blackboard);
 
@@ -122,10 +109,7 @@ class FindNounsGame {
       color: "#00ff88",
     });
 
-    foundTitle.pos(
-      60,
-      this.blackboard.height - 180
-    );
+    foundTitle.pos(60, this.blackboard.height - 180);
 
     foundTitle.addTo(this.blackboard);
 
@@ -137,10 +121,7 @@ class FindNounsGame {
       lineWidth: this.blackboard.width - 140,
     });
 
-    foundWordsLabel.pos(
-      60,
-      this.blackboard.height - 130
-    );
+    foundWordsLabel.pos(60, this.blackboard.height - 130);
 
     foundWordsLabel.addTo(this.blackboard);
 
@@ -155,9 +136,7 @@ class FindNounsGame {
 
     const lineHeight = 42;
 
-    const maxWidth =
-      this.blackboard.width - 80;
-    
+    const maxWidth = this.blackboard.width - 80;
 
     //-----------------------------------
     // WORDS
@@ -170,10 +149,7 @@ class FindNounsGame {
         color: "white",
       });
 
-      if (
-        x + label.width >
-        maxWidth
-      ) {
+      if (x + label.width > maxWidth) {
         x = margin;
         y += lineHeight;
       }
@@ -189,24 +165,15 @@ class FindNounsGame {
       //-----------------------------------
 
       label.tap(() => {
-        const cleanWord =
-          word
-            .toLowerCase()
-            .replace(/[^\w']/g, "");
-          console.log("CLICKED:", cleanWord);
+        const cleanWord = word.toLowerCase().replace(/[^\w']/g, "");
+        console.log("CLICKED:", cleanWord);
         //-----------------------------------
         // CORRECT VERB
         //-----------------------------------
 
-        if (
-          this.nouns.includes(cleanWord)
-        ) {
-
-          if (
-            this.foundWords.includes(cleanWord)
-          ) {
-            messageLabel.text =
-              `${cleanWord} already found`;
+        if (this.nouns.includes(cleanWord)) {
+          if (this.foundWords.includes(cleanWord)) {
+            messageLabel.text = `${cleanWord} already found`;
 
             this.game.stage.update();
             return;
@@ -215,42 +182,31 @@ class FindNounsGame {
           // Prevent this label from firing again
           label.mouseEnabled = false;
 
-          this.foundWords.push(
-            cleanWord
-          );
+          this.foundWords.push(cleanWord);
           console.log("FOUND =", this.foundWords);
 
           this.score++;
           console.log("SCORE =", this.score);
           label.color = "#00ff88";
 
-          progressLabel.text =
-            `Found ${this.score}/${this.nouns.length} Nouns`;
+          progressLabel.text = `Found ${this.score}/${this.nouns.length} Nouns`;
 
-          messageLabel.text =
-            `Great! "${cleanWord}" is a noun`;
+          messageLabel.text = `Great! "${cleanWord}" is a noun`;
 
-          foundWordsLabel.text =
-            this.foundWords.join(", ");
+          foundWordsLabel.text = this.foundWords.join(", ");
 
           emit("correct");
 
-          this.checkWin(
-            messageLabel
-          );
+          this.checkWin(messageLabel);
         }
 
         //-----------------------------------
         // NOUN
         //-----------------------------------
-
-        else if (
-          this.verbs.includes(cleanWord)
-        ) {
+        else if (this.verbs.includes(cleanWord)) {
           label.color = "red";
 
-          messageLabel.text =
-            `Oops! "${cleanWord}" is a verb`;
+          messageLabel.text = `Oops! "${cleanWord}" is a verb`;
 
           emit("wrong");
         }
@@ -258,14 +214,10 @@ class FindNounsGame {
         //-----------------------------------
         // ADJECTIVE
         //-----------------------------------
-
-        else if (
-          this.adjectives.includes(cleanWord)
-        ) {
+        else if (this.adjectives.includes(cleanWord)) {
           label.color = "orange";
 
-          messageLabel.text =
-            `Oops! "${cleanWord}" is an adjective`;
+          messageLabel.text = `Oops! "${cleanWord}" is an adjective`;
 
           emit("wrong");
         }
@@ -273,12 +225,10 @@ class FindNounsGame {
         //-----------------------------------
         // OTHER
         //-----------------------------------
-
         else {
           label.color = "#ff6666";
 
-          messageLabel.text =
-            `"${cleanWord}" is not a noun`;
+          messageLabel.text = `"${cleanWord}" is not a noun`;
 
           emit("wrong");
         }
@@ -290,7 +240,7 @@ class FindNounsGame {
     //-----------------------------------
     // CHALK
     //-----------------------------------
-
+    
     new Chalk(this.game).show();
 
     this.game.stage.update();
@@ -303,12 +253,7 @@ class FindNounsGame {
   //-----------------------------------
 
   checkWin() {
-
-    if (
-      this.foundWords.length ===
-      this.nouns.length
-    ) {
-
+    if (this.foundWords.length === this.nouns.length) {
       const modal = document.createElement("div");
 
       modal.innerHTML = `
@@ -391,7 +336,6 @@ class FindNounsGame {
       //-----------------------------------
 
       document.getElementById("continueBtn").onclick = () => {
-
         modal.remove();
 
         this.blackboard.removeFrom();
@@ -406,7 +350,6 @@ class FindNounsGame {
       //-----------------------------------
 
       document.getElementById("exitBtn").onclick = () => {
-
         modal.remove();
 
         this.game.stage.removeAllChildren();
@@ -423,9 +366,7 @@ class FindNounsGame {
   //-----------------------------------
 
   getData() {
-    return (
-      this.game.storyData.story.match(/\S+/g) || []
-    );
+    return this.game.storyData.story.match(/\S+/g) || [];
   }
 }
 

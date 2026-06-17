@@ -37,11 +37,7 @@ const wordTypes = {
     "pacified",
   ],
 
-  adjectives: [
-    "great",
-    "closer",
-    "each",
-  ],
+  adjectives: ["great", "closer", "each"],
 };
 
 export default createZimGame({
@@ -54,7 +50,6 @@ export default createZimGame({
   outerColor: "#556B3D",
 
   setup({ stage, W, H, zim }) {
-
     const game = new Game({
       stage,
       W,
