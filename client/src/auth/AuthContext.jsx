@@ -1,5 +1,20 @@
-import { createContext, useContext, useMemo, useState } from "react";
-import { loginWithPassword, signUpWithPassword } from "./fakeAuthClient";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  loginWithEmail,
+  logout as firebaseLogout,
+  signInAsGuest,
+  signInWithGoogle,
+  signUpWithEmail,
+  subscribeToAuth,
+  toFriendlyError,
+} from "./firebaseClient";
 
 const AuthContext = createContext(null);
 
@@ -7,63 +22,94 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  // True until Firebase reports the restored session for the first time, so we
+  // can avoid flashing the login screen to an already-signed-in user.
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  async function login(credentials) {
+  // The single source of truth for who is signed in: Firebase tells us via
+  // onAuthStateChanged after sign-in, sign-out, and on initial page load.
+  useEffect(() => {
+    const unsubscribe = subscribeToAuth((mappedUser) => {
+      setUser(mappedUser);
+      setStatus(mappedUser ? "authenticated" : "idle");
+      setIsInitializing(false);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Wrap a Firebase auth action with shared loading/error handling. The user
+  // state itself is set by the onAuthStateChanged subscription above.
+  const runAuthAction = useCallback(async (action) => {
     setStatus("loading");
     setError("");
 
     try {
-      const authenticatedUser = await loginWithPassword(credentials);
-      setUser(authenticatedUser);
-      setStatus("authenticated");
-      return authenticatedUser;
-    } catch (loginError) {
-      setUser(null);
-      setStatus("idle");
-      setError(loginError.message);
-      throw loginError;
+      return await action();
+    } catch (authError) {
+      setStatus((current) => (current === "loading" ? "idle" : current));
+      setError(toFriendlyError(authError));
+      throw authError;
     }
-  }
+  }, []);
 
-  async function signUp(account) {
-    setStatus("loading");
+  const login = useCallback(
+    (credentials) => runAuthAction(() => loginWithEmail(credentials)),
+    [runAuthAction]
+  );
+
+  const signUp = useCallback(
+    (account) => runAuthAction(() => signUpWithEmail(account)),
+    [runAuthAction]
+  );
+
+  const loginWithGoogle = useCallback(
+    () => runAuthAction(() => signInWithGoogle()),
+    [runAuthAction]
+  );
+
+  const loginAsGuest = useCallback(
+    () => runAuthAction(() => signInAsGuest()),
+    [runAuthAction]
+  );
+
+  const clearError = useCallback(() => setError(""), []);
+
+  const logout = useCallback(async () => {
     setError("");
-
     try {
-      const authenticatedUser = await signUpWithPassword(account);
-      setUser(authenticatedUser);
-      setStatus("authenticated");
-      return authenticatedUser;
-    } catch (signUpError) {
-      setUser(null);
-      setStatus("idle");
-      setError(signUpError.message);
-      throw signUpError;
+      await firebaseLogout();
+    } catch (logoutError) {
+      setError(toFriendlyError(logoutError));
     }
-  }
-
-  function clearError() {
-    setError("");
-  }
-
-  function logout() {
-    setUser(null);
-    setStatus("idle");
-    setError("");
-  }
+  }, []);
 
   const value = useMemo(
     () => ({
       error,
       isAuthenticated: Boolean(user),
+      isInitializing,
       isLoading: status === "loading",
       clearError,
       login,
+      loginAsGuest,
+      loginWithGoogle,
       logout,
       signUp,
       user,
     }),
-    [error, status, user]
+    [
+      error,
+      isInitializing,
+      status,
+      user,
+      clearError,
+      login,
+      loginAsGuest,
+      loginWithGoogle,
+      logout,
+      signUp,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
