@@ -80,7 +80,8 @@ class Game {
     this.stage.update();
   }
   //-------------------------
-  // API CALL to get Game Data
+  // API CALL TO GET GAME DATA AND DATA PROCESSING
+  //-------------------------
 
   async getPassageById() {
     try {
