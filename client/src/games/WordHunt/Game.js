@@ -16,7 +16,7 @@ class Game {
     this.passageArray = null;
     this.tokenizedArray = null;
     this.storyData = null;
-    this.wordTypes = setup.wordTypes;
+    this.wordTypes = null;
 
     this.landingPage = null;
 
@@ -97,13 +97,45 @@ class Game {
   }
 
   processData() {
+    if (!this.data) {
+      console.log("Backend Not Connected");
+      return;
+    }
     this.storyData = {
       story: this.data.passage,
     };
 
     this.passageArray = this.data.passageArray;
     this.tokenizedArray = this.data.tokenizedPassage;
-    console.log("Tokenized Array : ",this.tokenizedArray);
+    // console.log("Tokenized Array : ", this.tokenizedArray);
+    this.wordTypes = this.splitPOSByType();
+    console.log("Word Types:", this.wordTypes);
+  }
+
+  splitPOSByType() {
+    const nouns = [];
+    const verbs = [];
+    const adjectives = [];
+
+    this.tokenizedArray.forEach((item) => {
+      // console.log("ITEM 0 IN TOKENZIED ARRAY:", item.text);
+      if (item.pos === "NOUN") {
+        nouns.push(item.text);
+      }
+      if (item.pos === "VERB") {
+        verbs.push(item.text);
+      }
+
+      if (item.pos === "ADV") {
+        adjectives.push(item.text);
+      }
+    });
+
+    return {
+      nouns,
+      verbs,
+      adjectives,
+    };
   }
 }
 

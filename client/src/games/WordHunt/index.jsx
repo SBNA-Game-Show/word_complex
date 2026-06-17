@@ -1,40 +1,6 @@
 import { createZimGame } from "../createZimGame";
 import Game from "./Game";
 
-const wordTypes = {
-  nouns: [
-    "rabbit",
-    "home",
-    "weasel",
-    "dispute",
-    "cat",
-    "opponents",
-    "paw",
-    "disputants",
-    "quarrel",
-  ],
-
-  verbs: [
-    "left",
-    "moved",
-    "refused",
-    "move",
-    "arose",
-    "heard",
-    "offered",
-    "pacify",
-    "asked",
-    "come",
-    "hear",
-    "happened",
-    "grabbed",
-    "devour",
-    "pacified",
-  ],
-
-  adjectives: ["great", "closer", "each"],
-};
-
 export default createZimGame({
   id: "word-hunt",
 
@@ -50,8 +16,6 @@ export default createZimGame({
       W,
       H,
       zim,
-      storyData,
-      wordTypes,
     });
 
     game.start();
