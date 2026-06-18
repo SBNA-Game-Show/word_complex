@@ -74,7 +74,6 @@ class FindNounsGame {
     //-----------------------------------
 
     this.messageBar = new MessageBar(this.game);
-
     //-----------------------------------
     // FOUND VERBS BOX
     //-----------------------------------
@@ -129,8 +128,6 @@ class FindNounsGame {
     // WORDS
     //-----------------------------------
 
-    const messageBar = new MessageBar(this.game);
-
     const chalk = new Chalk(this.game);
     chalk.show();
 
@@ -161,7 +158,7 @@ class FindNounsGame {
       label.tap(() => {
         const cleanWord = word.toLowerCase().replace(/[^\w']/g, "");
         console.log("CLICKED:", cleanWord);
-        this.messageBar.show("Hello World", "red");
+
         //-----------------------------------
         // CORRECT VERB
         //-----------------------------------
@@ -202,7 +199,7 @@ class FindNounsGame {
         else if (this.verbs.includes(cleanWord)) {
           label.color = "red";
 
-          messageLabel.text = `Oops! "${cleanWord}" is a verb`;
+          this.messageBar.show(`Oops! "${cleanWord}" is a verb`, "red", 10000);
 
           emit("wrong");
         }
