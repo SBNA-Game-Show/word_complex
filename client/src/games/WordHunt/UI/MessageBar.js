@@ -13,7 +13,7 @@ class MessageBar {
   }
 
   show(text, color = "white", duration = 1200) {
-    this.game.inputLocked = true;
+    this.game.isInputLocked = true;
     if (this.container) {
       this.container.removeFrom();
       clearTimeout(this.timeout);
@@ -59,7 +59,7 @@ class MessageBar {
       if (this.container) {
         this.container.removeFrom();
         this.container = null;
-        this.game.inputLocked = false;
+        this.game.isInputLocked = false;
         this.game.stage.update();
       }
     }, duration);

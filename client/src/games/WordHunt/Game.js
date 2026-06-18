@@ -27,7 +27,8 @@ class Game {
 
     // game logic variables
     this.maxTime = 1; // time in minutes
-    this.inputLocked = false;
+    this.isInputLocked = false;
+    this.isTimerRunning = false;
   }
 
   //----------------------------------
