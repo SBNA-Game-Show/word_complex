@@ -42,7 +42,7 @@ class MessageBar {
 
     bg.addTo(this.container);
 
-    this.label = new ZimLabel(this.game, text, 26, "white").createLabel();
+    this.label = new ZimLabel(this.game, text, 26, color).createLabel();
     this.label.addTo(this.container);
     // vertical stack system (future-proof)
     this.label.pos(

@@ -199,7 +199,11 @@ class FindNounsGame {
         else if (this.verbs.includes(cleanWord)) {
           label.color = "red";
 
-          this.messageBar.show(`Oops! "${cleanWord}" is a verb`, "red", 10000);
+          this.messageBar.show(
+            `Oops! "${cleanWord}" is a verb`,
+            "white",
+            10000,
+          );
 
           emit("wrong");
         }
@@ -210,7 +214,11 @@ class FindNounsGame {
         else if (this.adjectives.includes(cleanWord)) {
           label.color = "orange";
 
-          messageLabel.text = `Oops! "${cleanWord}" is an adjective`;
+          this.messageBar.show(
+            `Oops! "${cleanWord}" is a Adjective`,
+            "white",
+            10000,
+          );
 
           emit("wrong");
         }
