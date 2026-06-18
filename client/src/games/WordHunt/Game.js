@@ -26,6 +26,7 @@ class Game {
     this.findAdjectiveGame = null;
 
     // game logic variables
+    this.initialMaxTime = 1;
     this.maxTime = 1; // time in minutes
     this.isInputLocked = false;
     this.isTimerRunning = false;
@@ -144,6 +145,7 @@ class Game {
       adjectives,
     };
   }
+
 }
 
 export default Game;

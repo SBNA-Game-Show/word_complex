@@ -1,5 +1,6 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import ZimContainer from "../../../zimcomponents/ZimContainer";
+import Timer from "../utils/Timer";
 
 class ProgressBar {
   constructor(game, challengeText, foundCount = 0) {
@@ -11,9 +12,11 @@ class ProgressBar {
     this.timerLabel = null;
     this.maxTime = this.game.maxTime;
 
-    this.startTime = Date.now();
+    this.timer = new Timer(game, game.maxTime);
 
-    this.isTimerActive = false
+    // this.startTime = Date.now();
+
+    // this.isTimerActive = false
   }
 
   create() {
@@ -52,61 +55,18 @@ class ProgressBar {
     return mainContainer;
   }
 
-  startTimer() {
-    if (this.timerRunning) return;
-
-    this.timerRunning = true;
-    this.startTime = Date.now();
-
-    const maxTimeMs = this.maxTime * 60 * 1000;
-
-    this.tickHandler = () => {
-      const elapsed = Date.now() - this.startTime;
-
-      if (elapsed >= maxTimeMs) {
-        this.stopTimer();
-        return;
-      }
-
-      const remainingMs = maxTimeMs - elapsed;
-
-      const minutes = Math.floor(remainingMs / 60000);
-      const seconds = Math.floor((remainingMs % 60000) / 1000);
-
-      this.timerLabel.setText(
-        `Time Left: ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
-      );
-    };
-
-    this.game.zim.Ticker.add(this.tickHandler);
-  }
-
-  stopTimer() {
-    if (!this.timerRunning) return;
-
-    this.timerRunning = false;
-
-    if (this.tickHandler) {
-      this.game.zim.Ticker.remove(this.tickHandler);
-      this.tickHandler = null;
-    }
-
-    this.timerLabel.setText("Time's Up!");
-
-    this.game.stage.update();
-  }
-
-  updateFound(count) {
-    if (!this.foundLabel) return;
-
-    this.foundCount = count;
+  setFound(count) {
     this.foundLabel.setText(`Found: ${count}`);
   }
 
-  updateFound(count) {
-    if (this.foundLabel) {
-      this.foundLabel = `Found: ${count}`;
-    }
+  setTime(minutes, seconds) {
+    this.timerLabel.setText(
+      `Time Left: ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
+    );
+  }
+
+  showTimesUp() {
+    this.timerLabel.setText("Time's Up!");
   }
 }
 

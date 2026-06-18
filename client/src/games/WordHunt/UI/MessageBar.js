@@ -12,7 +12,7 @@ class MessageBar {
     this.timeout = null;
   }
 
-  show(text, color = "white", duration = 1200) {
+  show(text, color = "black", duration = 1200) {
     this.game.isInputLocked = true;
     if (this.container) {
       this.container.removeFrom();
@@ -37,10 +37,10 @@ class MessageBar {
     const bg = new this.game.zim.Rectangle({
       width: 420,
       height: 120,
-      color: "#1E3A1E",
+      color: "#FFF8F0",
       corner: 16,
-      borderColor: "#5C4033",
-      borderWidth: 10,
+      borderColor: "#E9D8A6",
+      borderWidth: 2,
     });
 
     bg.addTo(this.container);
@@ -65,6 +65,9 @@ class MessageBar {
     }, duration);
 
     return this.container;
+  }
+  showWinningMessage() {
+    
   }
 }
 

@@ -4,6 +4,7 @@ import BackButton from "../../../zimcomponents/BackButton";
 import Chalk from "../UI/Chalk";
 import ProgressBar from "../UI/ProgressBar";
 import MessageBar from "../UI/MessageBar";
+import Timer from "../utils/Timer";
 
 import { emit } from "../../../scenes/sceneBus";
 
@@ -14,6 +15,7 @@ class FindNounsGame {
     this.verbs = game.wordTypes.verbs;
     this.adjectives = game.wordTypes.adjectives;
     this.challenge = `Find All ${this.nouns.length} Nouns`;
+    this.timer = new Timer(game, this.game.initialMaxTime);
 
     this.score = 0;
     this.foundWords = [];
@@ -119,6 +121,20 @@ class FindNounsGame {
     const chalk = new Chalk(this.game);
     chalk.show();
 
+    this.timer.start(
+      ({ minutes, seconds }) => {
+        this.progressBar.setTime(minutes, seconds);
+      },
+
+      // () => {
+      //   this.progressBar.showTimesUp();
+
+      //   this.game.inputLocked = true;
+
+      //   this.messageBar.show("Time's Up!", "red", 5000);
+      // },
+    );
+
     this.data.forEach((word) => {
       const label = new ZimLabel(this.game, word, 24, "white");
 
@@ -166,23 +182,17 @@ class FindNounsGame {
           console.log("FOUND =", this.foundWords);
 
           this.score++;
-          this.progressBar.foundLabel.setText(
-            `Found: ${this.foundWords.length}`,
-          );
+          this.progressBar.setFound(this.foundWords.length);
           console.log("SCORE =", this.score);
           label.setColor("#00ff88");
 
-          this.messageBar.show(
-            `Great! "${cleanWord}" is a Noun`,
-            "white",
-            10000,
-          );
+          // this.messageBar.show(`Great! "${cleanWord}" is a Noun`, 10000);
 
           foundWordsLabel.text = this.foundWords.join(", ");
 
           emit("correct");
 
-          // this.checkWin(messageLabel);
+          this.checkWin();
         }
 
         //-----------------------------------
@@ -191,11 +201,7 @@ class FindNounsGame {
         else if (this.verbs.includes(cleanWord)) {
           label.color = "red";
 
-          this.messageBar.show(
-            `Great! "${cleanWord}" is a VERB`,
-            "white",
-            10000,
-          );
+          this.messageBar.show(`Great! "${cleanWord}" is a VERB`, 10000);
 
           emit("wrong");
         }
@@ -206,11 +212,7 @@ class FindNounsGame {
         else if (this.adjectives.includes(cleanWord)) {
           label.color = "orange";
 
-          this.messageBar.show(
-            `Oops! "${cleanWord}" is a Adjective`,
-            "white",
-            10000,
-          );
+          this.messageBar.show(`Oops! "${cleanWord}" is a Adjective`, 10000);
 
           emit("wrong");
         }
@@ -230,14 +232,7 @@ class FindNounsGame {
       });
     });
 
-    //-----------------------------------
-    // CHALK
-    //-----------------------------------
-
     this.game.stage.update();
-    this.progressBar.startTimer();
-    console.log("Timer Running: ", this.progressBar);
-
     return this.blackboard;
   }
 
@@ -245,112 +240,120 @@ class FindNounsGame {
   // WIN
   //-----------------------------------
 
+  // checkWin() {
+  //   if (this.foundWords.length === this.nouns.length) {
+  //     const modal = document.createElement("div");
+
+  //     modal.innerHTML = `
+  //       <div style="
+  //         position:fixed;
+  //         top:0;
+  //         left:0;
+  //         width:100%;
+  //         height:100%;
+  //         background:rgba(0,0,0,0.4);
+  //         display:flex;
+  //         justify-content:center;
+  //         align-items:center;
+  //         z-index:99999;
+  //       ">
+  //         <div style="
+  //           background:#FFF8F0;
+  //           padding:30px;
+  //           border-radius:20px;
+  //           border:4px solid #E9D8A6;
+  //           text-align:center;
+  //           min-width:400px;
+  //           box-shadow:0 8px 20px rgba(0,0,0,.25);
+  //         ">
+
+  //           <h1 style="
+  //             color:#7B2CBF;
+  //             margin-bottom:10px;
+  //             font-size:42px;
+  //           ">
+  //             🎉 Great Job!
+  //           </h1>
+
+  //           <p style="
+  //             font-size:24px;
+  //             margin-bottom:25px;
+  //           ">
+  //             You found all Nouns!
+  //           </p>
+
+  //           <button
+  //             id="continueBtn"
+  //             style="
+  //               background:#9D6EFF;
+  //               color:white;
+  //               border:none;
+  //               padding:14px 26px;
+  //               border-radius:12px;
+  //               cursor:pointer;
+  //               margin-right:12px;
+  //               font-size:18px;
+  //             "
+  //           >
+  //             Continue to Verbs
+  //           </button>
+
+  //           <button
+  //             id="exitBtn"
+  //             style="
+  //               background:#FF8A80;
+  //               color:white;
+  //               border:none;
+  //               padding:14px 26px;
+  //               border-radius:12px;
+  //               cursor:pointer;
+  //               font-size:18px;
+  //             "
+  //           >
+  //             Exit Game
+  //           </button>
+
+  //         </div>
+  //       </div>
+  //     `;
+
+  //     document.body.appendChild(modal);
+
+  //     //-----------------------------------
+  //     // CONTINUE
+  //     //-----------------------------------
+
+  //     document.getElementById("continueBtn").onclick = () => {
+  //       modal.remove();
+
+  //       this.blackboard.removeFrom();
+
+  //       this.game.startVerbGame();
+
+  //       this.game.stage.update();
+  //     };
+
+  //     //-----------------------------------
+  //     // EXIT
+  //     //-----------------------------------
+
+  //     document.getElementById("exitBtn").onclick = () => {
+  //       modal.remove();
+
+  //       this.game.stage.removeAllChildren();
+
+  //       this.game.start();
+
+  //       this.game.stage.update();
+  //     };
+  //   }
+  // }
+
   checkWin() {
     if (this.foundWords.length === this.nouns.length) {
-      const modal = document.createElement("div");
-
-      modal.innerHTML = `
-        <div style="
-          position:fixed;
-          top:0;
-          left:0;
-          width:100%;
-          height:100%;
-          background:rgba(0,0,0,0.4);
-          display:flex;
-          justify-content:center;
-          align-items:center;
-          z-index:99999;
-        ">
-          <div style="
-            background:#FFF8F0;
-            padding:30px;
-            border-radius:20px;
-            border:4px solid #E9D8A6;
-            text-align:center;
-            min-width:400px;
-            box-shadow:0 8px 20px rgba(0,0,0,.25);
-          ">
-
-            <h1 style="
-              color:#7B2CBF;
-              margin-bottom:10px;
-              font-size:42px;
-            ">
-              🎉 Great Job!
-            </h1>
-
-            <p style="
-              font-size:24px;
-              margin-bottom:25px;
-            ">
-              You found all Nouns!
-            </p>
-
-            <button
-              id="continueBtn"
-              style="
-                background:#9D6EFF;
-                color:white;
-                border:none;
-                padding:14px 26px;
-                border-radius:12px;
-                cursor:pointer;
-                margin-right:12px;
-                font-size:18px;
-              "
-            >
-              Continue to Verbs
-            </button>
-
-            <button
-              id="exitBtn"
-              style="
-                background:#FF8A80;
-                color:white;
-                border:none;
-                padding:14px 26px;
-                border-radius:12px;
-                cursor:pointer;
-                font-size:18px;
-              "
-            >
-              Exit Game
-            </button>
-
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-
-      //-----------------------------------
-      // CONTINUE
-      //-----------------------------------
-
-      document.getElementById("continueBtn").onclick = () => {
-        modal.remove();
-
-        this.blackboard.removeFrom();
-
-        this.game.startVerbGame();
-
-        this.game.stage.update();
-      };
-
-      //-----------------------------------
-      // EXIT
-      //-----------------------------------
-
-      document.getElementById("exitBtn").onclick = () => {
-        modal.remove();
-
-        this.game.stage.removeAllChildren();
-
-        this.game.start();
-
-        this.game.stage.update();
-      };
+      this.timer.stop();
+      this.game.inputLocked = true;
+      this.messageBar.show("Time's Up!", "red", 5000);
     }
   }
 
