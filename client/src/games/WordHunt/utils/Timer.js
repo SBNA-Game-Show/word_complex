@@ -1,12 +1,12 @@
 class Timer {
   constructor(game, minutes = 1) {
     this.game = game;
-
     this.minutes = minutes;
 
     this.isActive = false;
     this.tickHandler = null;
     this.startTime = null;
+    this.elapsedMs = 0;
   }
 
   start(onTick = null, onComplete = null) {
@@ -18,15 +18,14 @@ class Timer {
     const maxTimeMs = this.minutes * 60 * 1000;
 
     this.tickHandler = () => {
-      const elapsed = Date.now() - this.startTime;
-      const remainingMs = maxTimeMs - elapsed;
+      this.elapsedMs = Date.now() - this.startTime;
+
+      const remainingMs = maxTimeMs - this.elapsedMs;
 
       if (remainingMs <= 0) {
         this.stop();
 
-        if (onComplete) {
-          onComplete();
-        }
+        if (onComplete) onComplete();
 
         return;
       }
@@ -46,9 +45,16 @@ class Timer {
     this.game.zim.Ticker.add(this.tickHandler);
   }
 
+  getElapsedTime() {
+    if (!this.startTime) return 0;
+
+    return this.isActive ? Date.now() - this.startTime : this.elapsedMs;
+  }
+
   stop() {
     if (!this.isActive) return;
 
+    this.elapsedMs = Date.now() - this.startTime;
     this.isActive = false;
 
     if (this.tickHandler) {

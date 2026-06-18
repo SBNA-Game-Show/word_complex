@@ -125,6 +125,7 @@ class MessageBar {
     this.winningLabel.pos(20, 20);
 
     this.continueButton = new ZimButton(this.game, 160, 40, "Continue");
+
     const continueBtn = this.continueButton.createButton();
     continueBtn.addTo(this.winningContainer);
     continueBtn.pos(50, 100);

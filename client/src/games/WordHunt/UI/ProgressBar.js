@@ -14,9 +14,7 @@ class ProgressBar {
 
     this.timer = new Timer(game, game.maxTime);
 
-    // this.startTime = Date.now();
-
-    // this.isTimerActive = false
+    this.usedTime = null;
   }
 
   create() {
@@ -68,6 +66,7 @@ class ProgressBar {
   showTimesUp() {
     this.timerLabel.setText("Time's Up!");
   }
+
 }
 
 export default ProgressBar;
