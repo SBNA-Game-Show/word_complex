@@ -45,18 +45,6 @@ class FindNounsGame {
     // SCORE
     //-----------------------------------
 
-    const progressLabel = new ZimLabel(
-      this.game,
-      `Found 0 / ${this.nouns.length} Verbs`,
-    ).createLabel();
-
-    progressLabel.scale = 0.65;
-    progressLabel.color = "#00ff88";
-
-    progressLabel.pos(this.blackboard.width - 330, 20);
-
-    progressLabel.addTo(this.blackboard);
-
     /**
      * New Progress Bar to be used
      */
@@ -132,24 +120,21 @@ class FindNounsGame {
     chalk.show();
 
     this.data.forEach((word) => {
-      const label = new this.game.zim.Label({
-        text: word,
-        size: 24,
-        color: "white",
-      });
+      const label = new ZimLabel(this.game, word, 24, "white");
 
-      if (x + label.width > maxWidth) {
+      label.createLabel();
+
+      if (x + 100 > maxWidth) {
         x = margin;
         y += lineHeight;
       }
 
-      label.pos(x, y);
+      label.pos(x, y).addTo(this.blackboard);
 
-      label.addTo(this.blackboard);
+      // IMPORTANT: measure AFTER adding
+      const width = label.label.width;
 
-      x += label.width + 14;
-
-      label.cur(chalk);
+      x += width + 14;
 
       //-----------------------------------
       // CLICK
@@ -165,7 +150,7 @@ class FindNounsGame {
 
         if (this.nouns.includes(cleanWord)) {
           if (this.foundWords.includes(cleanWord)) {
-            messageLabel.text = `${cleanWord} already found`;
+            // messageLabel.text = `${cleanWord} already found`;
 
             this.game.stage.update();
             return;
@@ -178,19 +163,23 @@ class FindNounsGame {
           console.log("FOUND =", this.foundWords);
 
           this.score++;
-          this.progressBar.updateFound(this.foundWords.length);
+          this.progressBar.foundLabel.setText(
+            `Found: ${this.foundWords.length}`,
+          );
           console.log("SCORE =", this.score);
-          label.color = "#00ff88";
+          label.setColor("#00ff88");
 
-          progressLabel.text = `Found ${this.score}/${this.nouns.length} Nouns`;
-
-          messageLabel.text = `Great! "${cleanWord}" is a noun`;
+          this.messageBar.show(
+            `Great! "${cleanWord}" is a Noun`,
+            "white",
+            10000,
+          );
 
           foundWordsLabel.text = this.foundWords.join(", ");
 
           emit("correct");
 
-          this.checkWin(messageLabel);
+          // this.checkWin(messageLabel);
         }
 
         //-----------------------------------
@@ -200,7 +189,7 @@ class FindNounsGame {
           label.color = "red";
 
           this.messageBar.show(
-            `Oops! "${cleanWord}" is a verb`,
+            `Great! "${cleanWord}" is a VERB`,
             "white",
             10000,
           );
@@ -243,6 +232,8 @@ class FindNounsGame {
     //-----------------------------------
 
     this.game.stage.update();
+    this.progressBar.startTimer();
+    console.log("Timer Running: ", this.progressBar);
 
     return this.blackboard;
   }

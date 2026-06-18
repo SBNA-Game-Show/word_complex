@@ -9,6 +9,7 @@ class ProgressBar {
 
     this.foundLabel = null;
     this.timerLabel = null;
+    this.maxTime = this.game.maxTime;
 
     this.startTime = Date.now();
   }
@@ -30,15 +31,10 @@ class ProgressBar {
     challengeLabel.addTo(mainContainer);
 
     // FOUND LABEL
-    this.foundLabel = new ZimLabel(
-      this.game,
-      `Found: ${this.foundCount}`,
-      20,
-      "#00ff88",
-    ).createLabel();
-
+    this.foundLabel = new ZimLabel(this.game, "", 20, "#00ff88").createLabel();
     this.foundLabel.pos(0, 35);
     this.foundLabel.addTo(mainContainer);
+    //TIME ALLOCATED
 
     // TIMER LABEL
     this.timerLabel = new ZimLabel(
@@ -55,27 +51,58 @@ class ProgressBar {
   }
 
   startTimer() {
-    this.game.zim.Ticker.add(() => {
+    if (this.timerRunning) return;
+
+    this.timerRunning = true;
+    this.startTime = Date.now();
+
+    const maxTimeMs = this.maxMinutes * 60 * 1000;
+
+    this.tickHandler = () => {
       const elapsed = Date.now() - this.startTime;
 
-      const minutes = Math.floor(elapsed / 60000);
-      const seconds = Math.floor((elapsed % 60000) / 1000);
-      const ms = elapsed % 1000;
+      if (elapsed >= maxTimeMs) {
+        this.stopTimer();
+        return;
+      }
 
-      const formatted =
-        `${String(minutes).padStart(2, "0")}:` +
-        `${String(seconds).padStart(2, "0")}.` +
-        `${String(ms).padStart(3, "0")}`;
+      const remainingMs = maxTimeMs - elapsed;
+
+      const minutes = Math.floor(remainingMs / 60000);
+      const seconds = Math.floor((remainingMs % 60000) / 1000);
 
       if (this.timerLabel) {
-        this.timerLabel.text = `Time: ${formatted}`;
+        this.timerLabel.text =
+          `Time Left: ${String(minutes).padStart(2, "0")}:` +
+          `${String(seconds).padStart(2, "0")}`;
       }
-    });
+
+      this.game.stage.update();
+    };
+
+    this.game.zim.Ticker.add(this.tickHandler);
+  }
+
+  stopTimer() {
+    if (!this.timerRunning) return;
+
+    this.timerRunning = false;
+
+    if (this.tickHandler) {
+      this.game.zim.Ticker.remove(this.tickHandler);
+      this.tickHandler = null;
+    }
+
+    if (this.timerLabel) {
+      this.timerLabel.text = "Time's Up!";
+    }
+
+    this.game.stage.update();
   }
 
   updateFound(count) {
     if (this.foundLabel) {
-      this.foundLabel.text = `Found: ${count}`;
+      this.foundLabel = `Found: ${count}`;
     }
   }
 }

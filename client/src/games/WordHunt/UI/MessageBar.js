@@ -5,6 +5,8 @@ class MessageBar {
   constructor(game) {
     this.game = game;
 
+    this.isActive = false;
+
     this.container = null;
     this.label = null;
     this.timeout = null;
@@ -62,6 +64,8 @@ class MessageBar {
 
     return this.container;
   }
+    
+    
 }
 
 export default MessageBar;

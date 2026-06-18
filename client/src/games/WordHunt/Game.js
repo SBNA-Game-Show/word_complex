@@ -24,6 +24,9 @@ class Game {
     this.findNounsGame = null;
     this.findVerbGame = null;
     this.findAdjectiveGame = null;
+
+    // game logic variables
+    this.maxTime = 2; // time in minutes
   }
 
   //----------------------------------
