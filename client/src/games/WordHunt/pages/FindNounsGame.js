@@ -353,7 +353,7 @@ class FindNounsGame {
     if (this.foundWords.length === this.nouns.length) {
       this.timer.stop();
       this.game.inputLocked = true;
-      this.messageBar.show("Time's Up!", "red", 5000);
+      this.messageBar.showWinningMessage("nouns", 20);
     }
   }
 

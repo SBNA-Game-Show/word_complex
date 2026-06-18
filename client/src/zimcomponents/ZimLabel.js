@@ -1,13 +1,23 @@
 class ZimLabel {
-  constructor(game, text, fontSize = 32, color = "white", cursor = "pointer") {
+  constructor(
+    game,
+    text,
+    fontSize = 32,
+    color = "white",
+    cursor = "pointer",
+    options = {},
+  ) {
     this.game = game;
     this.zim = game.zim;
+
     this.text = text;
-    this.label = null;
     this.fontSize = fontSize;
     this.color = color;
     this.cursor = cursor;
 
+    this.options = options; // 👈 add this
+
+    this.label = null;
     this.tapHandler = null;
   }
 
@@ -17,6 +27,9 @@ class ZimLabel {
       size: this.fontSize,
       color: this.color,
       cursor: this.cursor,
+
+      // 👇 IMPORTANT: pass layout options
+      ...this.options,
     });
 
     return this;

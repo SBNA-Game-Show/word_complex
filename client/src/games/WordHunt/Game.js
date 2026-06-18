@@ -30,6 +30,9 @@ class Game {
     this.maxTime = 1; // time in minutes
     this.isInputLocked = false;
     this.isTimerRunning = false;
+
+    //player&Game specific
+     this.bestTimeByStoryId=.30 //  comes from the game collection to be tracked by story id
   }
 
   //----------------------------------
