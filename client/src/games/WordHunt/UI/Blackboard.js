@@ -4,10 +4,12 @@ class Blackboard {
     this.zim = game.zim;
     this.width = width;
     this.height = height;
+
+    this.board = null;
   }
 
   create() {
-    const board = new this.zim.Container(this.width, this.height);
+    this.board = new this.zim.Container(this.width, this.height);
 
     const background = new this.zim.Rectangle({
       width: this.width,
@@ -18,9 +20,9 @@ class Blackboard {
       corner: 10,
     });
 
-    background.addTo(board);
+    background.addTo(this.board);
 
-    return board;
+    return this.board;
   }
 }
 

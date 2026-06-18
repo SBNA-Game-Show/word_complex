@@ -1,53 +1,45 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
-import Chalk from "../UI/Chalk";
 import BackButton from "../../../zimcomponents/BackButton";
+import Chalk from "../UI/Chalk";
+import ProgressBar from "../UI/ProgressBar";
+import MessageBar from "../UI/MessageBar";
 
 import { emit } from "../../../scenes/sceneBus";
 
 class FindNounsGame {
   constructor(game) {
     this.game = game;
-
     this.nouns = game.wordTypes.nouns;
     this.verbs = game.wordTypes.verbs;
     this.adjectives = game.wordTypes.adjectives;
+    this.challenge = `Find All ${this.nouns.length} Nouns`;
 
     this.score = 0;
     this.foundWords = [];
 
     this.data = this.getData();
+
+    this.progressBar = null;
+    this.messageBar = null;
   }
 
   displayPassage() {
-    this.game.stage.canvas.style.cursor = "none";
-
     //-----------------------------------
     // BOARD
     //-----------------------------------
 
-    this.blackboard = new Blackboard(this.game, 1350, 760).create();
+    this.blackboard = new Blackboard(
+      this.game,
+      this.game.width - 20,
+      this.game.height - 20,
+    ).create();
 
     this.blackboard.center(this.game.stage);
     this.blackboard.addTo(this.game.stage);
 
     // Add Back Button
     new BackButton(this.game, this.blackboard).create();
-
-    //-----------------------------------
-    // TITLE
-    //-----------------------------------
-
-    const heading = new ZimLabel(
-      this.game,
-      "Search For All Nouns From The Passage",
-    ).createLabel();
-
-    heading.scale = 0.75;
-    heading.color = "white";
-
-    heading.pos(180, 20);
-    heading.addTo(this.blackboard);
 
     //-----------------------------------
     // SCORE
@@ -65,28 +57,23 @@ class FindNounsGame {
 
     progressLabel.addTo(this.blackboard);
 
+    /**
+     * New Progress Bar to be used
+     */
+
+    this.progressBar = new ProgressBar(this.game, this.challenge);
+
+    const progressBarContainer = this.progressBar.create();
+
+    progressBarContainer.pos(this.blackboard.width - 300, 40);
+
+    progressBarContainer.addTo(this.blackboard);
+
     //-----------------------------------
     // MESSAGE BAR
     //-----------------------------------
 
-    const messageBar = new this.game.zim.Rectangle({
-      width: this.blackboard.width - 80,
-      height: 55,
-      color: "#274527",
-      corner: 8,
-    });
-
-    messageBar.pos(40, 70);
-    messageBar.addTo(this.blackboard);
-
-    const messageLabel = new this.game.zim.Label({
-      text: `Find all ${this.nouns.length} nouns`,
-      size: 28,
-      color: "#FFD700",
-    });
-
-    messageLabel.pos(60, 84);
-    messageLabel.addTo(this.blackboard);
+    this.messageBar = new MessageBar(this.game);
 
     //-----------------------------------
     // FOUND VERBS BOX
@@ -142,10 +129,15 @@ class FindNounsGame {
     // WORDS
     //-----------------------------------
 
+    const messageBar = new MessageBar(this.game);
+
+    const chalk = new Chalk(this.game);
+    chalk.show();
+
     this.data.forEach((word) => {
       const label = new this.game.zim.Label({
         text: word,
-        size: 32,
+        size: 24,
         color: "white",
       });
 
@@ -160,6 +152,8 @@ class FindNounsGame {
 
       x += label.width + 14;
 
+      label.cur(chalk);
+
       //-----------------------------------
       // CLICK
       //-----------------------------------
@@ -167,6 +161,7 @@ class FindNounsGame {
       label.tap(() => {
         const cleanWord = word.toLowerCase().replace(/[^\w']/g, "");
         console.log("CLICKED:", cleanWord);
+        this.messageBar.show("Hello World", "red");
         //-----------------------------------
         // CORRECT VERB
         //-----------------------------------
@@ -186,6 +181,7 @@ class FindNounsGame {
           console.log("FOUND =", this.foundWords);
 
           this.score++;
+          this.progressBar.updateFound(this.foundWords.length);
           console.log("SCORE =", this.score);
           label.color = "#00ff88";
 
@@ -240,8 +236,6 @@ class FindNounsGame {
     //-----------------------------------
     // CHALK
     //-----------------------------------
-    
-    new Chalk(this.game).show();
 
     this.game.stage.update();
 

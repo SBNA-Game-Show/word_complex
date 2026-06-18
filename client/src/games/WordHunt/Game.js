@@ -7,6 +7,7 @@ import retrieveEnglishVersion from "../../services/wordHuntService";
 
 class Game {
   constructor(setup) {
+    this.frame = setup.frame;
     this.stage = setup.stage;
     this.width = setup.W;
     this.height = setup.H;
@@ -127,7 +128,7 @@ class Game {
         verbs.push(item.text);
       }
 
-      if (item.pos === "ADV") {
+      if (item.pos === "ADJ") {
         adjectives.push(item.text);
       }
     });

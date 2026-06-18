@@ -23,9 +23,9 @@ class Chalk {
     this.create().addTo(this.game.stage);
 
     this.zim.Ticker.add(() => {
-      this.chalk.x = this.game.stage.mouseX - this.chalk.width / 2;
+      this.chalk.x = this.game.stage.mouseX + this.chalk.width / 2;
 
-      this.chalk.y = this.game.stage.mouseY - this.chalk.height / 2;
+      this.chalk.y = this.game.stage.mouseY + this.chalk.height / 2;
     });
 
     return this.chalk;
