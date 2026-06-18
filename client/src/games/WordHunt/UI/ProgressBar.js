@@ -12,6 +12,8 @@ class ProgressBar {
     this.maxTime = this.game.maxTime;
 
     this.startTime = Date.now();
+
+    this.isTimerActive = false
   }
 
   create() {
@@ -56,7 +58,7 @@ class ProgressBar {
     this.timerRunning = true;
     this.startTime = Date.now();
 
-    const maxTimeMs = this.maxMinutes * 60 * 1000;
+    const maxTimeMs = this.maxTime * 60 * 1000;
 
     this.tickHandler = () => {
       const elapsed = Date.now() - this.startTime;
@@ -71,13 +73,9 @@ class ProgressBar {
       const minutes = Math.floor(remainingMs / 60000);
       const seconds = Math.floor((remainingMs % 60000) / 1000);
 
-      if (this.timerLabel) {
-        this.timerLabel.text =
-          `Time Left: ${String(minutes).padStart(2, "0")}:` +
-          `${String(seconds).padStart(2, "0")}`;
-      }
-
-      this.game.stage.update();
+      this.timerLabel.setText(
+        `Time Left: ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
+      );
     };
 
     this.game.zim.Ticker.add(this.tickHandler);
@@ -93,11 +91,16 @@ class ProgressBar {
       this.tickHandler = null;
     }
 
-    if (this.timerLabel) {
-      this.timerLabel.text = "Time's Up!";
-    }
+    this.timerLabel.setText("Time's Up!");
 
     this.game.stage.update();
+  }
+
+  updateFound(count) {
+    if (!this.foundLabel) return;
+
+    this.foundCount = count;
+    this.foundLabel.setText(`Found: ${count}`);
   }
 
   updateFound(count) {

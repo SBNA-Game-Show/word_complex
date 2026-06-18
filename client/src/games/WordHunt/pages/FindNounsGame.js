@@ -141,6 +141,9 @@ class FindNounsGame {
       //-----------------------------------
 
       label.tap(() => {
+        if (this.game.inputLocked) {
+          return;
+        }
         const cleanWord = word.toLowerCase().replace(/[^\w']/g, "");
         console.log("CLICKED:", cleanWord);
 
