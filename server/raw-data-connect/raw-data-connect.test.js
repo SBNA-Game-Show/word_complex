@@ -1,41 +1,29 @@
-const DBManager = require("../config/testdbconfig");
-
-// Mock BEFORE importing the file under test
 jest.mock("../config/dataConnectConfig", () => jest.fn());
 
 const connectTokenizedStories = require("../config/dataConnectConfig");
 const retrieveAllStories = require("./retrieveAllTokenizedStories");
 const { retrieveStoryById } = require("./retrieveTokenizedStoryById");
 
-const dbManager = new DBManager();
+function createMockDb(stories = []) {
+  return {
+    collection: jest.fn(() => ({
+      find: jest.fn(() => ({
+        toArray: jest.fn().mockResolvedValue(stories),
+      })),
+      findOne: jest.fn(({ _id }) =>
+        Promise.resolve(stories.find((story) => story._id === _id) || null),
+      ),
+    })),
+  };
+}
 
-let db;
-
-beforeAll(async () => {
-  await dbManager.start();
-
-  db = dbManager.getDb();
-
-  // Make retrieveAllStories use the in-memory DB
-  connectTokenizedStories.mockResolvedValue(db);
-});
-
-afterEach(async () => {
-  await dbManager.cleanup();
-
+afterEach(() => {
   jest.clearAllMocks();
-
-  // Reapply mock after clearAllMocks
-  connectTokenizedStories.mockResolvedValue(db);
-});
-
-afterAll(async () => {
-  await dbManager.stop();
 });
 
 describe("Retrieve All Tokenized Stories Tests", () => {
   it("should successfully retrieve all stories", async () => {
-    await db.collection("tokenized_stories").insertMany([
+    const stories = [
       {
         _id: "1",
         title: "Aesop",
@@ -46,7 +34,9 @@ describe("Retrieve All Tokenized Stories Tests", () => {
         title: "Panchatantra",
         origin: "Panchatantra",
       },
-    ]);
+    ];
+
+    connectTokenizedStories.mockResolvedValue(createMockDb(stories));
 
     const result = await retrieveAllStories();
 
@@ -66,6 +56,8 @@ describe("Retrieve All Tokenized Stories Tests", () => {
   });
 
   it("should return an empty array when collection is empty", async () => {
+    connectTokenizedStories.mockResolvedValue(createMockDb([]));
+
     const result = await retrieveAllStories();
 
     expect(result).toEqual([]);
@@ -88,33 +80,39 @@ describe("Retrieve All Tokenized Stories Tests", () => {
 
 describe("Retrieve Tokenized Story By Id", () => {
   it("should should throw and error. Story Id is Missing", async () => {
-    await db.collection("tokenized_stories").insertMany([
-      {
-        _id: "1",
-        title: "Aesop",
-        origin: "Aesop",
-      },
-      {
-        _id: "2",
-        title: "Panchatantra",
-        origin: "Panchatantra",
-      },
-    ]);
+    connectTokenizedStories.mockResolvedValue(
+      createMockDb([
+        {
+          _id: "1",
+          title: "Aesop",
+          origin: "Aesop",
+        },
+        {
+          _id: "2",
+          title: "Panchatantra",
+          origin: "Panchatantra",
+        },
+      ]),
+    );
+
     await expect(retrieveStoryById("")).rejects.toThrow("Story Id is Required");
   });
+
   it("should successfully retrieve a story given a valid Id", async () => {
-    await db.collection("tokenized_stories").insertMany([
-      {
-        _id: "1",
-        title: "Aesop",
-        origin: "Aesop",
-      },
-      {
-        _id: "2",
-        title: "Panchatantra",
-        origin: "Panchatantra",
-      },
-    ]);
+    connectTokenizedStories.mockResolvedValue(
+      createMockDb([
+        {
+          _id: "1",
+          title: "Aesop",
+          origin: "Aesop",
+        },
+        {
+          _id: "2",
+          title: "Panchatantra",
+          origin: "Panchatantra",
+        },
+      ]),
+    );
 
     const story = await retrieveStoryById("1");
 
@@ -124,19 +122,22 @@ describe("Retrieve Tokenized Story By Id", () => {
       origin: "Aesop",
     });
   });
+
   it("should throw an error when no tokenized story is found by the given id", async () => {
-    await db.collection("tokenized_stories").insertMany([
-      {
-        _id: "1",
-        title: "Aesop",
-        origin: "Aesop",
-      },
-      {
-        _id: "2",
-        title: "Panchatantra",
-        origin: "Panchatantra",
-      },
-    ]);
+    connectTokenizedStories.mockResolvedValue(
+      createMockDb([
+        {
+          _id: "1",
+          title: "Aesop",
+          origin: "Aesop",
+        },
+        {
+          _id: "2",
+          title: "Panchatantra",
+          origin: "Panchatantra",
+        },
+      ]),
+    );
 
     await expect(retrieveStoryById("999")).rejects.toThrow(
       "No Tokenized story found by given Id",

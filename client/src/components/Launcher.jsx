@@ -99,6 +99,7 @@ export default function Launcher({
                 <div className="preview-actions">
                   <button
                     className="preview-cta"
+                    data-testid={`game-start-${game.id}`}
                     type="button"
                     onClick={() => onStart(game.id)}
                   >

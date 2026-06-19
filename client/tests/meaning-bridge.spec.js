@@ -1,10 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-const DEMO_USER = {
-  username: "anthony",
-  password: "demo123",
-};
-
 const MOCK_GENERATE_RESPONSE = {
   success: true,
   ok: true,
@@ -161,9 +156,7 @@ async function mockMeaningBridgeApi(page) {
 
 async function login(page) {
   await page.goto("/");
-  await page.getByTestId("username-input").fill(DEMO_USER.username);
-  await page.getByTestId("password-input").fill(DEMO_USER.password);
-  await page.getByTestId("login-button").click();
+  await page.getByTestId("guest-login-button").click();
 
   await expect(page.getByTestId("launcher-page")).toBeVisible();
 }

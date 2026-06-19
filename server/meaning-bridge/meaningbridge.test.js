@@ -1,13 +1,66 @@
 const request = require("supertest");
+
+jest.mock("../raw-data-connect/retrieveTokenizedStoryById", () => ({
+  retrieveStoryById: jest.fn(),
+  retrieveRandomStory: jest.fn(),
+}));
+
+const {
+  retrieveStoryById,
+} = require("../raw-data-connect/retrieveTokenizedStoryById");
 const app = require("../app");
 const { resetRoundFallbackForTests } = require("./service/roundstore");
 const { resetScoreFallbackForTests } = require("./service/scorestore");
 const { API_KEY_HEADER } = require("./middleware/apikey");
 
+const MOCK_STORY = {
+  _id: "292f2009-96bb-4a3c-b856-e04214e852f8",
+  title: { englishversion: "Mock Meaning Bridge Story" },
+  category: "Test Story",
+  englishVersion:
+    "A bright rabbit moved quickly through the calm forest toward a happy village.",
+  tokenized_english_version: [
+    {
+      text: "bright",
+      pos: "ADJ",
+      synonyms: ["smart", "clever"],
+      antonyms: ["dark"],
+    },
+    {
+      text: "quickly",
+      pos: "ADV",
+      synonyms: ["rapidly", "swiftly"],
+      antonyms: ["slowly"],
+    },
+    {
+      text: "calm",
+      pos: "ADJ",
+      synonyms: ["peaceful", "quiet"],
+      antonyms: ["angry"],
+    },
+    {
+      text: "happy",
+      pos: "ADJ",
+      synonyms: ["joyful", "glad"],
+      antonyms: ["sad"],
+    },
+    {
+      text: "village",
+      pos: "NOUN",
+      synonyms: ["settlement", "town"],
+      antonyms: ["wilderness"],
+    },
+  ],
+  sanskritVersion: ["रामः वनं गच्छति", "सीता पुस्तकम् पठति"],
+  transliteratedVersion: ["rāmaḥ vanaṃ gacchati", "sītā pustakam paṭhati"],
+  tokenized_sanskrit_version: [],
+};
+
 describe("Meaning Bridge API routes", () => {
   beforeEach(() => {
     resetRoundFallbackForTests();
     resetScoreFallbackForTests();
+    retrieveStoryById.mockResolvedValue(MOCK_STORY);
   });
   afterEach(() => {
     delete process.env.MEANING_BRIDGE_REQUIRE_API_KEY;
