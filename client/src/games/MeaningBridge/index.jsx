@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { createZimGame } from "../createZimGame";
+import { emit } from "../../scenes/sceneBus";
 import {
   generateMeaningBridgeRound,
   getMeaningBridgeLeaderboard,
@@ -1823,10 +1824,16 @@ const ZimGame = createZimGame({
         ];
 
         playSound("correct");
-        cardFlash = { type: "correct", leftId: matchedLeftId, rightId: item.id };
+        cardFlash = {
+          type: "correct",
+          leftId: matchedLeftId,
+          rightId: item.id,
+        };
         selectedLeftId = null;
 
         const completed = matches.length === puzzle.leftItems.length;
+
+        emit(completed ? "complete" : "correct");
 
         setFeedback(
           completed
@@ -1836,14 +1843,20 @@ const ZimGame = createZimGame({
         );
 
         renderScene();
-        setTimeout(() => { cardFlash = null; renderScene(); }, 700);
+        setTimeout(() => {
+          cardFlash = null;
+          renderScene();
+        }, 700);
       } else {
         wrongAttempts += 1;
         playSound("wrong");
         cardFlash = { type: "wrong", leftId: selectedLeftId, rightId: item.id };
         setFeedback("Not quite. Try another meaning card.", "error");
         renderScene();
-        setTimeout(() => { cardFlash = null; renderScene(); }, 700);
+        setTimeout(() => {
+          cardFlash = null;
+          renderScene();
+        }, 700);
       }
     }
 
@@ -1951,7 +1964,9 @@ const ZimGame = createZimGame({
 
       const imageUrl = puzzle.hintImages?.[selectedLeftId];
       if (imageUrl) {
-        window.dispatchEvent(new CustomEvent("mb-hint", { detail: { imageUrl } }));
+        window.dispatchEvent(
+          new CustomEvent("mb-hint", { detail: { imageUrl } }),
+        );
       }
       setFeedback(
         puzzle.hints[selectedLeftId] || "No hint available.",
@@ -3143,16 +3158,32 @@ const ZimGame = createZimGame({
       const fill = matched
         ? "#f0fdf4"
         : selected
-          ? (isLeft ? "#eff6ff" : "#f0fdf4")
+          ? isLeft
+            ? "#eff6ff"
+            : "#f0fdf4"
           : "#ffffff";
-      const stroke  = matched ? "#22c55e" : selected ? (isLeft ? "#3b82f6" : "#22c55e") : "rgba(255,255,255,0.9)";
+      const stroke = matched
+        ? "#22c55e"
+        : selected
+          ? isLeft
+            ? "#3b82f6"
+            : "#22c55e"
+          : "rgba(255,255,255,0.9)";
       const strokeW = matched ? 2.5 : selected ? 2.5 : 1.5;
-      const textColor    = matched ? "#14532d" : selected ? "#1e3a8a" : "#1e293b";
-      const subTextColor = matched ? "#16a34a" : selected ? "#3b82f6" : "#64748b";
+      const textColor = matched ? "#14532d" : selected ? "#1e3a8a" : "#1e293b";
+      const subTextColor = matched
+        ? "#16a34a"
+        : selected
+          ? "#3b82f6"
+          : "#64748b";
 
       const accentColor = isLeft
-        ? (selected ? "#1d4ed8" : "#2563eb")
-        : (matched  ? "#15803d" : "#059669");
+        ? selected
+          ? "#1d4ed8"
+          : "#2563eb"
+        : matched
+          ? "#15803d"
+          : "#059669";
 
       function activateCard() {
         if (side === "left") {
@@ -3164,34 +3195,61 @@ const ZimGame = createZimGame({
 
       // Drop shadow
       const shadow = new zim.Rectangle(
-        cardLayout.width, cardLayout.height,
-        "rgba(15,23,42,0.10)", null, 0, 14,
-      ).addTo(stage).loc(x + 2, y + 3);
+        cardLayout.width,
+        cardLayout.height,
+        "rgba(15,23,42,0.10)",
+        null,
+        0,
+        14,
+      )
+        .addTo(stage)
+        .loc(x + 2, y + 3);
       shadow.mouseEnabled = false;
 
       // Card base
       const base = new zim.Rectangle(
-        cardLayout.width, cardLayout.height,
-        fill, stroke, strokeW, 14,
-      ).addTo(stage).loc(x, y);
+        cardLayout.width,
+        cardLayout.height,
+        fill,
+        stroke,
+        strokeW,
+        14,
+      )
+        .addTo(stage)
+        .loc(x, y);
       base.mouseEnabled = false;
 
       // Shine strip — top highlight gives a glossy feel
       const shine = new zim.Rectangle(
-        cardLayout.width - 10, Math.floor(cardLayout.height * 0.38),
-        "rgba(255,255,255,0.62)", null, 0, [12, 12, 0, 0],
-      ).addTo(stage).loc(x + 5, y + 2);
+        cardLayout.width - 10,
+        Math.floor(cardLayout.height * 0.38),
+        "rgba(255,255,255,0.62)",
+        null,
+        0,
+        [12, 12, 0, 0],
+      )
+        .addTo(stage)
+        .loc(x + 5, y + 2);
       shine.mouseEnabled = false;
 
       // Left accent bar (replaces dots)
-      const accent = new zim.Rectangle(4, cardLayout.height - 12, accentColor, null, 0, 2)
-        .addTo(stage).loc(x + 10, y + 6);
+      const accent = new zim.Rectangle(
+        4,
+        cardLayout.height - 12,
+        accentColor,
+        null,
+        0,
+        2,
+      )
+        .addTo(stage)
+        .loc(x + 10, y + 6);
       accent.mouseEnabled = false;
 
       // Icon pill
       const pillH = cardLayout.height - 10;
       const iconPill = new zim.Rectangle(32, pillH, accentColor, null, 0, 10)
-        .addTo(stage).loc(x + 22, y + 5);
+        .addTo(stage)
+        .loc(x + 22, y + 5);
       iconPill.mouseEnabled = false;
 
       addLabel({
@@ -3225,25 +3283,33 @@ const ZimGame = createZimGame({
       });
 
       // Right indicator — circle centered on card mid-line
-      const indX   = x + cardLayout.width - 22;
-      const indY   = y + cardLayout.height / 2;   // true vertical centre of card
+      const indX = x + cardLayout.width - 22;
+      const indY = y + cardLayout.height / 2; // true vertical centre of card
       if (matched) {
         const matchColor = isLeft ? "#1d4ed8" : "#15803d";
         const mc = new zim.Circle(13, matchColor).addTo(stage).loc(indX, indY);
         mc.mouseEnabled = false;
         // label y: circle centre minus ~half a cap-height so ✓ sits in the middle
         addLabel({
-          text: "✓", x: indX,
+          text: "✓",
+          x: indX,
           y: indY - 8,
-          size: 13, color: "#ffffff", bold: true, align: "center",
+          size: 13,
+          color: "#ffffff",
+          bold: true,
+          align: "center",
         });
       } else if (selected) {
         const sc = new zim.Circle(13, "#2563eb").addTo(stage).loc(indX, indY);
         sc.mouseEnabled = false;
         addLabel({
-          text: "●", x: indX,
+          text: "●",
+          x: indX,
           y: indY - 7,
-          size: 11, color: "#ffffff", bold: true, align: "center",
+          size: 11,
+          color: "#ffffff",
+          bold: true,
+          align: "center",
         });
       } else {
         addLabel({
@@ -3261,28 +3327,54 @@ const ZimGame = createZimGame({
       const animWait = index * 70;
       [shadow, base, shine, accent, iconPill].forEach((obj) => {
         obj.alpha = 0;
-        obj.animate({ props: { alpha: 1 }, time: 220, wait: animWait, ease: "quadOut" });
+        obj.animate({
+          props: { alpha: 1 },
+          time: 220,
+          wait: animWait,
+          ease: "quadOut",
+        });
       });
 
       // Correct / wrong flash overlay
-      if (cardFlash && (cardFlash.leftId === item.id || cardFlash.rightId === item.id)) {
+      if (
+        cardFlash &&
+        (cardFlash.leftId === item.id || cardFlash.rightId === item.id)
+      ) {
         const isCorrectFlash = cardFlash.type === "correct";
-        const flashFill  = isCorrectFlash ? "rgba(34,197,94,0.40)"  : "rgba(239,68,68,0.40)";
+        const flashFill = isCorrectFlash
+          ? "rgba(34,197,94,0.40)"
+          : "rgba(239,68,68,0.40)";
         const flashBorder = isCorrectFlash ? "#22c55e" : "#ef4444";
         const flashOverlay = new zim.Rectangle(
-          cardLayout.width + 10, cardLayout.height + 10,
-          flashFill, flashBorder, 3, 16,
-        ).addTo(stage).loc(x - 5, y - 5);
+          cardLayout.width + 10,
+          cardLayout.height + 10,
+          flashFill,
+          flashBorder,
+          3,
+          16,
+        )
+          .addTo(stage)
+          .loc(x - 5, y - 5);
         flashOverlay.mouseEnabled = false;
         flashOverlay.alpha = 1;
-        flashOverlay.animate({ props: { alpha: 0 }, time: 680, ease: "quadOut" });
+        flashOverlay.animate({
+          props: { alpha: 0 },
+          time: 680,
+          ease: "quadOut",
+        });
       }
 
       // Hit layer
       const hitLayer = new zim.Rectangle(
-        cardLayout.width + 12, cardLayout.height + 8,
-        "rgba(255,255,255,0.01)", null, 0, 16,
-      ).addTo(stage).loc(x - 6, y - 4);
+        cardLayout.width + 12,
+        cardLayout.height + 8,
+        "rgba(255,255,255,0.01)",
+        null,
+        0,
+        16,
+      )
+        .addTo(stage)
+        .loc(x - 6, y - 4);
       hitLayer.cursor = "pointer";
       hitLayer.on("click", activateCard);
     }
@@ -3307,8 +3399,16 @@ const ZimGame = createZimGame({
       });
 
       // Left panel inner glow strip
-      new zim.Rectangle(left.width - 8, left.height - 8, "rgba(255,255,255,0.28)", null, 0, 24)
-        .addTo(stage).loc(left.x + 4, left.y + 4);
+      new zim.Rectangle(
+        left.width - 8,
+        left.height - 8,
+        "rgba(255,255,255,0.28)",
+        null,
+        0,
+        24,
+      )
+        .addTo(stage)
+        .loc(left.x + 4, left.y + 4);
 
       new zim.Rectangle(left.width, 34, "#2563eb", null, 0, [28, 28, 0, 0])
         .addTo(stage)
@@ -3338,8 +3438,16 @@ const ZimGame = createZimGame({
       });
 
       // Right panel inner glow strip
-      new zim.Rectangle(right.width - 8, right.height - 8, "rgba(255,255,255,0.28)", null, 0, 24)
-        .addTo(stage).loc(right.x + 4, right.y + 4);
+      new zim.Rectangle(
+        right.width - 8,
+        right.height - 8,
+        "rgba(255,255,255,0.28)",
+        null,
+        0,
+        24,
+      )
+        .addTo(stage)
+        .loc(right.x + 4, right.y + 4);
 
       new zim.Rectangle(right.width, 34, "#059669", null, 0, [28, 28, 0, 0])
         .addTo(stage)
@@ -3363,22 +3471,82 @@ const ZimGame = createZimGame({
         // Left panel message
         const leftCx = left.x + left.width / 2;
         const leftCy = left.y + left.height / 2;
-        const leftBox = new zim.Rectangle(left.width - 32, 70, "rgba(255,255,255,0.55)", "#2563eb", 2, 14)
-          .addTo(stage).loc(left.x + 16, leftCy - 35);
+        const leftBox = new zim.Rectangle(
+          left.width - 32,
+          70,
+          "rgba(255,255,255,0.55)",
+          "#2563eb",
+          2,
+          14,
+        )
+          .addTo(stage)
+          .loc(left.x + 16, leftCy - 35);
         leftBox.mouseEnabled = false;
-        addLabel({ text: panelMsg, x: leftCx, y: leftCy - 22, size: 16, color: "#1e3a8a", bold: true, align: "center" });
-        addLabel({ text: panelSub, x: leftCx, y: leftCy + 4, size: 12, color: "#3b82f6", bold: false, align: "center" });
-        leftBox.animate({ props: { alpha: 0.4 }, time: 700, rewind: true, loop: true, ease: "sineInOut" });
+        addLabel({
+          text: panelMsg,
+          x: leftCx,
+          y: leftCy - 22,
+          size: 16,
+          color: "#1e3a8a",
+          bold: true,
+          align: "center",
+        });
+        addLabel({
+          text: panelSub,
+          x: leftCx,
+          y: leftCy + 4,
+          size: 12,
+          color: "#3b82f6",
+          bold: false,
+          align: "center",
+        });
+        leftBox.animate({
+          props: { alpha: 0.4 },
+          time: 700,
+          rewind: true,
+          loop: true,
+          ease: "sineInOut",
+        });
 
         // Right panel message
         const rightCx = right.x + right.width / 2;
         const rightCy = right.y + right.height / 2;
-        const rightBox = new zim.Rectangle(right.width - 32, 70, "rgba(255,255,255,0.55)", "#059669", 2, 14)
-          .addTo(stage).loc(right.x + 16, rightCy - 35);
+        const rightBox = new zim.Rectangle(
+          right.width - 32,
+          70,
+          "rgba(255,255,255,0.55)",
+          "#059669",
+          2,
+          14,
+        )
+          .addTo(stage)
+          .loc(right.x + 16, rightCy - 35);
         rightBox.mouseEnabled = false;
-        addLabel({ text: panelMsg, x: rightCx, y: rightCy - 22, size: 16, color: "#14532d", bold: true, align: "center" });
-        addLabel({ text: panelSub, x: rightCx, y: rightCy + 4, size: 12, color: "#059669", bold: false, align: "center" });
-        rightBox.animate({ props: { alpha: 0.4 }, time: 700, rewind: true, loop: true, ease: "sineInOut" });
+        addLabel({
+          text: panelMsg,
+          x: rightCx,
+          y: rightCy - 22,
+          size: 16,
+          color: "#14532d",
+          bold: true,
+          align: "center",
+        });
+        addLabel({
+          text: panelSub,
+          x: rightCx,
+          y: rightCy + 4,
+          size: 12,
+          color: "#059669",
+          bold: false,
+          align: "center",
+        });
+        rightBox.animate({
+          props: { alpha: 0.4 },
+          time: 700,
+          rewind: true,
+          loop: true,
+          ease: "sineInOut",
+        });
 
         return;
       }
@@ -4772,7 +4940,10 @@ function MeaningBridge() {
           onClick={() => setHintImage(null)}
           style={{
             position: "absolute",
-            top: 0, left: 0, right: 0, bottom: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             background: "rgba(0,0,0,0.55)",
             display: "flex",
             alignItems: "center",
@@ -4799,7 +4970,9 @@ function MeaningBridge() {
                 e.target.src = "https://loremflickr.com/300/200/word";
               }}
             />
-            <p style={{ marginTop: "10px", color: "#475569", fontSize: "13px" }}>
+            <p
+              style={{ marginTop: "10px", color: "#475569", fontSize: "13px" }}
+            >
               Tap anywhere to close
             </p>
           </div>

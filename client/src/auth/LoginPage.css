@@ -1,0 +1,48 @@
+/* Styles for the new auth UI added on top of the login layout in App.css.
+   Covers the Google / guest sign-in buttons and the "or use email" divider. */
+
+.auth-social {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.auth-google,
+.auth-guest {
+  justify-content: center;
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  font-size: 1rem;
+}
+
+.auth-google-icon {
+  flex: 0 0 auto;
+}
+
+.auth-guest {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px rgba(29, 43, 102, 0.16);
+  color: var(--ink-soft, #4a5578);
+}
+
+.auth-guest:hover {
+  box-shadow: inset 0 0 0 2px rgba(29, 43, 102, 0.28);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--ink-soft, #6a7397);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(29, 43, 102, 0.14);
+}

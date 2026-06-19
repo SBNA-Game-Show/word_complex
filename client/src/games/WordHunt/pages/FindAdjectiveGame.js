@@ -1,8 +1,13 @@
+
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
 import Chalk from "../UI/Chalk";
+import BackButton from "../../../zimcomponents/BackButton";
+
+import { emit } from "../../../scenes/sceneBus";
 
 class FindAdjectiveGame {
+
   constructor(game) {
     this.game = game;
 
@@ -51,6 +56,11 @@ class FindAdjectiveGame {
     this.blackboard.addTo(
       this.game.stage
     );
+    // Add Back Button
+    new BackButton(
+      this.game,
+      this.blackboard
+    ).create();
 
     //-----------------------------------
     // TITLE
@@ -65,7 +75,7 @@ class FindAdjectiveGame {
     heading.scale = 0.75;
     heading.color = "white";
 
-    heading.pos(40, 20);
+    heading.pos(180, 20);
 
     heading.addTo(
       this.blackboard
@@ -306,6 +316,8 @@ class FindAdjectiveGame {
           foundWordsLabel.text =
             formatFoundWords();
 
+          emit("correct");
+
           this.checkWin(
             messageLabel
           );
@@ -325,6 +337,8 @@ class FindAdjectiveGame {
 
           messageLabel.text =
             `Oops! "${cleanWord}" is a noun`;
+
+          emit("wrong");
         }
 
         //-----------------------------------
@@ -341,6 +355,8 @@ class FindAdjectiveGame {
 
           messageLabel.text =
             `Oops! "${cleanWord}" is a verb`;
+
+          emit("wrong");
         }
 
         //-----------------------------------
@@ -353,6 +369,8 @@ class FindAdjectiveGame {
 
           messageLabel.text =
             `"${cleanWord}" is not an adjective`;
+
+          emit("wrong");
         }
 
         this.game.stage.update();

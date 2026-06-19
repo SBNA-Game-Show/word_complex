@@ -1,8 +1,6 @@
 import BackgroundDecor from "./BackgroundDecor";
 import { useAuth } from "../auth/AuthContext";
 import UserBadge from "./UserBadge";
-import { useEffect } from "react";
-import { getFillInBlanks } from "../services/api";
 import { games } from "../games/index.js";
 
 export default function Launcher({
@@ -11,12 +9,9 @@ export default function Launcher({
   onHowToPlay,
   onChooseCharacter,
   isZooming = false,
+  isLaunching = false,
 }) {
   const { logout, user } = useAuth();
-
-  useEffect(() => {
-    getFillInBlanks().then(console.log).catch(console.error);
-  }, []);
 
   function startDefaultGame() {
     onStart("sentence-builder");
@@ -104,7 +99,6 @@ export default function Launcher({
                 <div className="preview-actions">
                   <button
                     className="preview-cta"
-                    data-testid={`game-start-${game.id}`}
                     type="button"
                     onClick={() => onStart(game.id)}
                   >

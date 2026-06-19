@@ -1,6 +1,9 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
 import Chalk from "../UI/Chalk";
+import BackButton from "../../../zimcomponents/BackButton";
+
+import { emit } from "../../../scenes/sceneBus";
 
 class FindVerbGame {
   constructor(game) {
@@ -14,6 +17,7 @@ class FindVerbGame {
     this.foundWords = [];
 
     this.data = this.getData();
+    console.log("VERB DATA:", this.data);
   }
 
   displayPassage() {
@@ -31,6 +35,11 @@ class FindVerbGame {
 
     this.blackboard.center(this.game.stage);
     this.blackboard.addTo(this.game.stage);
+    // Add Back Button
+    new BackButton(
+      this.game,
+      this.blackboard
+    ).create();
 
     //-----------------------------------
     // TITLE
@@ -44,7 +53,7 @@ class FindVerbGame {
     heading.scale = 0.75;
     heading.color = "white";
 
-    heading.pos(40, 20);
+    heading.pos(180, 20);
     heading.addTo(this.blackboard);
 
     //-----------------------------------
@@ -224,6 +233,8 @@ class FindVerbGame {
           foundWordsLabel.text =
             this.foundWords.join(", ");
 
+          emit("correct");
+
           this.checkWin(
             messageLabel
           );
@@ -240,6 +251,8 @@ class FindVerbGame {
 
           messageLabel.text =
             `Oops! "${cleanWord}" is a noun`;
+
+          emit("wrong");
         }
 
         //-----------------------------------
@@ -253,6 +266,8 @@ class FindVerbGame {
 
           messageLabel.text =
             `Oops! "${cleanWord}" is an adjective`;
+
+          emit("wrong");
         }
 
         //-----------------------------------
@@ -264,6 +279,8 @@ class FindVerbGame {
 
           messageLabel.text =
             `"${cleanWord}" is not a verb`;
+
+          emit("wrong");
         }
 
         this.game.stage.update();
@@ -286,6 +303,8 @@ class FindVerbGame {
   //-----------------------------------
 
   checkWin() {
+    
+      emit("complete");
 
     if (
       this.foundWords.length ===

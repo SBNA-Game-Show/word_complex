@@ -33,6 +33,15 @@ const splitIntoSentences = (passage) => {
     .filter((s) => s.length > 0);
 };
 
+const shuffle = (arr) => {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+};
+
 const buildChunks = (sentence) => {
   const words = sentence.trim().split(/\s+/);
   const total = words.length;
@@ -44,7 +53,14 @@ const buildChunks = (sentence) => {
     answer.push(words.slice(start, end).join(" "));
   }
 
-  const chunks = [...answer].sort(() => Math.random() - 0.5);
+  // Reroll if the shuffle lands on the answer order, so a round never arrives pre-solved.
+  // Skipped when all chunks are identical, since no permutation could differ.
+  let chunks = shuffle(answer);
+  if (new Set(answer).size > 1) {
+    while (chunks.every((chunk, i) => chunk === answer[i])) {
+      chunks = shuffle(answer);
+    }
+  }
 
   return { sentence, chunks, answer };
 };

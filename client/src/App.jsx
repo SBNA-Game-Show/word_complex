@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { AuthProvider, LoginPage, useAuth } from "./auth";
 import VideoBackground from "./components/VideoBackground";
-import LoginPage from "./components/LoginPage";
 import Launcher from "./components/Launcher";
 import GameScreen from "./components/GameScreen";
 import HowToPlay from "./components/HowToPlay";
 import AboutPage from "./components/AboutPage";
 import CharacterSelect from "./components/CharacterSelect";
+import GameScene from "./scenes/GameScene";
+import { getSceneConfig } from "./scenes/sceneConfig";
 import "./App.css";
 
 const CHARACTER_STORAGE_KEY = "wc:selectedCharacter";
@@ -20,7 +21,7 @@ export default function App() {
 }
 
 function AuthenticatedApp() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
   const [screen, setScreen] = useState("launcher");
   const [activeGameId, setActiveGameId] = useState("sentence-builder");
   const [selectedCharacterId, setSelectedCharacterId] = useState(() => {
@@ -28,6 +29,9 @@ function AuthenticatedApp() {
     return window.localStorage.getItem(CHARACTER_STORAGE_KEY);
   });
   const [transitionPhase, setTransitionPhase] = useState("idle");
+  // "idle" while on the menu, "swiping" during the menu swipe-out before a
+  // scene-based game mounts. Used to disable launch buttons and drive the swipe.
+  const [launchPhase, setLaunchPhase] = useState("idle");
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -38,6 +42,25 @@ function AuthenticatedApp() {
   function openGame(gameId) {
     setActiveGameId(gameId);
     setScreen("game");
+  }
+
+  // Launch a game from the menu. Games with a sceneConfig entry get the polished
+  // swipe-then-environment treatment; everything else opens instantly.
+  function launchGame(gameId) {
+    if (launchPhase !== "idle") return; // guard against spam-clicks mid-transition
+
+    const sceneConfig = getSceneConfig(gameId);
+    if (!sceneConfig) {
+      openGame(gameId);
+      return;
+    }
+
+    setLaunchPhase("swiping");
+    window.setTimeout(() => {
+      setActiveGameId(gameId);
+      setScreen("scene");
+      setLaunchPhase("idle");
+    }, sceneConfig.transitionMs);
   }
 
   function openHowToPlay(gameId = activeGameId) {
@@ -63,11 +86,26 @@ function AuthenticatedApp() {
 
   return (
     <div
-      className={`app${transitionPhase === "zoom-in" ? " is-zooming-house" : ""}`}
+      className={`app${transitionPhase === "zoom-in" ? " is-zooming-house" : ""}${
+        launchPhase === "swiping" ? " is-launching-game" : ""
+      }`}
     >
       <VideoBackground />
-      {!isAuthenticated ? (
+      {isInitializing ? (
+        <div className="auth-splash" role="status" aria-live="polite">
+          <span className="auth-splash-logo" aria-hidden="true">
+            W
+          </span>
+          <p>Loading...</p>
+        </div>
+      ) : !isAuthenticated ? (
         <LoginPage />
+      ) : screen === "scene" ? (
+        <GameScene
+          gameId={activeGameId}
+          selectedCharacterId={selectedCharacterId}
+          onBack={() => setScreen("launcher")}
+        />
       ) : screen === "launcher" ? (
         <Launcher
           onStart={openGame}
@@ -85,13 +123,13 @@ function AuthenticatedApp() {
       ) : screen === "about" ? (
         <AboutPage
           onBack={() => setScreen("launcher")}
-          onPlay={() => openGame("sentence-builder")}
+          onPlay={() => launchGame("sentence-builder")}
         />
       ) : screen === "how-to-play" ? (
         <HowToPlay
           gameId={activeGameId}
           onBack={() => setScreen("launcher")}
-          onPlay={() => openGame(activeGameId)}
+          onPlay={() => launchGame(activeGameId)}
         />
       ) : (
         <GameScreen

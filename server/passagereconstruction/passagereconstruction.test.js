@@ -70,6 +70,13 @@ describe("Passage Reconstruction Service", () => {
       const result = buildChunks(sentence);
       expect(result.sentence).toBe(sentence);
     });
+
+    it("never returns chunks already in the answer order", () => {
+      for (let i = 0; i < 100; i++) {
+        const result = buildChunks("The rabbit left his home alone today here.");
+        expect(result.chunks).not.toEqual(result.answer);
+      }
+    });
   });
 
   describe("getPassageReconstructionGame", () => {
