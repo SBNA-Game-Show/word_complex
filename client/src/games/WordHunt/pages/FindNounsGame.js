@@ -235,7 +235,7 @@ class FindNounsGame {
         else if (this.verbs.includes(cleanWord)) {
           label.color = "red";
 
-          this.messageBar.show(`Great! "${cleanWord}" is a VERB`, 10000);
+          this.messageBar.show(`Oops! "${cleanWord}" is a VERB`, 10000);
 
           emit("wrong");
         }
@@ -256,9 +256,6 @@ class FindNounsGame {
         //-----------------------------------
         else {
           label.color = "#ff6666";
-
-          messageLabel.text = `"${cleanWord}" is not a noun`;
-
           emit("wrong");
         }
 
@@ -277,6 +274,9 @@ class FindNounsGame {
     if (this.foundWords.length === this.nouns.length) {
       this.gameOver = true;
       this.timer.stop();
+      this.game.totalScore += this.score;
+
+      console.log("Game Total Score", this.game.totalScore);
 
       const elapsedMs = this.timer.getElapsedTime();
 

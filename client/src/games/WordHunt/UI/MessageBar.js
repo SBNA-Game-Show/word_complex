@@ -25,7 +25,7 @@ class MessageBar {
 
     this.onRestart = null;
     this.onExit = null;
-    this.onContinue = null
+    this.onContinue = null;
   }
 
   show(text, color = "black", duration = 1200) {
@@ -149,6 +149,10 @@ class MessageBar {
     const exitBtn = this.exitButton.createButton();
     exitBtn.addTo(this.winningContainer);
 
+    exitBtn.tap(() => {
+      if (this.onExit) this.onExit();
+    });
+
     // group centering (important part)
     const spacing = 20;
     const totalWidth = 140 + 140 + spacing;
@@ -225,6 +229,73 @@ class MessageBar {
     this.game.stage.update();
 
     return this.timeOverContainer;
+  }
+
+  countdownTimer(onComplete) {
+    this.game.isInputLocked = true;
+
+    const steps = ["READY", "3", "2", "1", "GO"];
+    let index = 0;
+
+    const showNext = () => {
+      // remove previous UI
+      if (this.messageContainer) {
+        this.messageContainer.removeFrom();
+        this.messageContainer = null;
+      }
+
+      const text = steps[index];
+
+      this.messageContainer = new ZimContainer(
+        this.game,
+        320,
+        140,
+      ).createContainer();
+
+      this.messageContainer.addTo(this.game.stage);
+
+      this.messageContainer.pos(
+        this.game.width / 2 - 160,
+        this.game.height / 2 - 70,
+      );
+
+      const bg = new this.game.zim.Rectangle({
+        width: 320,
+        height: 140,
+        color: "#FFF8F0",
+        corner: 16,
+        borderColor: "#E9D8A6",
+        borderWidth: 2,
+      });
+
+      bg.addTo(this.messageContainer);
+
+      const label = new ZimLabel(this.game, text, 48, "black").createLabel();
+      label.addTo(this.messageContainer);
+
+      label.pos((320 - label.label.width) / 2, (140 - label.label.height) / 2);
+
+      this.game.stage.update();
+
+      index++;
+
+      if (index < steps.length) {
+        setTimeout(showNext, 800);
+      } else {
+        setTimeout(() => {
+          if (this.messageContainer) {
+            this.messageContainer.removeFrom();
+            this.messageContainer = null;
+          }
+
+          this.game.isInputLocked = false;
+
+          if (onComplete) onComplete();
+        }, 400);
+      }
+    };
+
+    showNext();
   }
 }
 

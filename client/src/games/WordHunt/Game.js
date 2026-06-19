@@ -2,6 +2,7 @@ import LandingPage from "./pages/LandingPage";
 import FindNounsGame from "./pages/FindNounsGame";
 import FindVerbGame from "./pages/FindVerbGame";
 import FindAdjectiveGame from "./pages/FindAdjectiveGame";
+import MessageBar from "./UI/MessageBar";
 
 import retrieveEnglishVersion from "../../services/wordHuntService";
 
@@ -25,14 +26,17 @@ class Game {
     this.findVerbGame = null;
     this.findAdjectiveGame = null;
 
+    this.messageBar = null;
+
     // game logic variables
     this.initialMaxTime = 1;
     this.maxTime = 1; // time in minutes
     this.isInputLocked = false;
     this.isTimerRunning = false;
+    this.totalScore = 0;
 
     //player&Game specific
-     this.bestTimeByStoryId=null //  comes from the game collection to be tracked by story id
+    this.bestTimeByStoryId = null; //  comes from the game collection to be tracked by story id
   }
 
   //----------------------------------
@@ -44,11 +48,15 @@ class Game {
     this.data = await this.getPassageById();
     this.processData();
 
+    this.messageBar = new MessageBar(this);
+
     this.landingPage.button.tap(() => {
       console.log("Button Tapped");
       this.landingPage.hide();
-
-      this.startNounGame();
+      this.messageBar.countdownTimer(() => {
+        // ✅ ONLY START GAME AFTER COUNTDOWN FINISHES
+        this.startNounGame();
+      });
     });
 
     this.stage.update();
@@ -148,7 +156,6 @@ class Game {
       adjectives,
     };
   }
-
 }
 
 export default Game;
