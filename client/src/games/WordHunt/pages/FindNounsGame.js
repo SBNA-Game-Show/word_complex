@@ -27,8 +27,6 @@ class FindNounsGame {
     this.score = 0;
     this.foundWords = [];
 
-    this.data = this.getData();
-
     this.progressBar = null;
     this.messageBar = null;
     this.playerInformation = null;
@@ -350,28 +348,6 @@ class FindNounsGame {
       this.messageBar.showWinningMessage(this.gameKey, completionTime);
     }
   }
-
-  //-----------------------------------
-  // DATA
-  //-----------------------------------
-
-  getData() {
-    const story = this.game.storyData.story;
-
-    if (typeof story === "string") {
-      return (
-        story.match(/[^.!?]+[.!?]+/g)?.map((sentence) => sentence.trim()) || []
-      );
-    }
-
-    if (Array.isArray(story)) {
-      console.log("Story Data is an Array");
-      return story;
-    }
-
-    return [];
-  }
-
   //-----------------------------------
   // Button Functionality
   //-----------------------------------
