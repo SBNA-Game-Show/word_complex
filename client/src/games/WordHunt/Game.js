@@ -32,7 +32,6 @@ class Game {
     this.initialMaxTime = 1;
     this.maxTime = 1; // time in minutes
     this.isInputLocked = false;
-    this.isTimerRunning = false;
 
     // Player
     this.player = "Jack";

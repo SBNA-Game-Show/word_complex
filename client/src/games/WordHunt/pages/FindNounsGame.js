@@ -170,7 +170,7 @@ class FindNounsGame {
       },
 
       () => {
-        if (this.gameOver) {
+        if (this.gameOver || !this.timer.isActive) {
           return;
         }
         this.progressBar.showTimesUp();
