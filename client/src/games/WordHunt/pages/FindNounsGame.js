@@ -173,96 +173,171 @@ class FindNounsGame {
       },
     );
 
-    this.data.forEach((word) => {
-      const label = new ZimLabel(this.game, word, 24, "white");
+    // this.data.forEach((word) => {
+    //   const label = new ZimLabel(this.game, word, 24, "white");
 
-      label.createLabel();
+    //   label.createLabel();
 
-      if (x + 100 > maxWidth) {
-        x = margin;
-        y += lineHeight;
-      }
+    //   if (x + 100 > maxWidth) {
+    //     x = margin;
+    //     y += lineHeight;
+    //   }
 
-      label.pos(x, y).addTo(this.blackboard);
+    //   label.pos(x, y).addTo(this.blackboard);
 
-      // IMPORTANT: measure AFTER adding
-      const width = label.label.width;
+    //   // IMPORTANT: measure AFTER adding
+    //   const width = label.label.width;
 
-      x += width + 14;
+    //   x += width + 14;
 
-      //-----------------------------------
-      // CLICK
-      //-----------------------------------
+    //   //-----------------------------------
+    //   // CLICK
+    //   //-----------------------------------
 
-      label.tap(() => {
-        if (this.game.inputLocked) {
-          return;
-        }
+    //   label.tap(() => {
+    //     if (this.game.inputLocked) {
+    //       return;
+    //     }
+    //     const cleanWord = word.toLowerCase().replace(/[^\w']/g, "");
+    //     console.log("CLICKED:", cleanWord);
+
+    //     //-----------------------------------
+    //     // CORRECT VERB
+    //     //-----------------------------------
+
+    //     if (this.nouns.includes(cleanWord)) {
+    //       if (this.foundWords.includes(cleanWord)) {
+    //         this.game.stage.update();
+    //         return;
+    //       }
+
+    //       // Prevent this label from firing again
+    //       label.mouseEnabled = false;
+
+    //       this.foundWords.push(cleanWord);
+    //       console.log("FOUND =", this.foundWords);
+
+    //       this.score++;
+    //       this.progressBar.setFound(this.foundWords.length);
+    //       console.log("SCORE =", this.score);
+    //       label.setColor("#00ff88");
+
+    //       foundWordsLabel.text = this.foundWords.join(", ");
+
+    //       emit("correct");
+
+    //       this.checkWin();
+    //     }
+
+    //     //-----------------------------------
+    //     // NOUN
+    //     //-----------------------------------
+    //     else if (this.verbs.includes(cleanWord)) {
+    //       label.color = "red";
+
+    //       this.messageBar.show(`Oops! "${cleanWord}" is a VERB`, 10000);
+
+    //       emit("wrong");
+    //     }
+
+    //     //-----------------------------------
+    //     // ADJECTIVE
+    //     //-----------------------------------
+    //     else if (this.adjectives.includes(cleanWord)) {
+    //       label.color = "orange";
+
+    //       this.messageBar.show(`Oops! "${cleanWord}" is a Adjective`, 10000);
+
+    //       emit("wrong");
+    //     }
+
+    //     //-----------------------------------
+    //     // OTHER
+    //     //-----------------------------------
+    //     else {
+    //       label.color = "#ff6666";
+    //       emit("wrong");
+    //     }
+
+    //     this.game.stage.update();
+    //   });
+    // });
+
+    this.data.forEach((sentence) => {
+      const words = sentence.split(/\s+/);
+
+      x = margin;
+
+      words.forEach((word) => {
         const cleanWord = word.toLowerCase().replace(/[^\w']/g, "");
-        console.log("CLICKED:", cleanWord);
 
-        //-----------------------------------
-        // CORRECT VERB
-        //-----------------------------------
+        const label = new ZimLabel(this.game, word, 24, "white");
+        label.createLabel();
 
-        if (this.nouns.includes(cleanWord)) {
-          if (this.foundWords.includes(cleanWord)) {
-            this.game.stage.update();
-            return;
+        // wrap line
+        if (x + label.label.width > maxWidth) {
+          x = margin;
+          y += lineHeight;
+        }
+
+        label.pos(x, y).addTo(this.blackboard);
+
+        x += label.label.width + 14;
+
+        label.tap(() => {
+          if (this.game.inputLocked) return;
+
+          console.log("CLICKED:", cleanWord);
+
+          // CORRECT NOUN
+          if (this.nouns.includes(cleanWord)) {
+            if (this.foundWords.includes(cleanWord)) {
+              this.game.stage.update();
+              return;
+            }
+
+            label.mouseEnabled = false;
+
+            this.foundWords.push(cleanWord);
+            this.score++;
+
+            this.progressBar.setFound(this.foundWords.length);
+
+            label.setColor("#00ff88");
+
+            foundWordsLabel.text = this.foundWords.join(", ");
+
+            emit("correct");
+
+            this.checkWin();
           }
 
-          // Prevent this label from firing again
-          label.mouseEnabled = false;
+          // VERB
+          else if (this.verbs.includes(cleanWord)) {
+            label.color = "red";
+            this.messageBar.show(`Oops! "${cleanWord}" is a VERB`, 10000);
+            emit("wrong");
+          }
 
-          this.foundWords.push(cleanWord);
-          console.log("FOUND =", this.foundWords);
+          // ADJECTIVE
+          else if (this.adjectives.includes(cleanWord)) {
+            label.color = "orange";
+            this.messageBar.show(`Oops! "${cleanWord}" is a Adjective`, 10000);
+            emit("wrong");
+          }
 
-          this.score++;
-          this.progressBar.setFound(this.foundWords.length);
-          console.log("SCORE =", this.score);
-          label.setColor("#00ff88");
+          // OTHER
+          else {
+            label.color = "#ff6666";
+            emit("wrong");
+          }
 
-          foundWordsLabel.text = this.foundWords.join(", ");
-
-          emit("correct");
-
-          this.checkWin();
-        }
-
-        //-----------------------------------
-        // NOUN
-        //-----------------------------------
-        else if (this.verbs.includes(cleanWord)) {
-          label.color = "red";
-
-          this.messageBar.show(`Oops! "${cleanWord}" is a VERB`, 10000);
-
-          emit("wrong");
-        }
-
-        //-----------------------------------
-        // ADJECTIVE
-        //-----------------------------------
-        else if (this.adjectives.includes(cleanWord)) {
-          label.color = "orange";
-
-          this.messageBar.show(`Oops! "${cleanWord}" is a Adjective`, 10000);
-
-          emit("wrong");
-        }
-
-        //-----------------------------------
-        // OTHER
-        //-----------------------------------
-        else {
-          label.color = "#ff6666";
-          emit("wrong");
-        }
-
-        this.game.stage.update();
+          this.game.stage.update();
+        });
       });
-    });
 
+      y += lineHeight;
+    });
     this.game.stage.update();
     return this.blackboard;
   }
@@ -298,8 +373,15 @@ class FindNounsGame {
   // DATA
   //-----------------------------------
 
+  // getData() {
+  //   return this.game.storyData.story.match(/\S+/g) || [];
+  // }
   getData() {
-    return this.game.storyData.story.match(/\S+/g) || [];
+    return (
+      this.game.storyData.story
+        .match(/[^.!?]+[.!?]+/g)
+        ?.map((sentence) => sentence.trim()) || []
+    );
   }
 
   //-----------------------------------
