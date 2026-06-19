@@ -1,1 +1,0 @@
-import ZimLabel from "../../../zimcomponents/ZimLabel";

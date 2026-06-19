@@ -23,7 +23,8 @@ class MessageBar {
     this.exitButton = null;
     this.restartButton = null;
 
-    this.onRestart = null
+    this.onRestart = null;
+    this.onExit = null;
   }
 
   show(text, color = "black", duration = 1200) {
@@ -211,6 +212,10 @@ class MessageBar {
     const exitBtn = this.exitButton.createButton();
     exitBtn.addTo(this.timeOverContainer);
     exitBtn.pos(270, 100);
+
+    exitBtn.tap(() => {
+      if (this.onExit) this.onExit();
+    });
 
     this.game.stage.update();
 

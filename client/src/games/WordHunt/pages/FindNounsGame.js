@@ -73,8 +73,12 @@ class FindNounsGame {
 
     this.messageBar = new MessageBar(this.game);
     // this.continueButton = this.messageBar.continueButton;
-    // this.exitButton = this.messageBar.exitButton;
-    // this.restartButton = this.messageBar.restartButton;
+    // Exiting to Home page
+    this.messageBar.onExit = () => {
+      this.game.stage.removeAllChildren();
+      this.game.start();
+    };
+    // Restarting same game when time is up
     this.messageBar.onRestart = () => {
       console.log("Restart triggered");
 
