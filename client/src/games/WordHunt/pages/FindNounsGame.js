@@ -17,6 +17,7 @@ class FindNounsGame {
     this.challenge = `Find All ${this.nouns.length} Nouns`;
     this.timer = new Timer(game, this.game.initialMaxTime);
     this.gameKey = "Nouns";
+    this.timeUpKey = "Oops ! Times UP";
 
     this.score = 0;
     this.foundWords = [];
@@ -25,6 +26,9 @@ class FindNounsGame {
 
     this.progressBar = null;
     this.messageBar = null;
+
+    this.continueButton = null;
+    this.exitButton = null;
   }
 
   displayPassage() {
@@ -65,6 +69,8 @@ class FindNounsGame {
     //-----------------------------------
 
     this.messageBar = new MessageBar(this.game);
+    this.continueButton = this.messageBar.continueButton;
+    this.exitButton = this.messageBar.exitButton;
     //-----------------------------------
     // FOUND VERBS BOX
     //-----------------------------------
@@ -127,13 +133,13 @@ class FindNounsGame {
         this.progressBar.setTime(minutes, seconds);
       },
 
-      // () => {
-      //   this.progressBar.showTimesUp();
+      () => {
+        this.progressBar.showTimesUp();
 
-      //   this.game.inputLocked = true;
+        this.game.inputLocked = true;
 
-      //   this.messageBar.show("Time's Up!", "red", 5000);
-      // },
+        this.messageBar.showTimeOverMessage(this.timeUpKey);
+      },
     );
 
     this.data.forEach((word) => {
@@ -253,10 +259,10 @@ class FindNounsGame {
 
       this.game.inputLocked = true;
 
-      this.messageBar.showWinningMessage(
-        this.gameKey,
-        `${minutes}:${String(seconds).padStart(2, "0")}`,
-      );
+      const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
+      this.game.bestTimeByStoryId = completionTime;
+
+      this.messageBar.showWinningMessage(this.gameKey, completionTime);
     }
   }
 
