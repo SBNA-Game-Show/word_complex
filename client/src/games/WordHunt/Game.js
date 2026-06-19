@@ -29,6 +29,7 @@ class Game {
     this.messageBar = null;
 
     // game logic variables
+    this.currentStoryId = "04e9ae48-5570-4cd0-8968-a2179353164b";
     this.initialMaxTime = 1;
     this.maxTime = 1; // time in minutes
     this.isInputLocked = false;
@@ -48,7 +49,7 @@ class Game {
 
   async start() {
     this.landingPage = new LandingPage(this).createLandingPage();
-    this.data = await this.getPassageById();
+    this.data = await this.getPassageById(this.currentStoryId);
     this.processData();
 
     this.messageBar = new MessageBar(this);
@@ -104,10 +105,8 @@ class Game {
   // API CALL TO GET GAME DATA AND DATA PROCESSING
   //-------------------------
 
-  async getPassageById() {
+  async getPassageById(storyId) {
     try {
-      const storyId = "04e9ae48-5570-4cd0-8968-a2179353164b";
-
       const response = await retrieveEnglishVersion(storyId);
 
       console.log("RESPONSE:", response);

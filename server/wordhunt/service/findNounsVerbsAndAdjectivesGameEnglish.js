@@ -21,7 +21,7 @@ const findNounVerbAndAdjEnglish = async (storyId) => {
 };
 
 const getStroyById = async (storyId) => {
-  const story = retrieveStoryById(storyId);
+  const story = await retrieveStoryById(storyId);
 
   return story;
 };
