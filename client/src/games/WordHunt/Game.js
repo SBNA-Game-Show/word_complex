@@ -33,6 +33,10 @@ class Game {
     this.maxTime = 1; // time in minutes
     this.isInputLocked = false;
     this.isTimerRunning = false;
+
+    // Player
+    this.player = "Jack";
+    this.playerCoins = 0;
     this.totalScore = 0;
 
     //player&Game specific

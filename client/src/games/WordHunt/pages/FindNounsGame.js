@@ -7,6 +7,7 @@ import MessageBar from "../UI/MessageBar";
 import Timer from "../utils/Timer";
 
 import { emit } from "../../../scenes/sceneBus";
+import PlayerInformation from "../UI/PlayerInfo";
 
 class FindNounsGame {
   constructor(game) {
@@ -26,10 +27,13 @@ class FindNounsGame {
 
     this.progressBar = null;
     this.messageBar = null;
+    this.playerInformation = null;
 
     this.continueButton = null;
     this.exitButton = null;
     this.restartButton = null;
+
+    this.player = this.game.player;
 
     this.gameOver = false;
   }
@@ -54,11 +58,6 @@ class FindNounsGame {
     //-----------------------------------
     // SCORE
     //-----------------------------------
-
-    /**
-     * New Progress Bar to be used
-     */
-
     this.progressBar = new ProgressBar(this.game, this.challenge);
 
     const progressBarContainer = this.progressBar.create();
@@ -66,6 +65,15 @@ class FindNounsGame {
     progressBarContainer.pos(this.blackboard.width - 300, 40);
 
     progressBarContainer.addTo(this.blackboard);
+
+    this.playerInformation = new PlayerInformation(this.game);
+    const playerInfoCont = this.playerInformation.create();
+
+    // FIXED POSITION (top-right HUD)
+    playerInfoCont.pos(this.blackboard.width - 880, 20);
+
+    // IMPORTANT: add to stage, NOT blackboard
+    playerInfoCont.addTo(this.game.stage);
 
     //-----------------------------------
     // MESSAGE BAR
@@ -300,6 +308,7 @@ class FindNounsGame {
 
             this.foundWords.push(cleanWord);
             this.score++;
+            this.playerInformation.update(this.score);
 
             this.progressBar.setFound(this.foundWords.length);
 
