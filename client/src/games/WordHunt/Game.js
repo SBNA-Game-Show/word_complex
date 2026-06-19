@@ -3,8 +3,12 @@ import FindNounsGame from "./pages/FindNounsGame";
 import FindVerbGame from "./pages/FindVerbGame";
 import FindAdjectiveGame from "./pages/FindAdjectiveGame";
 import MessageBar from "./UI/MessageBar";
+import GameManger from "./utils/GameManager";
 
-import retrieveEnglishVersion from "../../services/wordHuntService";
+import {
+  retrieveEnglishVersion,
+  retrieveSanskritVersion,
+} from "../../services/wordHuntService";
 
 class Game {
   constructor(setup) {
@@ -13,6 +17,7 @@ class Game {
     this.width = setup.W;
     this.height = setup.H;
     this.zim = setup.zim;
+    this.manager = new GameManger();
 
     this.data = null;
     this.passageArray = null;
@@ -49,8 +54,9 @@ class Game {
 
   async start() {
     this.landingPage = new LandingPage(this).createLandingPage();
-    this.data = await this.getPassageById(this.currentStoryId);
-    this.processData();
+    this.data = await this.getPassageByIdSanskrit(this.currentStoryId); //await this.getPassageByIdEnglish(this.currentStoryId); //;
+    //this.processDataEnglish();
+    this.processDataSanskrit();
 
     this.messageBar = new MessageBar(this);
 
@@ -104,8 +110,8 @@ class Game {
   //-------------------------
   // API CALL TO GET GAME DATA AND DATA PROCESSING
   //-------------------------
-
-  async getPassageById(storyId) {
+  // English Version
+  async getPassageByIdEnglish(storyId) {
     try {
       const response = await retrieveEnglishVersion(storyId);
 
@@ -117,7 +123,7 @@ class Game {
     }
   }
 
-  processData() {
+  processDataEnglish() {
     if (!this.data) {
       console.log("Backend Not Connected");
       return;
@@ -129,11 +135,11 @@ class Game {
     this.passageArray = this.data.passageArray;
     this.tokenizedArray = this.data.tokenizedPassage;
     // console.log("Tokenized Array : ", this.tokenizedArray);
-    this.wordTypes = this.splitPOSByType();
+    this.wordTypes = this.splitPOSByTypeEnglish();
     console.log("Word Types:", this.wordTypes);
   }
 
-  splitPOSByType() {
+  splitPOSByTypeEnglish() {
     const nouns = [];
     const verbs = [];
     const adjectives = [];
@@ -157,6 +163,63 @@ class Game {
       verbs,
       adjectives,
     };
+  }
+
+  async getPassageByIdSanskrit(storyId) {
+    try {
+      const response = await retrieveSanskritVersion(storyId);
+
+      console.log("RESPONSE:", response);
+
+      return response;
+    } catch (error) {
+      console.error("Failed to load story:", error);
+    }
+  }
+
+  processDataSanskrit() {
+    if (!this.data) {
+      console.log("Backend Not Connected");
+      return;
+    }
+    this.storyData = {
+      story: this.data.passage,
+    };
+
+    this.passageArray = this.data.passageArray;
+    this.tokenizedArray = this.data.tokenizedPassage;
+    // console.log("Tokenized Array : ", this.tokenizedArray);
+    this.wordTypes = this.splitPOSByTypeSanskrit();
+    console.log("Word Types:", this.wordTypes);
+  }
+
+  splitPOSByTypeSanskrit() {
+    const nouns = [];
+    const verbs = [];
+    const adjectives = [];
+
+    console.log("tokenizedArray =", this.tokenizedArray);
+
+    this.tokenizedArray.forEach((sentence, i) => {
+      console.log("sentence", i, sentence);
+
+      sentence.forEach((token) => {
+        console.log("text:", token.text, "upos:", token.upos);
+
+        if (token.upos === "NOUN")
+          nouns.push(this.manager.normalize(token.text));
+        if (token.upos === "VERB")
+          verbs.push(this.manager.normalize(token.text));
+        if (token.upos === "ADJ")
+          adjectives.push(this.manager.normalize(token.text));
+      });
+    });
+
+    console.log("NOUNS", nouns);
+    console.log("VERBS", verbs);
+    console.log("ADJECTIVES", adjectives);
+
+    return { nouns, verbs, adjectives };
   }
 }
 

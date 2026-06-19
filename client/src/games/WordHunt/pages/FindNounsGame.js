@@ -8,10 +8,14 @@ import Timer from "../utils/Timer";
 
 import { emit } from "../../../scenes/sceneBus";
 import PlayerInformation from "../UI/PlayerInfo";
+import GameManger from "../utils/GameManager";
 
 class FindNounsGame {
   constructor(game) {
     this.game = game;
+    this.manager = new GameManger();
+
+
     this.nouns = game.wordTypes.nouns;
     this.verbs = game.wordTypes.verbs;
     this.adjectives = game.wordTypes.adjectives;
@@ -277,7 +281,7 @@ class FindNounsGame {
       x = margin;
 
       words.forEach((word) => {
-        const cleanWord = word.toLowerCase().replace(/[^\w']/g, "");
+        const cleanWord = this.manager.normalize(word)
 
         const label = new ZimLabel(this.game, word, 24, "white");
         label.createLabel();
@@ -382,15 +386,21 @@ class FindNounsGame {
   // DATA
   //-----------------------------------
 
-  // getData() {
-  //   return this.game.storyData.story.match(/\S+/g) || [];
-  // }
   getData() {
-    return (
-      this.game.storyData.story
-        .match(/[^.!?]+[.!?]+/g)
-        ?.map((sentence) => sentence.trim()) || []
-    );
+    const story = this.game.storyData.story;
+
+    if (typeof story === "string") {
+      return (
+        story.match(/[^.!?]+[.!?]+/g)?.map((sentence) => sentence.trim()) || []
+      );
+    }
+
+    if (Array.isArray(story)) {
+      console.log("Story Data is an Array");
+      return story;
+    }
+
+    return [];
   }
 
   //-----------------------------------

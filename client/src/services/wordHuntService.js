@@ -26,4 +26,31 @@ export const retrieveEnglishVersion = async (storyId) => {
   }
 };
 
-export default retrieveEnglishVersion;
+export const retrieveSanskritVersion = async (storyId) => {
+  try {
+    if (!storyId) {
+      throw new Error("storyId is required");
+    }
+
+    const response = await fetch(
+      `${API_BASE}/wordHunt/POSSanskrit?storyId=${storyId}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+
+      throw new Error(
+        errorData?.message || `Request failed: ${response.status}`,
+      );
+    }
+
+    const result = await response.json();
+    console.log("Sanskrit Version Response: ", result);
+    return result.data;
+  } catch (error) {
+    console.error("Failed to fetch English version:", error);
+    return null;
+  }
+};
+
+export default { retrieveEnglishVersion, retrieveSanskritVersion };
