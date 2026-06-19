@@ -29,6 +29,9 @@ class FindNounsGame {
 
     this.continueButton = null;
     this.exitButton = null;
+    this.restartButton = null;
+
+    this.gameOver = false;
   }
 
   displayPassage() {
@@ -69,8 +72,22 @@ class FindNounsGame {
     //-----------------------------------
 
     this.messageBar = new MessageBar(this.game);
-    this.continueButton = this.messageBar.continueButton;
-    this.exitButton = this.messageBar.exitButton;
+    // this.continueButton = this.messageBar.continueButton;
+    // this.exitButton = this.messageBar.exitButton;
+    // this.restartButton = this.messageBar.restartButton;
+    this.messageBar.onRestart = () => {
+      console.log("Restart triggered");
+
+      this.gameOver = false;
+      this.foundWords = [];
+      this.score = 0;
+
+      this.timer.stop();
+      this.game.inputLocked = false;
+
+      this.game.stage.removeAllChildren();
+      this.displayPassage();
+    };
     //-----------------------------------
     // FOUND VERBS BOX
     //-----------------------------------
@@ -130,10 +147,16 @@ class FindNounsGame {
 
     this.timer.start(
       ({ minutes, seconds }) => {
+        if (this.gameOver) {
+          return;
+        }
         this.progressBar.setTime(minutes, seconds);
       },
 
       () => {
+        if (this.gameOver) {
+          return;
+        }
         this.progressBar.showTimesUp();
 
         this.game.inputLocked = true;
@@ -176,8 +199,6 @@ class FindNounsGame {
 
         if (this.nouns.includes(cleanWord)) {
           if (this.foundWords.includes(cleanWord)) {
-            // messageLabel.text = `${cleanWord} already found`;
-
             this.game.stage.update();
             return;
           }
@@ -192,8 +213,6 @@ class FindNounsGame {
           this.progressBar.setFound(this.foundWords.length);
           console.log("SCORE =", this.score);
           label.setColor("#00ff88");
-
-          // this.messageBar.show(`Great! "${cleanWord}" is a Noun`, 10000);
 
           foundWordsLabel.text = this.foundWords.join(", ");
 
@@ -248,6 +267,7 @@ class FindNounsGame {
   //-----------------------------------
   checkWin() {
     if (this.foundWords.length === this.nouns.length) {
+      this.gameOver = true;
       this.timer.stop();
 
       const elapsedMs = this.timer.getElapsedTime();
@@ -257,7 +277,7 @@ class FindNounsGame {
 
       console.log(`TIME USED: ${minutes}:${seconds}`);
 
-      this.game.inputLocked = true;
+      // this.game.inputLocked = true;
 
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
       this.game.bestTimeByStoryId = completionTime;
@@ -272,6 +292,28 @@ class FindNounsGame {
 
   getData() {
     return this.game.storyData.story.match(/\S+/g) || [];
+  }
+
+  //-----------------------------------
+  // Button Functionality
+  //-----------------------------------
+
+  restartButtonTapped() {
+    if (!this.restartButton) return;
+
+    this.restartButton.tap(() => {
+      console.log("Restart Button Tapped");
+
+      this.gameOver = false;
+      this.foundWords = [];
+      this.score = 0;
+
+      this.timer.stop();
+      this.game.inputLocked = false;
+
+      this.game.stage.removeAllChildren();
+      this.displayPassage();
+    });
   }
 }
 

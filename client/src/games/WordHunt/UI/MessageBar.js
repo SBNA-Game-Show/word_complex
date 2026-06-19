@@ -22,6 +22,8 @@ class MessageBar {
     this.continueButton = null;
     this.exitButton = null;
     this.restartButton = null;
+
+    this.onRestart = null
   }
 
   show(text, color = "black", duration = 1200) {
@@ -137,7 +139,7 @@ class MessageBar {
     const continueBtn = this.continueButton.createButton();
     continueBtn.addTo(this.winningContainer);
 
-    this.exitButton = new ZimButton(this.game, 140, 40, "Exit",16);
+    this.exitButton = new ZimButton(this.game, 140, 40, "Exit", 16);
     const exitBtn = this.exitButton.createButton();
     exitBtn.addTo(this.winningContainer);
 
@@ -200,6 +202,10 @@ class MessageBar {
     const restartBtn = this.restartButton.createButton();
     restartBtn.addTo(this.timeOverContainer);
     restartBtn.pos(90, 100);
+
+    restartBtn.tap(() => {
+      if (this.onRestart) this.onRestart();
+    });
 
     this.exitButton = new ZimButton(this.game, 140, 40, "Exit", 16);
     const exitBtn = this.exitButton.createButton();
