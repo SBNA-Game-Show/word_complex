@@ -72,7 +72,11 @@ class FindNounsGame {
     //-----------------------------------
 
     this.messageBar = new MessageBar(this.game);
-    // this.continueButton = this.messageBar.continueButton;
+    // Continue Button Functionality
+    this.messageBar.onContinue = () => {
+      this.game.stage.removeAllChildren();
+      this.game.startVerbGame();
+    };
     // Exiting to Home page
     this.messageBar.onExit = () => {
       this.game.stage.removeAllChildren();
