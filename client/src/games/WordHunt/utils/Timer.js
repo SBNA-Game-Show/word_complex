@@ -1,7 +1,7 @@
 class Timer {
-  constructor(game, minutes = 1) {
+  constructor(game) {
     this.game = game;
-    this.minutes = minutes;
+    this.minutes = game.firstAttemptTime;
 
     this.isActive = false;
     this.tickHandler = null;

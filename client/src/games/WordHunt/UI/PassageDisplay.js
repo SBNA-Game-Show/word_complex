@@ -8,7 +8,7 @@ class PassageDisplay {
     this.zim = game.zim;
     this.width = this.game.width;
     this.height = this.game.height;
-    this.manager = new GameManger();
+    this.manager = new GameManger(this.game);
 
     this.rawData = game.storyData?.story || null;
     this.passage = this.parseData();

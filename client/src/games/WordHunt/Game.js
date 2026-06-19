@@ -17,7 +17,7 @@ class Game {
     this.width = setup.W;
     this.height = setup.H;
     this.zim = setup.zim;
-    this.manager = new GameManger();
+    this.manager = new GameManger(this);
 
     this.data = null;
     this.passageArray = null;
@@ -35,7 +35,7 @@ class Game {
 
     // game logic variables
     this.currentStoryId = "04e9ae48-5570-4cd0-8968-a2179353164b";
-    this.initialMaxTime = 1;
+    this.firstAttemptTime = 0;
     this.maxTime = 1; // time in minutes
     this.isInputLocked = false;
 
@@ -54,14 +54,16 @@ class Game {
 
   async start() {
     this.landingPage = new LandingPage(this).createLandingPage();
-    this.data = await this.getPassageByIdEnglish(this.currentStoryId); //await this.getPassageByIdSanskrit(this.currentStoryId); //; //; //; //; //; //; //; //;
-    this.processDataEnglish(); //; //;
-    //this.processDataSanskrit();
+    this.data = await this.getPassageByIdEnglish(this.currentStoryId); //
+    this.processDataEnglish();
+    // this.data = await this.getPassageByIdSanskrit(this.currentStoryId);
+    // this.processDataSanskrit();
 
     this.messageBar = new MessageBar(this);
+    this.manager.setFirstAttemptTime();
 
     this.landingPage.button.tap(() => {
-      console.log("Button Tapped");
+      // console.log("Button Tapped");
       this.landingPage.hide();
       this.messageBar.countdownTimer(() => {
         // ✅ ONLY START GAME AFTER COUNTDOWN FINISHES
@@ -198,7 +200,7 @@ class Game {
     const verbs = [];
     const adjectives = [];
 
-    console.log("tokenizedArray =", this.tokenizedArray);
+    // console.log("tokenizedArray =", this.tokenizedArray);
 
     this.tokenizedArray.forEach((sentence, i) => {
       // console.log("sentence", i, sentence);

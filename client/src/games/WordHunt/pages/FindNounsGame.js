@@ -14,7 +14,7 @@ import GameManger from "../utils/GameManager";
 class FindNounsGame {
   constructor(game) {
     this.game = game;
-    this.manager = new GameManger();
+    this.manager = new GameManger(this.game);
 
     this.nouns = game.wordTypes.nouns;
     this.verbs = game.wordTypes.verbs;
@@ -151,20 +151,7 @@ class FindNounsGame {
     chalk.show();
 
     //-----------------------------------
-    // STORY
-    //-----------------------------------
-
-    const margin = 60;
-
-    let x = margin;
-    let y = 160;
-
-    const lineHeight = 42;
-
-    const maxWidth = this.blackboard.width - 80;
-
-    //-----------------------------------
-    // WORDS
+    // Timer to start the game
     //-----------------------------------
 
     this.timer.start(
@@ -186,9 +173,10 @@ class FindNounsGame {
         this.messageBar.showTimeOverMessage(this.timeUpKey);
       },
     );
-    this.passageDisplay = new PassageDisplay(this.game, this.blackboard);
 
     // 2. Generate container and handle click callbacks
+    this.passageDisplay = new PassageDisplay(this.game, this.blackboard);
+
     const passageDisplayCont = this.passageDisplay.displayPassage(
       (cleanWord, label) => {
         if (this.game.inputLocked) return;
@@ -237,7 +225,6 @@ class FindNounsGame {
       },
     );
 
-    // 3. Manually add to your blackboard here
     passageDisplayCont.pos(50, 100);
     passageDisplayCont.addTo(this.blackboard);
 
