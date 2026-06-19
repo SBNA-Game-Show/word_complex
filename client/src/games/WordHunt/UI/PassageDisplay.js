@@ -6,6 +6,8 @@ class PassageDisplay {
   constructor(game) {
     this.game = game;
     this.zim = game.zim;
+    this.width = this.game.width;
+    this.height = this.game.height;
     this.manager = new GameManger();
 
     this.rawData = game.storyData?.story || null;
@@ -27,21 +29,26 @@ class PassageDisplay {
   }
 
   displayPassage(onWordClick) {
-    // Create standalone container
-    const container = new ZimContainer(
-      this.game,
-      this.game.width,
-      this.game.height,
-    ).createContainer();
-
     const margin = 60;
     const lineHeight = 45;
     const spacing = 14;
 
-    let x = margin;
-    let y = 160;
+    const windowWidth = this.width - 120;
+    const windowHeight = 380;
 
-    const maxWidth = this.game.width - 120;
+    // 1. Give the text container a fixed, strict width right away
+    const textContainer = new ZimContainer(
+      this.game,
+      windowWidth,
+      2000,
+    ).createContainer();
+
+    let x = margin;
+    let y = 20;
+
+    // Account for the scrollbar thickness on the right side by reducing width slightly
+    const scrollbarBuffer = 30;
+    const maxWidth = windowWidth - margin * 2 - scrollbarBuffer;
 
     this.passage.forEach((sentence) => {
       const words = sentence.split(/\s+/);
@@ -51,14 +58,10 @@ class PassageDisplay {
         if (!word) return;
 
         const cleanWord = this.manager.normalize(word);
+        const label = new ZimLabel(this.game, word, 20, "white").createLabel();
 
-        const label = new ZimLabel(this.game, word, 24, "white").createLabel();
+        label.addTo(textContainer);
 
-        // FIXED: Use ZIM's native chainable method instead of container.addChild()
-        // This ensures the custom component unwraps correctly into the container.
-        label.addTo(container);
-
-        // Fallback checks to find the correct width property
         const w =
           label.width || label.label?.width || label.getBounds?.()?.width || 60;
 
@@ -81,7 +84,34 @@ class PassageDisplay {
       y += lineHeight;
     });
 
-    return container;
+    const calculatedHeight = y + 60;
+
+    // 2. FORCE ZIM boundary alignment to match windowWidth exactly.
+    // This stops CreateJS from thinking the container content expands outward horizontally.
+    textContainer.setBounds(0, 0, windowWidth, calculatedHeight);
+    textContainer.width = windowWidth;
+    textContainer.height = calculatedHeight;
+
+    // Create the ZIM Window
+    const scrollWindow = new this.zim.Window({
+      width: windowWidth,
+      height: windowHeight,
+      content: textContainer,
+      interactive: true,
+      bgColor: "transparent",
+      borderColor: "transparent",
+      padding: 0,
+
+      // STRICT VERTICAL SCROLL SETTINGS
+      scrollX: false,
+      scrollY: true,
+      scrollBarDrag: true,
+      scrollBarColor: "#00ff88",
+      scrollBarActiveColor: "white",
+      indicatorFade: false,
+    });
+
+    return scrollWindow;
   }
 }
 

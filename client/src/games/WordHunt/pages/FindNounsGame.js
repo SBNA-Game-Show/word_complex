@@ -178,7 +178,7 @@ class FindNounsGame {
       },
 
       () => {
-        if (this.gameOver || !this.timer.isActive) {
+        if (this.gameOver) {
           return;
         }
         this.progressBar.showTimesUp();
@@ -190,23 +190,57 @@ class FindNounsGame {
     );
     this.passageDisplay = new PassageDisplay(this.game, this.blackboard);
 
-    // displayPassage now only takes the click callback action handler
-    // 1. Initialize standalone
-    this.passageDisplay = new PassageDisplay(this.game);
-
     // 2. Generate container and handle click callbacks
     const passageDisplayCont = this.passageDisplay.displayPassage(
       (cleanWord, label) => {
         if (this.game.inputLocked) return;
-
         console.log("CLICKED:", cleanWord);
-        // ... rest of your word logic (nouns, verbs, adjectives checks)
+        //CORRECT NOUN
+        if (this.nouns.includes(cleanWord)) {
+          if (this.foundWords.includes(cleanWord)) {
+            this.game.stage.update();
+            return;
+          }
+
+          label.mouseEnabled = false;
+
+          this.foundWords.push(cleanWord);
+          this.score++;
+          console.log("Found Words:", this.foundWords);
+          this.progressBar.setFound(this.foundWords.length);
+
+          label.setColor("#00ff88");
+
+          foundWordsLabel.text = this.foundWords.join(", ");
+
+          emit("correct");
+
+          this.checkWin();
+        }
+        // VERB
+        else if (this.verbs.includes(cleanWord)) {
+          label.setColor("red");
+          this.messageBar.show(`Oops! "${cleanWord}" is a VERB`, 10000);
+          emit("wrong");
+        }
+
+        // ADJECTIVE
+        else if (this.adjectives.includes(cleanWord)) {
+          label.setColor("orange");
+          this.messageBar.show(`Oops! "${cleanWord}" is a Adjective`, 10000);
+          emit("wrong");
+        }
+        // OTHER
+        else {
+          label.setColor("#ff6666");
+          emit("wrong");
+        }
+        this.game.stage.update();
       },
     );
 
     // 3. Manually add to your blackboard here
-    passageDisplayCont.addTo(this.blackboard);
-
+    passageDisplayCont.pos(50, 100);
     passageDisplayCont.addTo(this.blackboard);
 
     // this.data.forEach((sentence) => {
