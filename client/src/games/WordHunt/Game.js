@@ -54,8 +54,8 @@ class Game {
 
   async start() {
     this.landingPage = new LandingPage(this).createLandingPage();
-    this.data = await this.getPassageByIdSanskrit(this.currentStoryId); //await this.getPassageByIdEnglish(this.currentStoryId); //;
-    //this.processDataEnglish();
+    this.data = await this.getPassageByIdSanskrit(this.currentStoryId); //await this.getPassageByIdEnglish(this.currentStoryId); //; //; //;
+    // this.processDataEnglish();
     this.processDataSanskrit();
 
     this.messageBar = new MessageBar(this);
@@ -201,10 +201,10 @@ class Game {
     console.log("tokenizedArray =", this.tokenizedArray);
 
     this.tokenizedArray.forEach((sentence, i) => {
-      console.log("sentence", i, sentence);
+      // console.log("sentence", i, sentence);
 
       sentence.forEach((token) => {
-        console.log("text:", token.text, "upos:", token.upos);
+        // console.log("text:", token.text, "upos:", token.upos);
 
         if (token.upos === "NOUN")
           nouns.push(this.manager.normalize(token.text));
@@ -215,9 +215,9 @@ class Game {
       });
     });
 
-    console.log("NOUNS", nouns);
-    console.log("VERBS", verbs);
-    console.log("ADJECTIVES", adjectives);
+    // console.log("NOUNS", nouns);
+    // console.log("VERBS", verbs);
+    // console.log("ADJECTIVES", adjectives);
 
     return { nouns, verbs, adjectives };
   }
