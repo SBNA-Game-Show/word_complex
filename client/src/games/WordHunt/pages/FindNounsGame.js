@@ -154,6 +154,8 @@ class FindNounsGame {
     //-----------------------------------
     this.manager.setGameTime(this.game.nounGameKey);
 
+    this.timer.minutes = this.game.gameTime
+
     this.timer.start(
       ({ minutes, seconds }) => {
         if (this.gameOver) {

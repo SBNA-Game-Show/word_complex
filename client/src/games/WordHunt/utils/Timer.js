@@ -22,9 +22,19 @@ class Timer {
 
       const remainingMs = maxTimeMs - this.elapsedMs;
 
+      // Inside Timer.js -> start() method
       if (remainingMs <= 0) {
-        this.stop();
+        // 1. Instantly clean up internal timer states
+        this.elapsedMs = maxTimeMs;
+        this.isActive = false;
 
+        // 2. Clear the loop references immediately to prevent a microsecond re-fire
+        if (this.tickHandler) {
+          this.game.zim.Ticker.remove(this.tickHandler);
+          this.tickHandler = null;
+        }
+
+        // 3. Trigger your Game Over layout logic safely at the end
         if (onComplete) onComplete();
 
         return;
