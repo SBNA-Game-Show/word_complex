@@ -1,6 +1,10 @@
 import ProgressBar from "../UI/ProgressBar";
 import Helper from "./Helper";
 
+/**
+ * The following class is responsible for setting game time 
+ * -  initialize game time according to the user experience
+ */
 class GameManager {
   constructor(game) {
     this.game = game;

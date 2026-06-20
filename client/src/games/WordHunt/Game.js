@@ -79,8 +79,8 @@ class Game {
   async start() {
     this.landingPage = new LandingPage(this).createLandingPage();
 
-    // await this.serviceManager.getPassageByIdEnglish();
-    await this.serviceManager.getPassageByIdSanskrit()
+    await this.serviceManager.getPassageByIdEnglish();
+    // await this.serviceManager.getPassageByIdSanskrit()
 
     this.messageBar = new MessageBar(this);
 
@@ -131,7 +131,6 @@ class Game {
 
     this.stage.update();
   }
-
 }
 
 export default Game;

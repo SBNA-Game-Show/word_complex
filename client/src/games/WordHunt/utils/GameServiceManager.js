@@ -3,6 +3,9 @@ import {
   retrieveSanskritVersion,
 } from "../../../services/wordHuntService";
 import GameManager from "./GameManager";
+/**
+ * The following class will be responsible for connecting with services to make api calls to retrieve data from database
+ */
 class GameServiceManager {
   constructor(game) {
     this.game = game;
@@ -10,9 +13,7 @@ class GameServiceManager {
     this.storyId = null;
     this.data = null;
   }
-  //-------------------------
-  // API CALL TO GET GAME DATA AND DATA PROCESSING
-  //-------------------------
+
   // English Version
 
   async getPassageByIdEnglish() {

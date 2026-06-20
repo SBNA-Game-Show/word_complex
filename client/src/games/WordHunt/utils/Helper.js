@@ -1,3 +1,6 @@
+/**
+ * Helper class to hold helper methods to be resued
+ */
 class Helper {
   constructor() {}
 
