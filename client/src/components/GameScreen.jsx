@@ -69,6 +69,7 @@ export default function GameScreen({ gameId, onBack }) {
   return (
     <main
       className={`game-screen game-screen-${gameClassName}`}
+      data-testid={`game-screen-${gameId}`}
       style={
         isMeaningBridge
           ? {
@@ -80,7 +81,12 @@ export default function GameScreen({ gameId, onBack }) {
       <BackgroundDecor />
 
       <header className="game-header">
-        <button className="back-button" type="button" onClick={onBack}>
+        <button
+          className="back-button"
+          data-testid="game-back-button"
+          type="button"
+          onClick={onBack}
+        >
           <span className="back-arrow" aria-hidden="true">
             &larr;
           </span>
@@ -145,7 +151,10 @@ export default function GameScreen({ gameId, onBack }) {
         <UserBadge user={user} onLogout={logout} />
       </header>
 
-      <section className={`canvas-shell canvas-shell-${gameClassName}`}>
+      <section
+        className={`canvas-shell canvas-shell-${gameClassName}`}
+        data-testid={`canvas-shell-${gameId}`}
+      >
         {Game ? <Game /> : <p className="missing-game">Game not found.</p>}
       </section>
     </main>
