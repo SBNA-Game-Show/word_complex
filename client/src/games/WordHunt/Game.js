@@ -80,10 +80,10 @@ class Game {
 
   async start() {
     this.landingPage = new LandingPage(this).createLandingPage();
-    // this.data = await this.getPassageByIdEnglish(this.currentStoryId); //
-    // this.processDataEnglish();
-    this.data = await this.getPassageByIdSanskrit(this.currentStoryId);
-    this.processDataSanskrit();
+    this.data = await this.getPassageByIdEnglish(this.currentStoryId); //
+    this.processDataEnglish();
+    // this.data = await this.getPassageByIdSanskrit(this.currentStoryId);
+    // this.processDataSanskrit();
 
     this.messageBar = new MessageBar(this);
 

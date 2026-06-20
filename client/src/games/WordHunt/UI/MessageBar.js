@@ -237,8 +237,86 @@ class MessageBar {
     const steps = ["READY", "3", "2", "1", "GO"];
     let index = 0;
 
+    // A list of vibrant neon colors for the random fireworks ambient cycle
+    const ambientColors = [
+      "#FFD700",
+      "#00FF88",
+      "#00F0FF",
+      "#FF007F",
+      "#FF7700",
+      "#FFF8F0",
+    ];
+
+    // -----------------------------------------------------------------
+    // CONTINUOUS RANDOM FLARE GENERATOR
+    // -----------------------------------------------------------------
+    // Spawns a small localized starburst anywhere on the screen
+    const spawnRandomFlareBurst = () => {
+      const numFlares = this.game.zim.rand(4, 7); // Mini localized bursts
+
+      // Select an absolute random point anywhere within the viewport dimensions
+      const centerX = this.game.zim.rand(100, this.game.width - 100);
+      const centerY = this.game.zim.rand(100, this.game.height - 100);
+
+      const themeColor = this.game.zim.shuffle(ambientColors)[0];
+
+      for (let i = 0; i < numFlares; i++) {
+        const flare = new this.game.zim.Poly({
+          radius: this.game.zim.rand(8, 22), // slightly smaller for ambient feel
+          sides: 3,
+          pointSize: 0.25,
+          color: themeColor,
+        });
+
+        flare.pos(centerX, centerY);
+        flare.reg(0, 0);
+
+        // Add underneath the text container layers
+        if (this.messageContainer) {
+          this.game.stage.addChildAt(
+            flare,
+            Math.max(
+              0,
+              this.game.stage.getChildIndex(this.messageContainer) - 1,
+            ),
+          );
+        } else {
+          this.game.stage.addTo(this.game.stage);
+        }
+
+        const angle = i * (360 / numFlares) * (Math.PI / 180);
+        const distance = this.game.zim.rand(40, 90);
+
+        const targetX = centerX + Math.cos(angle) * distance;
+        const targetY = centerY + Math.sin(angle) * distance;
+
+        flare.rotation = i * (360 / numFlares) + 90;
+        flare.sca(0);
+
+        flare.animate({
+          props: {
+            x: targetX,
+            y: targetY,
+            scale: this.game.zim.rand(1, 1.5),
+            alpha: 0,
+            rotation: flare.rotation + this.game.zim.rand(-45, 45),
+          },
+          time: this.game.zim.rand(0.3, 0.5),
+          ease: "quadOut",
+          call: () => {
+            flare.removeFrom();
+          },
+        });
+      }
+    };
+
+    // Trigger the loops every 150ms to populate the board with continuous activity
+    const flareIntervalId = setInterval(spawnRandomFlareBurst, 150);
+
+    // -----------------------------------------------------------------
+    // STEP TEXT RENDERING COMPONENT
+    // -----------------------------------------------------------------
     const showNext = () => {
-      // remove previous UI
       if (this.messageContainer) {
         this.messageContainer.removeFrom();
         this.messageContainer = null;
@@ -246,52 +324,50 @@ class MessageBar {
 
       const text = steps[index];
 
-      this.messageContainer = new ZimContainer(
-        this.game,
-        320,
-        140,
-      ).createContainer();
-
+      // Build a naked transparent container just to align the crisp popping text copy
+      this.messageContainer = new ZimContainer(this.game).createContainer();
       this.messageContainer.addTo(this.game.stage);
+      this.messageContainer.pos(this.game.width / 2, this.game.height / 2);
 
-      this.messageContainer.pos(
-        this.game.width / 2 - 160,
-        this.game.height / 2 - 70,
-      );
+      // Clean striking label with no shapes boxing it up
+      const label = new ZimLabel(this.game, text, 72, "white").createLabel();
+      label.addTo(this.messageContainer);
+      label.pos(-label.label.width / 2, -label.label.height / 2);
 
-      const bg = new this.game.zim.Rectangle({
-        width: 320,
-        height: 140,
-        color: "#FFF8F0",
-        corner: 16,
-        borderColor: "#E9D8A6",
-        borderWidth: 2,
+      // Text animation styles
+      this.messageContainer.sca(0);
+      this.messageContainer.alp(0);
+
+      this.messageContainer.animate({
+        props: { scale: 1, alpha: 1 },
+        time: 0.2,
+        ease: "backOut",
       });
 
-      bg.addTo(this.messageContainer);
-
-      const label = new ZimLabel(this.game, text, 48, "black").createLabel();
-      label.addTo(this.messageContainer);
-
-      label.pos((320 - label.label.width) / 2, (140 - label.label.height) / 2);
+      this.messageContainer.animate({
+        props: { alpha: 0, scale: 1.4 }, // Explodes outward when fading
+        time: 0.2,
+        wait: 0.6,
+      });
 
       this.game.stage.update();
-
       index++;
 
       if (index < steps.length) {
         setTimeout(showNext, 800);
       } else {
         setTimeout(() => {
+          // TERMINATION & CLEANUP
+          clearInterval(flareIntervalId); // Kill the background background fireworks engine loop cleanly
+
           if (this.messageContainer) {
             this.messageContainer.removeFrom();
             this.messageContainer = null;
           }
-
           this.game.isInputLocked = false;
-
           if (onComplete) onComplete();
-        }, 400);
+          this.game.stage.update();
+        }, 800);
       }
     };
 
