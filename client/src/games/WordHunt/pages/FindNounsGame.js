@@ -6,6 +6,7 @@ import ProgressBar from "../UI/ProgressBar";
 import MessageBar from "../UI/MessageBar";
 import Timer from "../utils/Timer";
 import PassageDisplay from "../UI/PassageDisplay";
+import ControlPanel from "../UI/Panel";
 
 import { emit } from "../../../scenes/sceneBus";
 import PlayerInformation from "../UI/PlayerInfo";
@@ -30,6 +31,7 @@ class FindNounsGame {
     this.messageBar = null;
     this.playerInformation = null;
     this.passageDisplay = null;
+    this.controlPanel = null;
 
     this.continueButton = null;
     this.exitButton = null;
@@ -54,8 +56,6 @@ class FindNounsGame {
     this.blackboard.center(this.game.stage);
     this.blackboard.addTo(this.game.stage);
 
-    // Add Back Button
-    new BackButton(this.game, this.blackboard).create();
 
     //-----------------------------------
     // SCORE
@@ -106,6 +106,16 @@ class FindNounsGame {
       this.game.stage.removeAllChildren();
       this.displayPassage();
     };
+
+    //-----------------------------------
+    // Control Panel
+    //-----------------------------------
+
+    this.controlPanel = new ControlPanel(this.game);
+    const controlPanelCont = this.controlPanel.create();
+    controlPanelCont.pos(this.blackboard.width - 1225, 20);
+    controlPanelCont.addTo(this.blackboard);
+
     //-----------------------------------
     // FOUND VERBS BOX
     //-----------------------------------
