@@ -1,12 +1,6 @@
-const {
-  retrieveStoryById,
-} = require("../../raw-data-connect/retrieveTokenizedStoryById");
-const {
-  getAnswers,
-  getNumberOfBlanks,
-  createFillInBlankGame,
-  getDistractors,
-} = require("../services/fillinblankservice");
+const retrieveStoryById = require("../../raw-data-connect/retrieveTokenizedStoryById");
+const { getAnswers, getNumberOfBlanks, createFillInBlankGame, getDistractors } = require("../services/fillinblankservice");
+
 
 async function initializeGame(req, res) {
   try {
@@ -31,16 +25,15 @@ async function initializeGame(req, res) {
       words,
       answers,
       wordTypes,
-      numberOfBlanks,
+      numberOfBlanks
     );
 
     const gameData = createFillInBlankGame(
       story._id,
       story[versionField],
       answers,
-      distractors,
+      distractors
     );
-
     return res.status(200).json({
       success: true,
       data: gameData,
@@ -52,5 +45,4 @@ async function initializeGame(req, res) {
     });
   }
 }
-
 module.exports = { initializeGame };

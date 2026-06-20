@@ -1,11 +1,22 @@
 import { useEffect, useRef } from "react";
 import * as zim from "zimjs";
 
+// This module is used to create a Zim game component which is a wrapper for the Zim game component that is used to create the game.
 /**
  * Wraps a ZIM scene as a React component so individual games only need to
  * provide a `setup` function. The helper owns the React/ZIM lifecycle:
  * mounting the holder div, creating the Frame, and disposing on unmount.
+ *
+ * Each game module should default-export the result of this call:
+ *
+ *   export default createZimGame({
+ *     id: "zim-my-game",
+ *     width: 1100,
+ *     height: 720,
+ *     setup({ frame, stage, W, H, zim }) { ...game code... }
+ *   });
  */
+// Function to create the Zim game component
 export function createZimGame({
   id,
   width,
@@ -13,25 +24,18 @@ export function createZimGame({
   color = "#fff3d3",
   outerColor = "#151019",
   scaling,
-  setup,
+  setup
 }) {
+  // Function to create the Zim game component
   function ZimGameComponent() {
     const holderRef = useRef(null);
-    // Track whether this effect instance has already initialized ZIM.
-    // Guards against React StrictMode's double-invoke of effects.
-    const initializedRef = useRef(false);
-
+    // Use effect to create the Zim game component
     useEffect(() => {
-      // StrictMode runs effects twice (mount→unmount→mount).
-      // Skip the second invocation if ZIM is already running in this mount.
-      if (initializedRef.current) return undefined;
       if (!holderRef.current) return undefined;
 
-      initializedRef.current = true;
-
-      let frame = null;
+      let frame;
       let disposed = false;
-
+      // Function to ready the Zim game component
       function ready() {
         if (disposed) return;
 
@@ -42,7 +46,7 @@ export function createZimGame({
             stage: frame.stage,
             W: frame.width,
             H: frame.height,
-            zim,
+            zim
           });
         };
 
@@ -52,48 +56,28 @@ export function createZimGame({
           start();
         }
       }
-
-      try {
-        frame = new zim.Frame({
-          scaling: scaling || id,
-          width,
-          height,
-          color,
-          outerColor,
-          ready,
-          allowDefault: true,
-        });
-      } catch (err) {
-        console.error("[ZimGame] Frame creation failed:", err);
-      }
-
-
+      // Create a new Zim frame
+      frame = new zim.Frame({
+        scaling: scaling || id,
+        width,
+        height,
+        color,
+        outerColor,
+        ready,
+        allowDefault: true
+      });
+      // Function to dispose the Zim game component
       return () => {
         disposed = true;
-        initializedRef.current = false;
-        try {
-          if (frame) {
-            frame.dispose();
-            frame = null;
-          }
-        } catch (err) {
-          // ZIM dispose can throw if the canvas was already removed
-          console.warn("[ZimGame] Dispose error (safe to ignore):", err.message);
-        }
+        if (frame) frame.dispose();
+        if (holderRef.current) holderRef.current.innerHTML = "";
       };
     }, []);
-
-    return (
-      <div
-        ref={holderRef}
-        id={id}
-        className="zim-holder"
-        data-testid={id}
-        data-zim-game-id={id}
-      />
-    );
+    // Return the Zim game component
+    return <div ref={holderRef} id={id} className="zim-holder" />;
   }
-
+  // Set the display name of the Zim game component
   ZimGameComponent.displayName = `ZimGame(${id})`;
+  // Return the Zim game component
   return ZimGameComponent;
 }

@@ -8,25 +8,14 @@ import {
   setPersistence,
 } from "firebase/auth";
 
-const isE2EAuthBypass = import.meta.env.VITE_E2E_AUTH_BYPASS === "true";
-
-const firebaseConfig = isE2EAuthBypass
-  ? {
-      apiKey: "e2e-auth-bypass",
-      authDomain: "e2e-auth-bypass.local",
-      projectId: "e2e-auth-bypass",
-      storageBucket: "e2e-auth-bypass.appspot.com",
-      messagingSenderId: "000000000000",
-      appId: "1:000000000000:web:e2eauthbypass",
-    }
-  : {
-      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    };
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
 
 const app = initializeApp(firebaseConfig);
 
