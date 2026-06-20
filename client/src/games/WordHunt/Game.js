@@ -33,16 +33,42 @@ class Game {
 
     this.messageBar = null;
 
+    // game Keys
+    this.nounGameKey = "Noun";
+    this.verbGameKey = "Verb";
+    this.adjGameKey = "Adjective";
+
     // game logic variables
     this.currentStoryId = "04e9ae48-5570-4cd0-8968-a2179353164b";
-    this.firstAttemptTime = 0;
-    this.maxTime = 1; // time in minutes
+    this.gameTime = 0;
     this.isInputLocked = false;
 
     // Player
     this.player = "Jack";
     this.playerCoins = 0;
     this.totalScore = 0;
+    this.playerInfo = [
+      // {
+      //   storyId: "04e9ae48-5570-4cd0-8968-a2179353164b",
+      //   games: {
+      //     Noun: {
+      //       bestTime: "0.20",
+      //       coins: 0,
+      //       totalScore: 0,
+      //     },
+      //     Verb: {
+      //       bestTime: "0.00",
+      //       coins: 0,
+      //       totalScore: 0,
+      //     },
+      //     Adjective: {
+      //       bestTime: "0.00",
+      //       coins: 0,
+      //       totalScore: 0,
+      //     },
+      //   },
+      // },
+    ];
 
     //player&Game specific
     this.bestTimeByStoryId = null; //  comes from the game collection to be tracked by story id
@@ -60,7 +86,6 @@ class Game {
     // this.processDataSanskrit();
 
     this.messageBar = new MessageBar(this);
-    this.manager.setFirstAttemptTime();
 
     this.landingPage.button.tap(() => {
       // console.log("Button Tapped");

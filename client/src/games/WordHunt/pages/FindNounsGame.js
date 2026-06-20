@@ -14,14 +14,13 @@ import GameManger from "../utils/GameManager";
 class FindNounsGame {
   constructor(game) {
     this.game = game;
-    this.manager = new GameManger(this.game);
+    this.manager = new GameManger(game);
 
     this.nouns = game.wordTypes.nouns;
     this.verbs = game.wordTypes.verbs;
     this.adjectives = game.wordTypes.adjectives;
     this.challenge = `Find All ${this.nouns.length} Nouns`;
-    this.timer = new Timer(game, this.game.initialMaxTime);
-    this.gameKey = "Nouns";
+    this.timer = new Timer(game);
     this.timeUpKey = "Oops ! Times UP";
 
     this.score = 0;
@@ -153,6 +152,7 @@ class FindNounsGame {
     //-----------------------------------
     // Timer to start the game
     //-----------------------------------
+    this.manager.setGameTime(this.game.nounGameKey);
 
     this.timer.start(
       ({ minutes, seconds }) => {
@@ -166,11 +166,15 @@ class FindNounsGame {
         if (this.gameOver) {
           return;
         }
+        this.gameOver = true;
+        this.game.inputLocked = true;
         this.progressBar.showTimesUp();
 
         this.game.inputLocked = true;
 
         this.messageBar.showTimeOverMessage(this.timeUpKey);
+
+        this.game.stage.update();
       },
     );
 
@@ -192,6 +196,7 @@ class FindNounsGame {
 
           this.foundWords.push(cleanWord);
           this.score++;
+          this.playerInformation.update(this.score);
           console.log("Found Words:", this.foundWords);
           this.progressBar.setFound(this.foundWords.length);
 
@@ -330,9 +335,8 @@ class FindNounsGame {
       // this.game.inputLocked = true;
 
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
-      this.game.bestTimeByStoryId = completionTime;
 
-      this.messageBar.showWinningMessage(this.gameKey, completionTime);
+      this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
     }
   }
   //-----------------------------------

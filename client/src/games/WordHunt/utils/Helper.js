@@ -28,6 +28,8 @@ class Helper {
     }
     return wordLength;
   }
+
+
 }
 
 export default Helper;
