@@ -1,5 +1,5 @@
 const findNounVerbAndAdjEnglish = require("./service/findNounsVerbsAndAdjectivesGameEnglish");
-const { retrieveStoryById } = require("../raw-data-connect/retrieveTokenizedStoryById");
+const retrieveStoryById = require("../raw-data-connect/retrieveTokenizedStoryById");
 
 jest.mock("../raw-data-connect/retrieveTokenizedStoryById");
 
