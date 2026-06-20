@@ -41,20 +41,6 @@ export async function submitMeaningBridgeRound(payload) {
   return readJsonResponse(response, "Failed to submit Meaning Bridge round");
 }
 
-export async function generateSentenceMatchRound(options = {}) {
-  const response = await fetch(`${API_BASE}/meaningBridge/generate-sentence`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      pairCount: options.pairCount || 3,
-    }),
-  });
-
-  return readJsonResponse(response, "Failed to generate sentence match round");
-}
-
 export async function getMeaningBridgeLeaderboard(limit = 5) {
   const response = await fetch(
     `${API_BASE}/meaningBridge/leaderboard?limit=${limit}`,

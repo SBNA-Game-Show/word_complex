@@ -1,11 +1,7 @@
-jest.mock("../raw-data-connect/retrieveTokenizedStoryById", () => ({
-  retrieveStoryById: jest.fn(),
-}));
-
 const { initializeGame } = require("./controller/fillinblankscontroller");
-const {
-  retrieveStoryById,
-} = require("../raw-data-connect/retrieveTokenizedStoryById");
+const retrieveStoryById = require("../raw-data-connect/retrieveTokenizedStoryById");
+
+jest.mock("../raw-data-connect/retrieveTokenizedStoryById");
 
 afterEach(() => {
   jest.clearAllMocks();
@@ -50,8 +46,12 @@ describe("Fill in the Blank Controller Tests", () => {
           answers: expect.any(Array),
           wordBank: expect.any(Array),
         }),
-      }),
+      })
     );
+
+   // expect(retrieveStoryById).toHaveBeenCalledWith(
+     // "292f2009-96bb-4a3c-b856-e04214e852f8"
+    //);
   });
 
   it("should return 500 when retrieveStoryById throws an error", async () => {

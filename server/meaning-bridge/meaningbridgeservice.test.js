@@ -1,3 +1,9 @@
+const { seedDictionary } = require("./data/dictionary");
+const { seedPassages } = require("./data/passages");
+const {
+  generateMeaningBridgePuzzle,
+  extractCandidateEntries,
+} = require("./service/generatepuzzle");
 const { scoreMeaningBridgeRound } = require("./service/scoreround");
 const {
   saveRoundFallback,
@@ -9,16 +15,74 @@ const {
   getPlayerLeaderboardFallback,
   resetScoreFallbackForTests,
 } = require("./service/scorestore");
+const {
+  selectRandomPassageForDifficulty,
+} = require("./service/selectrandompassage");
 
-// dictionary.js and passages.js have been removed.
-// All round generation now uses MongoDB via retrieveStoryById().
-// Tests for generateMeaningBridgePuzzle, extractCandidateEntries,
-// selectRandomPassageForDifficulty have been removed accordingly.
-
-describe("Meaning Bridge scoring and store logic", () => {
+describe("Meaning Bridge backend service logic", () => {
   beforeEach(() => {
     resetRoundFallbackForTests();
     resetScoreFallbackForTests();
+  });
+
+  it("extracts dictionary-backed words from a passage", () => {
+    const passage = seedPassages[0];
+    const entries = extractCandidateEntries(passage.text, seedDictionary);
+
+    expect(entries.map((entry) => entry.english)).toEqual(
+      expect.arrayContaining(["king", "forest", "fire", "river"]),
+    );
+  });
+
+  it("generates an English to Sanskrit puzzle", () => {
+    const puzzle = generateMeaningBridgePuzzle({
+      passage: seedPassages[0],
+      dictionary: seedDictionary,
+      mode: "english-to-sanskrit",
+      difficulty: "easy",
+      pairCount: 4,
+    });
+
+    expect(puzzle.gameId).toBe("meaning_bridge");
+    expect(puzzle.roundId).toMatch(/^round_/);
+    expect(puzzle.leftItems).toHaveLength(4);
+    expect(puzzle.rightItems).toHaveLength(4);
+    expect(Object.keys(puzzle.answerKey)).toHaveLength(4);
+    expect(puzzle.scoreRules.correct).toBe(10);
+  });
+
+  it("generates hard antonym puzzles using real antonym data", () => {
+    const hardPassage = seedPassages.find(
+      (passage) => passage.difficulty === "hard",
+    );
+
+    const puzzle = generateMeaningBridgePuzzle({
+      passage: hardPassage,
+      dictionary: seedDictionary,
+      mode: "word-to-antonym",
+      difficulty: "hard",
+      pairCount: 6,
+    });
+
+    expect(puzzle.leftItems).toHaveLength(6);
+    expect(puzzle.rightItems).toHaveLength(6);
+    expect(
+      puzzle.rightItems.every(
+        (item) =>
+          item.sublabel === "antonym" && item.label !== "No antonym available",
+      ),
+    ).toBe(true);
+  });
+
+  it("selects a passage for a requested difficulty and avoids immediate repeat when possible", () => {
+    const selected = selectRandomPassageForDifficulty({
+      passages: seedPassages,
+      difficulty: "easy",
+      previousPassageId: "passage_001",
+      random: () => 0,
+    });
+
+    expect(selected.passageId).toBe("passage_002");
   });
 
   it("scores a perfect round with score, accuracy, and round point", () => {
@@ -30,8 +94,14 @@ describe("Meaning Bridge scoring and store logic", () => {
     const result = scoreMeaningBridgeRound({
       answerKey,
       matches: [
-        { leftId: "left_0_king",   rightId: "right_0_king" },
-        { leftId: "left_1_forest", rightId: "right_1_forest" },
+        {
+          leftId: "left_0_king",
+          rightId: "right_0_king",
+        },
+        {
+          leftId: "left_1_forest",
+          rightId: "right_1_forest",
+        },
       ],
       hintsUsed: 0,
       wrongAttempts: 0,
@@ -52,8 +122,14 @@ describe("Meaning Bridge scoring and store logic", () => {
     const result = scoreMeaningBridgeRound({
       answerKey,
       matches: [
-        { leftId: "left_0_king",   rightId: "right_0_king" },
-        { leftId: "left_1_forest", rightId: "right_1_forest" },
+        {
+          leftId: "left_0_king",
+          rightId: "right_0_king",
+        },
+        {
+          leftId: "left_1_forest",
+          rightId: "right_1_forest",
+        },
       ],
       hintsUsed: 0,
       wrongAttempts: 1,
@@ -66,28 +142,30 @@ describe("Meaning Bridge scoring and store logic", () => {
   });
 
   it("stores fallback rounds and aggregates player leaderboard records", () => {
-    const fakeRound = {
-      roundId: "round_test001",
-      gameId: "meaning_bridge",
-      leftItems: [],
-      rightItems: [],
-      answerKey: {},
-      hints: {},
-      scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
-    };
+    const puzzle = generateMeaningBridgePuzzle({
+      passage: seedPassages[0],
+      dictionary: seedDictionary,
+      mode: "english-to-sanskrit",
+      difficulty: "easy",
+      pairCount: 4,
+    });
 
-    saveRoundFallback(fakeRound);
-    expect(getRoundFallback(fakeRound.roundId)?.puzzle.roundId).toBe(fakeRound.roundId);
+    saveRoundFallback(puzzle);
+
+    expect(getRoundFallback(puzzle.roundId)?.puzzle.roundId).toBe(
+      puzzle.roundId,
+    );
 
     const createdAt = new Date().toISOString();
 
     saveScoreFallback({
-      roundId: fakeRound.roundId,
+      roundId: puzzle.roundId,
       playerName: "API Tester",
       gameId: "meaning_bridge",
       score: 40,
       accuracy: 100,
       correctMatches: 4,
+      incorrectMatches: 0,
       totalMatches: 4,
       wrongAttempts: 0,
       roundPoints: 1,
@@ -104,6 +182,7 @@ describe("Meaning Bridge scoring and store logic", () => {
       score: 35,
       accuracy: 100,
       correctMatches: 4,
+      incorrectMatches: 0,
       totalMatches: 4,
       wrongAttempts: 1,
       roundPoints: 0,

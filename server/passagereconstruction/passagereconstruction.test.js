@@ -1,7 +1,7 @@
 const request = require("supertest");
 const app = require("../app");
 
-const { retrieveStoryById } = require("../raw-data-connect/retrieveTokenizedStoryById");
+const retrieveStoryById = require("../raw-data-connect/retrieveTokenizedStoryById");
 
 const {
   getPassageReconstructionGame,

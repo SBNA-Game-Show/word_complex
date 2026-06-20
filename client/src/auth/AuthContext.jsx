@@ -18,34 +18,17 @@ import {
 
 const AuthContext = createContext(null);
 
-const E2E_AUTH_BYPASS = import.meta.env.VITE_E2E_AUTH_BYPASS === "true";
-
-const E2E_USER = {
-  id: "e2e-user",
-  name: "E2E Reader",
-  nickname: "E2E",
-  username: "e2e@example.test",
-  role: "Test Reader",
-  stars: 0,
-  isGuest: true,
-};
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   // True until Firebase reports the restored session for the first time, so we
   // can avoid flashing the login screen to an already-signed-in user.
-  const [isInitializing, setIsInitializing] = useState(!E2E_AUTH_BYPASS);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // The single source of truth for who is signed in: Firebase tells us via
   // onAuthStateChanged after sign-in, sign-out, and on initial page load.
   useEffect(() => {
-    if (E2E_AUTH_BYPASS) {
-      setIsInitializing(false);
-      return undefined;
-    }
-
     const unsubscribe = subscribeToAuth((mappedUser) => {
       setUser(mappedUser);
       setStatus(mappedUser ? "authenticated" : "idle");
@@ -53,20 +36,6 @@ export function AuthProvider({ children }) {
     });
 
     return unsubscribe;
-  }, []);
-
-  const signInWithE2EUser = useCallback((overrides = {}) => {
-    const nextUser = {
-      ...E2E_USER,
-      ...overrides,
-    };
-
-    setUser(nextUser);
-    setStatus("authenticated");
-    setError("");
-    setIsInitializing(false);
-
-    return Promise.resolve(nextUser);
   }, []);
 
   // Wrap a Firebase auth action with shared loading/error handling. The user
@@ -86,26 +55,23 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(
     (credentials) => runAuthAction(() => loginWithEmail(credentials)),
-    [runAuthAction],
+    [runAuthAction]
   );
 
   const signUp = useCallback(
     (account) => runAuthAction(() => signUpWithEmail(account)),
-    [runAuthAction],
+    [runAuthAction]
   );
 
   const loginWithGoogle = useCallback(
     () => runAuthAction(() => signInWithGoogle()),
-    [runAuthAction],
+    [runAuthAction]
   );
 
-  const loginAsGuest = useCallback(() => {
-    if (E2E_AUTH_BYPASS) {
-      return signInWithE2EUser();
-    }
-
-    return runAuthAction(() => signInAsGuest());
-  }, [runAuthAction, signInWithE2EUser]);
+  const loginAsGuest = useCallback(
+    () => runAuthAction(() => signInAsGuest()),
+    [runAuthAction]
+  );
 
   const clearError = useCallback(() => setError(""), []);
 
@@ -143,7 +109,7 @@ export function AuthProvider({ children }) {
       loginWithGoogle,
       logout,
       signUp,
-    ],
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
