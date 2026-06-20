@@ -1,5 +1,5 @@
-import ZimLabel from "../../../zimcomponents/ZimLabel";
-import ZimContainer from "../../../zimcomponents/ZimContainer";
+import ZimLabel from "../ZimComponents/ZimLabelNew";
+import ZimContainer from "../ZimComponents/ZimContainerNew";
 import Timer from "../utils/Timer";
 
 class ProgressBar {
@@ -66,7 +66,6 @@ class ProgressBar {
   showTimesUp() {
     this.timerLabel.setText("Time's Up!");
   }
-
 }
 
 export default ProgressBar;

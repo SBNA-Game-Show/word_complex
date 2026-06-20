@@ -1,4 +1,4 @@
-import ZimLabel from "../../../zimcomponents/ZimLabel";
+import ZimLabel from "../ZimComponents/ZimLabelNew";
 import Blackboard from "../UI/Blackboard";
 import BackButton from "../../../zimcomponents/BackButton";
 import Chalk from "../UI/Chalk";
@@ -154,7 +154,7 @@ class FindNounsGame {
     //-----------------------------------
     this.manager.setGameTime(this.game.nounGameKey);
 
-    this.timer.minutes = this.game.gameTime
+    this.timer.minutes = this.game.gameTime;
 
     this.timer.start(
       ({ minutes, seconds }) => {

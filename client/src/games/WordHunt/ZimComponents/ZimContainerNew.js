@@ -1,9 +1,9 @@
 class ZimContainer {
-  constructor(game) {
+  constructor(game, width, height) {
     this.game = game;
     this.zim = game.zim;
-    this.width = 200;
-    this.height = 200;
+    this.width = this.game.width || width;
+    this.height = this.game.height || height;
   }
 
   createContainer() {

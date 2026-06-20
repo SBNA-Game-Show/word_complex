@@ -2,7 +2,15 @@
  * Helper class to hold helper methods to be resued
  */
 class Helper {
-  constructor() {}
+    constructor() { }
+    
+    /**
+     * 
+     * Given a passage this method returns the number of words in the given passage
+     * - checks if the given passage is a string for english
+     * - checks if the given passage for an array for sanskrit passage
+     * 
+     */
 
   getPassageLength(data) {
     if (!data) {

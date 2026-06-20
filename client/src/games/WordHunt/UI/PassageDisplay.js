@@ -1,5 +1,5 @@
-import ZimLabel from "../../../zimcomponents/ZimLabel";
-import ZimContainer from "../../../zimcomponents/ZimContainer";
+import ZimLabel from "../ZimComponents/ZimLabelNew";
+import ZimContainer from "../ZimComponents/ZimContainerNew";
 import GameManger from "../utils/GameManager";
 
 class PassageDisplay {

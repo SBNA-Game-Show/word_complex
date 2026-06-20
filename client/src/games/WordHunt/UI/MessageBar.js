@@ -1,6 +1,6 @@
-import ZimLabel from "../../../zimcomponents/ZimLabel";
-import ZimContainer from "../../../zimcomponents/ZimContainer";
-import ZimButton from "../../../zimcomponents/ZimButton";
+import ZimLabel from "../ZimComponents/ZimLabelNew";
+import ZimContainer from "../ZimComponents/ZimContainerNew";
+import ZimButton from "../zimcomponents/ZimButtonNew";
 
 class MessageBar {
   constructor(game) {
