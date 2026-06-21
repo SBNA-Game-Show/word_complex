@@ -56,7 +56,6 @@ class FindNounsGame {
     this.blackboard.center(this.game.stage);
     this.blackboard.addTo(this.game.stage);
 
-
     //-----------------------------------
     // SCORE
     //-----------------------------------
@@ -115,6 +114,14 @@ class FindNounsGame {
     const controlPanelCont = this.controlPanel.create();
     controlPanelCont.pos(this.blackboard.width - 1225, 20);
     controlPanelCont.addTo(this.blackboard);
+    // this.controlPanel.update();
+    this.controlPanel.onNextClicked = () => {
+      this.game.stage.removeAllChildren();
+      this.game.startVerbGame();
+    };
+    this.controlPanel.hintClicked = () => {
+      console.log("HInt Clicked");
+    };
 
     //-----------------------------------
     // FOUND VERBS BOX
@@ -242,7 +249,7 @@ class FindNounsGame {
       },
     );
 
-    passageDisplayCont.pos(50, 100);
+    passageDisplayCont.pos(50, 130);
     passageDisplayCont.addTo(this.blackboard);
 
     // this.data.forEach((sentence) => {

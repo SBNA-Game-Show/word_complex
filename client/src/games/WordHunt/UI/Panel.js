@@ -10,10 +10,20 @@ class ControlPanel {
 
     this.eyeEmojiWrapper = null;
     this.blinkTimer = 0;
-    this.isClosed = false;
+    this.isClosed = true;
+    this.nextButton = null;
+    this.onNextClicked = null;
+    this.hintClicked = null;
+
+    this.hintCounter = 0;
+    this.isProcessingClick = false;
+
+    // Track the active 10-second close timer instance
+    this.hintAutoCloseTimer = null;
   }
 
   create() {
+    console.log("Control panel Created");
     const panelWidth = 350;
     const panelHeight = 100;
     const panel = new ZimContainer(
@@ -28,41 +38,84 @@ class ControlPanel {
     const bg = new this.zim.Rectangle({
       width: panelWidth,
       height: panelHeight,
-      color: "#1F2937",
+      color: "#1E3A1E",
       corner: 15,
     });
     bg.addTo(panel);
 
     //-----------------------------------
-    // CENTER: BLINKING EYE EMOJI (Moved Up)
+    // CENTER: INTERACTIVE EYE EMOJI (WITH AUTO-CLOSE)
     //-----------------------------------
-    this.eyeEmojiWrapper = new ZimLabel(this.game, "👁️", 36).createLabel();
+    this.eyeEmojiWrapper = new ZimLabel(this.game, "😑", 36).createLabel();
     this.eyeEmojiWrapper.addTo(panel);
 
     const emojiDisplay = this.eyeEmojiWrapper.label;
     emojiDisplay.reg(emojiDisplay.width / 2, emojiDisplay.height / 2);
-
-    // OPTIMIZED POSITION: Centered at x: 175, and shifted up to y: 32 now that HINT is gone
-    emojiDisplay.pos(150, 20);
+    emojiDisplay.pos(150, 30);
 
     this.eyeEmojiWrapper.tap(() => {
-      console.log("Hint Emoji clicked!");
+      if (this.isProcessingClick) return;
+      this.isProcessingClick = true;
+
+      // Always clear any active countdown timer when manually interacting
+      if (this.hintAutoCloseTimer) {
+        clearTimeout(this.hintAutoCloseTimer);
+        this.hintAutoCloseTimer = null;
+      }
+
+      this.isClosed = !this.isClosed;
+      const targetLabel = this.eyeEmojiWrapper.label;
+
+      if (!this.isClosed) {
+        // --- OPEN STATE ---
+        targetLabel.text = "👁️";
+
+        if (this.hintClicked) {
+          this.hintClicked();
+          this.hintCounter += 1;
+          console.log("Hint Counter: ", this.hintCounter);
+        }
+
+        // START 10-SECOND COUNTDOWN ENGINE
+        this.hintAutoCloseTimer = setTimeout(() => {
+          this.isClosed = true;
+          targetLabel.text = "😑"; // Automatically flip back to closed frame
+
+          // Re-balance bounds tracking configurations on timeout execution
+          targetLabel.reg(targetLabel.width / 2, targetLabel.height / 2);
+          targetLabel.pos(150, 30);
+          this.game.stage.update();
+
+          console.log("Hint expired and closed automatically.");
+          this.hintAutoCloseTimer = null;
+        }, 10000); // 10000ms = 10 seconds
+      } else {
+        // --- MANUAL CLOSE STATE ---
+        targetLabel.text = "😑";
+        console.log("Hint Hidden.");
+      }
+
+      // Re-align bounds origin settings for immediate clicks
+      targetLabel.reg(targetLabel.width / 2, targetLabel.height / 2);
+      targetLabel.pos(150, 30);
+      this.game.stage.update();
+
+      setTimeout(() => {
+        this.isProcessingClick = false;
+      }, 50);
     });
 
     //-----------------------------------
-    // SIDE BUTTONS BAR (Cleanly Balanced Underneath)
+    // SIDE BUTTONS BAR
     //-----------------------------------
-    // Left side: Back Button
     const backBtn = new BackButton(this.game, panel);
     const backBtnInstance = backBtn.create();
 
     if (backBtnInstance && typeof backBtnInstance.pos === "function") {
-      // Kept at y: 52 to sit nicely beneath the higher eye placement
-      backBtnInstance.pos(20, 20);
+      backBtnInstance.pos(20, 31);
     }
 
-    // Right side: Next Button
-    const nextButton = new ZimButton(
+    this.nextButton = new ZimButton(
       this.game,
       90,
       38,
@@ -70,38 +123,17 @@ class ControlPanel {
       14,
     ).createButton();
 
-    // Aligned to y: 52 to perfectly match the Back Button horizontal baseline
-    nextButton.pos(240, 20);
-    nextButton.addTo(panel);
+    this.nextButton.pos(240, 31);
+    this.nextButton.addTo(panel);
+    this.nextButton.tap(() => {
+      if (this.onNextClicked) {
+        this.onNextClicked();
+      }
+    });
 
-    panel.nextButton = nextButton;
+    panel.nextButton = this.nextButton;
 
     return panel;
-  }
-
-  /**
-   * MAIN ANIMATION UPDATE TICKER
-   */
-  update() {
-    if (!this.eyeEmojiWrapper || !this.eyeEmojiWrapper.label) return;
-
-    this.blinkTimer++;
-
-    if (this.isClosed) {
-      if (this.blinkTimer >= 10) {
-        this.eyeEmojiWrapper.label.text = "👁️";
-        this.isClosed = false;
-        this.blinkTimer = 0;
-        this.game.stage.update();
-      }
-    } else {
-      if (this.blinkTimer >= 120) {
-        this.eyeEmojiWrapper.label.text = "😑";
-        this.isClosed = true;
-        this.blinkTimer = 0;
-        this.game.stage.update();
-      }
-    }
   }
 }
 

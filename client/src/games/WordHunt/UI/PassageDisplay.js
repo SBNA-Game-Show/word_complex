@@ -29,6 +29,7 @@ class PassageDisplay {
   }
 
   displayPassage(onWordClick) {
+    console.log("Display Passage")
     const margin = 60;
     const lineHeight = 45;
     const spacing = 14;
