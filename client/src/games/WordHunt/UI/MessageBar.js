@@ -36,43 +36,100 @@ class MessageBar {
       clearTimeout(this.timeout);
     }
 
+    // Increased height slightly to comfortably stack 3 lines
+    const containerWidth = 460;
+    const containerHeight = 160;
+    const padding = 25;
+    const maxTextWidth = containerWidth - padding * 2;
+
     this.messageContainer = new ZimContainer(
       this.game,
-      420,
-      120,
+      containerWidth,
+      containerHeight,
     ).createContainer();
 
     this.messageContainer.addTo(this.game.stage);
 
     this.messageContainer.pos(
-      this.game.width / 2 - 210,
-      this.game.height / 2 - 60,
+      this.game.width / 2 - containerWidth / 2,
+      this.game.height / 2 - containerHeight / 2,
     );
 
     this.messageContainer.alpha = 0.95;
 
-    // background
+    // Background Panel
     const bg = new this.game.zim.Rectangle({
-      width: 420,
-      height: 120,
+      width: containerWidth,
+      height: containerHeight,
       color: "#FFF8F0",
       corner: 16,
       borderColor: "#E9D8A6",
       borderWidth: 2,
     });
-
     bg.addTo(this.messageContainer);
 
-    // label
-    this.label = new ZimLabel(this.game, text, 26, color).createLabel();
+    // --- OBJECT SANITIZATION LAYER ---
+    let rawText = text;
+    if (typeof text === "object" && text !== null) {
+      rawText = text.text || text.label?.text || "";
+    }
+    if (typeof rawText !== "string") {
+      rawText = String(rawText);
+    }
 
-    this.label.addTo(this.messageContainer);
+    // --- THREE-WAY SENTENCE SPLITTING ---
+    // Example input: "Oops! "run" is a VERB. An action word..."
+    const sentences = rawText.split(/(?<=[.!?])\s+/);
 
-    // ✅ proper centering inside container
-    this.label.pos(
-      (420 - this.label.label.width) / 2,
-      (120 - this.label.label.height) / 2,
-    );
+    const line1Text = sentences[0] || ""; // "Oops!"
+    const line2Text = sentences[1] || ""; // '"run" is a VERB.'
+    const line3Text = sentences[2] || ""; // 'An action word...'
+
+    // Line 1: Header/Alert
+    const label1Wrapper = new ZimLabel(this.game, line1Text, 18, "red");
+    const label1 = label1Wrapper.createLabel();
+
+    // Line 2: The Core Answer
+    const label2Wrapper = new ZimLabel(this.game, line2Text, 18, "black");
+    const label2 = label2Wrapper.createLabel();
+
+    // Line 3: The Helpful Definition
+    const label3Wrapper = new ZimLabel(this.game, line3Text, 16, "black");
+    const label3 = label3Wrapper.createLabel();
+
+    // Force strict alignment properties down onto native labels
+    const inner1 = label1.label || label1;
+    const inner2 = label2.label || label2;
+    const inner3 = label3.label || label3;
+
+    [inner1, inner2, inner3].forEach((labelNode) => {
+      if (labelNode) {
+        labelNode.lineWidth = maxTextWidth;
+        labelNode.textAlign = "left";
+      }
+    });
+
+    label1.addTo(this.messageContainer);
+    label2.addTo(this.messageContainer);
+    label3.addTo(this.messageContainer);
+
+    // Grab rendering bounds heights
+    const h1 = inner1?.getBounds()?.height || 20;
+    const h2 = inner2?.getBounds()?.height || 20;
+    const h3 = inner3?.getBounds()?.height || 18;
+
+    const gap = 8; // Smaller gap since we have 3 lines
+    const totalTextHeight = h1 + h2 + h3 + gap * 2;
+
+    // Vertical Start positioning
+    const startY = (containerHeight - totalTextHeight) / 2;
+    // const centerX = containerWidth / 2;
+    const leftX = padding;
+
+    // Position layouts perfectly relative to the center axis point
+    label1.pos(leftX, startY);
+    label2.pos(leftX, startY + h1 + gap);
+    label3.pos(leftX, startY + h1 + h2 + gap * 2);
 
     this.game.stage.update();
 
@@ -87,6 +144,7 @@ class MessageBar {
 
     return this.messageContainer;
   }
+
   showWinningMessage(text, time, color = "black") {
     this.game.isInputLocked = true;
 

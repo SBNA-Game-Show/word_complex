@@ -93,7 +93,7 @@ class FindNounsGame {
     };
     // Restarting same game when time is up
     this.messageBar.onRestart = () => {
-      console.log("Restart triggered");
+      // console.log("Restart triggered");
 
       this.gameOver = false;
       this.foundWords = [];
@@ -259,8 +259,9 @@ class FindNounsGame {
           label.setColor("red");
           const definition = this.manager.defineVerb();
           this.messageBar.show(
-            `Oops! "${cleanWord}" is a VERB\n ${definition}`,
-            10000,
+            `Oops! "${cleanWord}" is a VERB. ${definition}`,
+            "black",
+            60000,
           );
           emit("wrong");
         }
