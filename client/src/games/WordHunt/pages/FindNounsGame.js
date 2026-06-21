@@ -107,22 +107,49 @@ class FindNounsGame {
     };
 
     //-----------------------------------
-    // Control Panel
+    // Control Panel Configuration
     //-----------------------------------
-
     this.controlPanel = new ControlPanel(this.game);
     const controlPanelCont = this.controlPanel.create();
     controlPanelCont.pos(this.blackboard.width - 1225, 20);
     controlPanelCont.addTo(this.blackboard);
-    // this.controlPanel.update();
+
     this.controlPanel.onNextClicked = () => {
       this.game.stage.removeAllChildren();
       this.game.startVerbGame();
     };
+
+    // 1. Highlight nouns as blue when clicked
     this.controlPanel.hintClicked = () => {
-      console.log("HInt Clicked");
+      console.log("Hint Clicked - Highlighting Nouns");
+      if (this.passageDisplay && this.passageDisplay.wordLabels) {
+        this.passageDisplay.wordLabels.forEach((wordObj) => {
+          if (this.nouns.includes(wordObj.text)) {
+            // Only paint un-found words blue (leave found words green)
+            if (!this.foundWords.includes(wordObj.text)) {
+              wordObj.instance.setColor("green");
+            }
+          }
+        });
+        this.game.stage.update();
+      }
     };
 
+    // 2. Removing
+    this.controlPanel.onHintExpired = () => {
+      console.log("Hint Expired - Removing Highlights");
+      if (this.passageDisplay && this.passageDisplay.wordLabels) {
+        this.passageDisplay.wordLabels.forEach((wordObj) => {
+          if (this.nouns.includes(wordObj.text)) {
+            // Revert back to white only if the word hasn't been found yet
+            if (!this.foundWords.includes(wordObj.text)) {
+              wordObj.instance.setColor("white");
+            }
+          }
+        });
+        this.game.stage.update();
+      }
+    };
     //-----------------------------------
     // FOUND VERBS BOX
     //-----------------------------------
@@ -230,7 +257,11 @@ class FindNounsGame {
         // VERB
         else if (this.verbs.includes(cleanWord)) {
           label.setColor("red");
-          this.messageBar.show(`Oops! "${cleanWord}" is a VERB`, 10000);
+          const definition = this.manager.defineVerb();
+          this.messageBar.show(
+            `Oops! "${cleanWord}" is a VERB\n ${definition}`,
+            10000,
+          );
           emit("wrong");
         }
 
@@ -251,83 +282,6 @@ class FindNounsGame {
 
     passageDisplayCont.pos(50, 130);
     passageDisplayCont.addTo(this.blackboard);
-
-    // this.data.forEach((sentence) => {
-    //   const words = sentence.split(/\s+/);
-
-    //   x = margin;
-
-    //   words.forEach((word) => {
-    //     const cleanWord = this.manager.normalize(word);
-
-    //     const label = new ZimLabel(this.game, word, 24, "white");
-    //     label.createLabel();
-
-    //     // wrap line
-    //     if (x + label.label.width > maxWidth) {
-    //       x = margin;
-    //       y += lineHeight;
-    //     }
-
-    //     label.pos(x, y).addTo(this.blackboard);
-
-    //     x += label.label.width + 14;
-
-    //     label.tap(() => {
-    //       if (this.game.inputLocked) return;
-
-    //       console.log("CLICKED:", cleanWord);
-
-    //       // CORRECT NOUN
-    //       if (this.nouns.includes(cleanWord)) {
-    //         if (this.foundWords.includes(cleanWord)) {
-    //           this.game.stage.update();
-    //           return;
-    //         }
-
-    //         label.mouseEnabled = false;
-
-    //         this.foundWords.push(cleanWord);
-    //         this.score++;
-    //         this.playerInformation.update(this.score);
-
-    //         this.progressBar.setFound(this.foundWords.length);
-
-    //         label.setColor("#00ff88");
-
-    //         foundWordsLabel.text = this.foundWords.join(", ");
-
-    //         emit("correct");
-
-    //         this.checkWin();
-    //       }
-
-    //       // VERB
-    //       else if (this.verbs.includes(cleanWord)) {
-    //         label.color = "red";
-    //         this.messageBar.show(`Oops! "${cleanWord}" is a VERB`, 10000);
-    //         emit("wrong");
-    //       }
-
-    //       // ADJECTIVE
-    //       else if (this.adjectives.includes(cleanWord)) {
-    //         label.color = "orange";
-    //         this.messageBar.show(`Oops! "${cleanWord}" is a Adjective`, 10000);
-    //         emit("wrong");
-    //       }
-
-    //       // OTHER
-    //       else {
-    //         label.color = "#ff6666";
-    //         emit("wrong");
-    //       }
-
-    //       this.game.stage.update();
-    //     });
-    //   });
-
-    //   y += lineHeight;
-    // });
 
     this.game.stage.update();
     return this.blackboard;

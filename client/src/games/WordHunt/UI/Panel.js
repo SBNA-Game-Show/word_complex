@@ -15,6 +15,9 @@ class ControlPanel {
     this.onNextClicked = null;
     this.hintClicked = null;
 
+    // NEW: Callback triggered when the 10-second timer finishes
+    this.onHintExpired = null;
+
     this.hintCounter = 0;
     this.isProcessingClick = false;
 
@@ -57,10 +60,15 @@ class ControlPanel {
       if (this.isProcessingClick) return;
       this.isProcessingClick = true;
 
-      // Always clear any active countdown timer when manually interacting
+      // Clear timer and clean up colors if manually toggled while active
       if (this.hintAutoCloseTimer) {
         clearTimeout(this.hintAutoCloseTimer);
         this.hintAutoCloseTimer = null;
+
+        // Revert colors early if player manually clicks to close the eye
+        if (this.isClosed === false && this.onHintExpired) {
+          this.onHintExpired();
+        }
       }
 
       this.isClosed = !this.isClosed;
@@ -84,6 +92,12 @@ class ControlPanel {
           // Re-balance bounds tracking configurations on timeout execution
           targetLabel.reg(targetLabel.width / 2, targetLabel.height / 2);
           targetLabel.pos(150, 30);
+
+          // TRIGGER EXPIRED CALLBACK: Tells the game to remove the blue highlights
+          if (this.onHintExpired) {
+            this.onHintExpired();
+          }
+
           this.game.stage.update();
 
           console.log("Hint expired and closed automatically.");
@@ -92,6 +106,11 @@ class ControlPanel {
       } else {
         // --- MANUAL CLOSE STATE ---
         targetLabel.text = "😑";
+
+        // Trigger expiration cleanup when manually closing
+        if (this.onHintExpired) {
+          this.onHintExpired();
+        }
         console.log("Hint Hidden.");
       }
 

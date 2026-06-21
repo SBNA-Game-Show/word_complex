@@ -12,6 +12,9 @@ class PassageDisplay {
 
     this.rawData = game.storyData?.story || null;
     this.passage = this.parseData();
+
+    // TRACKING ARRAY: Stores references to word labels for color styling updates
+    this.wordLabels = [];
   }
 
   parseData() {
@@ -29,7 +32,7 @@ class PassageDisplay {
   }
 
   displayPassage(onWordClick) {
-    console.log("Display Passage")
+    console.log("Display Passage");
     const margin = 60;
     const lineHeight = 45;
     const spacing = 14;
@@ -51,6 +54,9 @@ class PassageDisplay {
     const scrollbarBuffer = 30;
     const maxWidth = windowWidth - margin * 2 - scrollbarBuffer;
 
+    // Reset tracking array on every layout render pass to prevent stale cache entries
+    this.wordLabels = [];
+
     this.passage.forEach((sentence) => {
       const words = sentence.split(/\s+/);
       x = margin;
@@ -62,6 +68,12 @@ class PassageDisplay {
         const label = new ZimLabel(this.game, word, 20, "white").createLabel();
 
         label.addTo(textContainer);
+
+        // SAVE REFERENCE: Pair the label instance with its clean lowercase/normalized text
+        this.wordLabels.push({
+          text: cleanWord,
+          instance: label,
+        });
 
         const w =
           label.width || label.label?.width || label.getBounds?.()?.width || 60;
@@ -87,8 +99,7 @@ class PassageDisplay {
 
     const calculatedHeight = y + 60;
 
-    // 2. FORCE ZIM boundary alignment to match windowWidth exactly.
-    // This stops CreateJS from thinking the container content expands outward horizontally.
+    // 2. FORCING ZIM boundary alignment to match windowWidth exactly.
     textContainer.setBounds(0, 0, windowWidth, calculatedHeight);
     textContainer.width = windowWidth;
     textContainer.height = calculatedHeight;

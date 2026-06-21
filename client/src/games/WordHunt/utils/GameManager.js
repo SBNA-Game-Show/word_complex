@@ -1,8 +1,9 @@
 import ProgressBar from "../UI/ProgressBar";
+import Definitions from "./Definitions";
 import Helper from "./Helper";
 
 /**
- * The following class is responsible for setting game time 
+ * The following class is responsible for setting game time
  * -  initialize game time according to the user experience
  */
 class GameManager {
@@ -10,6 +11,7 @@ class GameManager {
     this.game = game;
     this.helper = new Helper();
     this.progressBar = new ProgressBar(game);
+    this.definitions = new Definitions(game);
   }
 
   /**
@@ -97,6 +99,29 @@ class GameManager {
     );
 
     return this.game.gameTime;
+  }
+  /**
+   * Getting Definitions to display in character
+   */
+
+  defineNoun() {
+    const definition = this.definitions.getRandomDefinition(
+      this.definitions.nounDefEng,
+    );
+
+    return definition;
+  }
+  defineVerb() {
+    const definition = this.definitions.getRandomDefinition(
+      this.definitions.VerbDefEng,
+    );
+    return definition;
+  }
+  defineAdjective() {
+    const definition = this.definitions.getRandomDefinition(
+      this.definitions.adjDefEng,
+    );
+    return definition;
   }
 
   /**

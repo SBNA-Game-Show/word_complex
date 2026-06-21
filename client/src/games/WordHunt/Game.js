@@ -68,8 +68,6 @@ class Game {
       // },
     ];
 
-    //player&Game specific
-    this.bestTimeByStoryId = null; //  comes from the game collection to be tracked by story id
   }
 
   //----------------------------------
