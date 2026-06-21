@@ -6,12 +6,12 @@ const ENV = require("./config/envconfig");
   try {
     await connectDB();
     console.log("MongoDB connected successfully");
-
-    app.listen(ENV.PORT, () => {
-      console.log(`Backend listening on port ${ENV.PORT}`);
-    });
   } catch (err) {
-    console.error("MongoDB connection failed:", err.message);
-    process.exit(1);
+    console.error("❌ MongoDB Connection Failed");
+    console.error("⚠️  Server starting without MongoDB — some routes may not work.");
   }
+
+  app.listen(ENV.PORT, () => {
+    console.log(`Backend listening on port ${ENV.PORT}`);
+  });
 })();
