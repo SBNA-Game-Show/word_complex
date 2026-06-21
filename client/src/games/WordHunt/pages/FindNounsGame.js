@@ -230,8 +230,9 @@ class FindNounsGame {
     const passageDisplayCont = this.passageDisplay.displayPassage(
       (cleanWord, label) => {
         if (this.game.inputLocked) return;
-        console.log("CLICKED:", cleanWord);
-        //CORRECT NOUN
+        console.log("CLICKED TARGET WORD:", cleanWord);
+
+        // CORRECT NOUN MATCH
         if (this.nouns.includes(cleanWord)) {
           if (this.foundWords.includes(cleanWord)) {
             this.game.stage.update();
@@ -239,44 +240,42 @@ class FindNounsGame {
           }
 
           label.mouseEnabled = false;
+          label.cursor = "default"; // Revert cursor back once found
 
           this.foundWords.push(cleanWord);
           this.score++;
           this.playerInformation.update(this.score);
-          console.log("Found Words:", this.foundWords);
           this.progressBar.setFound(this.foundWords.length);
 
           label.setColor("#00ff88");
-
           foundWordsLabel.text = this.foundWords.join(", ");
 
           emit("correct");
-
           this.checkWin();
         }
-        // VERB
+        // INCORRECT VERB MATCH
         else if (this.verbs.includes(cleanWord)) {
           label.setColor("red");
           const definition = this.manager.defineVerb();
           this.messageBar.show(
             `Oops! "${cleanWord}" is a VERB. ${definition}`,
             "black",
-            60000,
+            1000,
+          );
+          emit("wrong");
+        }
+        // INCORRECT ADJECTIVE MATCH
+        else if (this.adjectives.includes(cleanWord)) {
+          label.setColor("orange");
+          const definition = this.manager.defineAdjective();
+          this.messageBar.show(
+            `Oops! "${cleanWord}" is an ADJECTIVE. ${definition}`,
+            "black",
+            1200,
           );
           emit("wrong");
         }
 
-        // ADJECTIVE
-        else if (this.adjectives.includes(cleanWord)) {
-          label.setColor("orange");
-          this.messageBar.show(`Oops! "${cleanWord}" is a Adjective`, 10000);
-          emit("wrong");
-        }
-        // OTHER
-        else {
-          label.setColor("#ff6666");
-          emit("wrong");
-        }
         this.game.stage.update();
       },
     );

@@ -102,7 +102,7 @@ class ControlPanel {
 
           console.log("Hint expired and closed automatically.");
           this.hintAutoCloseTimer = null;
-        }, 10000); // 10000ms = 10 seconds
+        }, 2000); // 2 seconds
       } else {
         // --- MANUAL CLOSE STATE ---
         targetLabel.text = "😑";

@@ -231,24 +231,29 @@ class MessageBar {
       this.timeOverContainer.removeFrom();
     }
 
-    // smaller container (fits content properly)
+    const containerWidth = 350;
+    const containerHeight = 170;
+
     this.timeOverContainer = new ZimContainer(
       this.game,
-      500,
-      170,
+      containerWidth,
+      containerHeight,
     ).createContainer();
 
     this.timeOverContainer.addTo(this.game.stage);
 
     this.timeOverContainer.pos(
-      this.game.width / 2 - 250,
-      this.game.height / 2 - 85,
+      (this.game.width - containerWidth) / 2,
+      (this.game.height - containerHeight) / 2,
     );
 
-    // background matches container
+    //-----------------------------------
+    // BACKGROUND
+    //-----------------------------------
+
     const bg = new this.game.zim.Rectangle({
-      width: 500,
-      height: 170,
+      width: containerWidth,
+      height: containerHeight,
       color: "#FFF8F0",
       corner: 16,
       borderColor: "#E9D8A6",
@@ -257,28 +262,64 @@ class MessageBar {
 
     bg.addTo(this.timeOverContainer);
 
-    // centered message
+    //-----------------------------------
+    // MESSAGE
+    //-----------------------------------
+
     this.timeOverLabel = new ZimLabel(this.game, text, 18, color).createLabel();
 
     this.timeOverLabel.addTo(this.timeOverContainer);
 
-    // center text horizontally
-    this.timeOverLabel.pos((500 - this.timeOverLabel.label.width) / 2, 25);
+    this.timeOverLabel.pos(
+      (containerWidth - this.timeOverLabel.label.width) / 2,
+      30,
+    );
 
-    // buttons row
-    this.restartButton = new ZimButton(this.game, 140, 40, "Restart", 16);
+    //-----------------------------------
+    // BUTTONS
+    //-----------------------------------
+
+    const buttonWidth = 80;
+    const buttonHeight = 40;
+    const gap = 40;
+
+    const totalWidth = buttonWidth + gap + buttonWidth;
+
+    const startX = (containerWidth - totalWidth) / 2;
+
+    // Restart
+    this.restartButton = new ZimButton(
+      this.game,
+      buttonWidth,
+      buttonHeight,
+      "Restart",
+      16,
+    );
+
     const restartBtn = this.restartButton.createButton();
+
     restartBtn.addTo(this.timeOverContainer);
-    restartBtn.pos(90, 100);
+
+    restartBtn.pos(startX, 105);
 
     restartBtn.tap(() => {
       if (this.onRestart) this.onRestart();
     });
 
-    this.exitButton = new ZimButton(this.game, 140, 40, "Exit", 16);
+    // Exit
+    this.exitButton = new ZimButton(
+      this.game,
+      buttonWidth,
+      buttonHeight,
+      "Exit",
+      16,
+    );
+
     const exitBtn = this.exitButton.createButton();
+
     exitBtn.addTo(this.timeOverContainer);
-    exitBtn.pos(270, 100);
+
+    exitBtn.pos(startX + buttonWidth + gap, 105);
 
     exitBtn.tap(() => {
       if (this.onExit) this.onExit();
