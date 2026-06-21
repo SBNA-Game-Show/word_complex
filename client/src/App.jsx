@@ -93,7 +93,9 @@ function AuthenticatedApp() {
       <VideoBackground />
       {isInitializing ? (
         <div className="auth-splash" role="status" aria-live="polite">
-          <span className="auth-splash-logo" aria-hidden="true">W</span>
+          <span className="auth-splash-logo" aria-hidden="true">
+            W
+          </span>
           <p>Loading...</p>
         </div>
       ) : !isAuthenticated ? (
@@ -105,14 +107,13 @@ function AuthenticatedApp() {
           onBack={() => setScreen("launcher")}
         />
       ) : screen === "launcher" ? (
-          <Launcher
-            onStart={launchGame}
-            onAbout={() => setScreen("about")}
-            onHowToPlay={openHowToPlay}
-            onChooseCharacter={openCharacters}
-            isZooming={transitionPhase === "zoom-in"}
-            isLaunching={launchPhase !== "idle"}
-          />
+        <Launcher
+          onStart={launchGame}
+          onAbout={() => setScreen("about")}
+          onHowToPlay={openHowToPlay}
+          onChooseCharacter={openCharacters}
+          isZooming={transitionPhase === "zoom-in"}
+        />
       ) : screen === "characters" ? (
         <CharacterSelect
           selectedId={selectedCharacterId}
@@ -131,7 +132,10 @@ function AuthenticatedApp() {
           onPlay={() => launchGame(activeGameId)}
         />
       ) : (
-        <GameScreen gameId={activeGameId} onBack={() => setScreen("launcher")} />
+        <GameScreen
+          gameId={activeGameId}
+          onBack={() => setScreen("launcher")}
+        />
       )}
     </div>
   );
