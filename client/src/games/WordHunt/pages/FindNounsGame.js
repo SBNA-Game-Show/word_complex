@@ -38,11 +38,18 @@ class FindNounsGame {
     this.restartButton = null;
 
     this.player = this.game.player;
+    this.hintsUsed = 0;
 
     this.gameOver = false;
+
+    this.newScore = 0;
   }
 
   displayPassage() {
+    //-----------------------------------
+    // Initializing RunTime Parameters
+    //-----------------------------------
+    this.manager.setGameTime(this.game.nounGameKey);
     //-----------------------------------
     // BOARD
     //-----------------------------------
@@ -60,13 +67,9 @@ class FindNounsGame {
     // SCORE
     //-----------------------------------
     this.progressBar = new ProgressBar(this.game, this.challenge);
-
     const progressBarContainer = this.progressBar.create();
-
     progressBarContainer.pos(this.blackboard.width - 300, 40);
-
     progressBarContainer.addTo(this.blackboard);
-
     this.playerInformation = new PlayerInformation(this.game);
     const playerInfoCont = this.playerInformation.create();
 
@@ -192,11 +195,11 @@ class FindNounsGame {
 
     const chalk = new Chalk(this.game);
     chalk.show();
+    // this.manager.setMaxScore();
 
     //-----------------------------------
     // Timer to start the game
     //-----------------------------------
-    this.manager.setGameTime(this.game.nounGameKey);
 
     this.timer.minutes = this.game.gameTime;
 
@@ -244,6 +247,13 @@ class FindNounsGame {
 
           this.foundWords.push(cleanWord);
           this.score++;
+          this.hintsUsed = this.controlPanel.hintCounter;
+          this.newScore = this.manager.setScore(
+            this.game.nounGameKey,
+            this.foundWords.length,
+            this.hintsUsed,
+          );
+          console.log("New Score: ", this.newScore);
           this.playerInformation.update(this.score);
           this.progressBar.setFound(this.foundWords.length);
 

@@ -10,11 +10,24 @@ import Helper from "./Helper";
 class GameManager {
   constructor(game) {
     this.game = game;
-    this.helper = new Helper();
+    this.helper = new Helper(game);
     this.progressBar = new ProgressBar(game);
     this.definitions = new Definitions(game);
     this.controlPanel = new ControlPanel(game);
+
+    this.wordTypes = null;
+    this.totalWordsToFind = 0;
+    this.baseHints = 1;
+    this.basePenalty = 0.025;
+    this.maxScore = 0;
+    this.minScore = 0;
+
+    this.nounCount = 0;
+    this.verbCount = 0;
+    this.adjectiveCount = 0;
+
     // GAME TIMINGS
+    this.WORD_TIMING = 2 / 60;
     this.BASE_SCORE = 1;
     this.PASSAGE_LESS_50 = { time: 0.5, maxHints: 1, hintPenalty: 0.25 }; // 30 SECONDS
     this.PASSAGE_50_100 = { time: 1, maxHints: 2, hintPenalty: 0.2 }; // 1 MINUTE
@@ -41,62 +54,122 @@ class GameManager {
     }
 
     // 2. fallback to passage-based timing
-    return this.setInitialTime(data);
+    this.setInitialGameTime(gameType);
+    return this.game.gameTime;
+  }
+  setInitialGameTime(gameType) {
+    this.wordTypes = this.game.wordTypes;
+    if (!this.wordTypes) return 0;
+
+    this.nounCount = this.wordTypes.nouns?.length || 0;
+    this.verbCount = this.wordTypes.verbs?.length || 0;
+    this.adjectiveCount = this.wordTypes.adjectives?.length || 0;
+
+    this.totalWordsToFind =
+      this.nounCount + this.verbCount + this.adjectiveCount;
+
+    let targetCount = 0;
+
+    // 1. Isolate target word count based directly on gameType
+    if (gameType === this.game.nounGameKey) {
+      targetCount = this.nounCount;
+    } else if (gameType === this.game.verbGameKey) {
+      targetCount = this.verbCount;
+    } else if (gameType === this.game.adjectiveGameKey) {
+      targetCount = this.adjectiveCount;
+    }
+
+    // 2. Compute Dynamic Score Ceiling & Time Allocations
+    this.maxScore = this.BASE_SCORE * targetCount * 100;
+    console.log("MAX SCORE: ", this.maxScore);
+    this.game.gameTime = targetCount * this.WORD_TIMING;
+    console.log("Game Time: ", this.game.gameTime.toFixed(2));
+    console.log("Targer Count: ", targetCount);
+
+    // 3. Dynamic Scaling for Hints & Penalties (Multiples of 10)
+    // Base configuration for targetCount <= 9
+
+    // Calculate how many times 10 fits completely into the targetCount
+    // e.g., 12 words = 1 block of ten | 25 words = 2 blocks of ten
+    const tenWordBlocks = Math.floor(targetCount / 10);
+
+    if (tenWordBlocks > 0) {
+      this.game.allowedHints = this.baseHints + tenWordBlocks;
+      this.game.hintPenalty = this.basePenalty + tenWordBlocks * 0.25;
+    } else {
+      this.game.allowedHints = this.baseHints;
+      this.game.hintPenalty = this.basePenalty;
+    }
+
+    console.log(
+      `[${gameType} Mode] Targets: ${targetCount} | Max Score: ${this.maxScore} | Time Allowed: ${this.game.gameTime.toFixed(2)}m | Allowed Hints: ${this.game.allowedHints} | Penalty: ${this.game.hintPenalty}`,
+    );
+
+    return this.maxScore;
   }
 
   /**
    * Set initial game time based on passage length
    */
-  setInitialTime(data) {
-    const wordLength = this.helper.getPassageLength(data);
+  // setInitialTime(data) {
+  //   const wordLength = this.helper.getPassageLength(data);
 
-    console.log("Passage Length:", wordLength);
+  //   // console.log("Passage Length:", wordLength);
 
-    switch (true) {
-      case wordLength <= 50:
-        this.game.gameTime = this.PASSAGE_LESS_50.time; // 30 sec
-        this.game.activeConfig = this.PASSAGE_LESS_50;
-        break;
+  //   this.wordTypes = this.game.wordTypes;
 
-      case wordLength > 50 && wordLength <= 100:
-        this.game.gameTime = this.PASSAGE_50_100.time;
-        this.game.activeConfig = this.PASSAGE_50_100;
-        break;
+  //   this.nounCount = this.wordTypes.nouns.length;
+  //   this.verbCount = this.wordTypes.verbs.length;
+  //   this.adjectiveCount = this.wordTypes.adjectives.length;
 
-      case wordLength > 100 && wordLength <= 150:
-        this.game.gameTime = this.PASSAGE_100_150.time;
-        this.game.activeConfig = this.PASSAGE_100_150;
-        break;
+  //   this.totalWordsToFind =
+  //     this.nounCount + this.verbCount + this.adjectiveCount;
 
-      case wordLength > 150 && wordLength <= 300:
-        this.game.gameTime = this.PASSAGE_150_300.time;
-        this.game.activeConfig = this.PASSAGE_150_300;
-        break;
+  //   switch (true) {
+  //     case wordLength <= 50:
+  //       this.game.gameTime = this.PASSAGE_LESS_50.time; // 30 sec
+  //       this.game.activeConfig = this.PASSAGE_LESS_50;
+  //       break;
 
-      case wordLength > 300 && wordLength <= 500:
-        this.game.gameTime = this.PASSAGE_300_500.time;
-        this.game.activeConfig = this.PASSAGE_300_500;
-        break;
-      case wordLength > 500 && wordLength <= 700:
-        this.game.gameTime = this.PASSAGE_500_700.time;
-        this.game.activeConfig = this.PASSAGE_500_700;
-        break;
+  //     case wordLength > 50 && wordLength <= 100:
+  //       this.game.gameTime = this.PASSAGE_50_100.time;
+  //       this.game.activeConfig = this.PASSAGE_50_100;
+  //       break;
 
-      case wordLength > 700 && wordLength <= 1000:
-        this.game.gameTime = this.PASSAGE_700_1000.time;
-        this.game.activeConfig = this.PASSAGE_700_1000;
-        break;
-      case wordLength > 1000:
-        this.game.gameTime = this.PASSAGE_GREATER_1000.time;
-        this.game.activeConfig = this.PASSAGE_GREATER_1000;
-        break;
+  //     case wordLength > 100 && wordLength <= 150:
+  //       this.game.gameTime = this.PASSAGE_100_150.time;
+  //       this.game.activeConfig = this.PASSAGE_100_150;
+  //       break;
 
-      default:
-        this.game.gameTime = 1;
-    }
+  //     case wordLength > 150 && wordLength <= 300:
+  //       this.game.gameTime = this.PASSAGE_150_300.time;
+  //       this.game.activeConfig = this.PASSAGE_150_300;
+  //       break;
 
-    return this.game.gameTime;
-  }
+  //     case wordLength > 300 && wordLength <= 500:
+  //       this.game.gameTime = this.PASSAGE_300_500.time;
+  //       this.game.activeConfig = this.PASSAGE_300_500;
+  //       break;
+  //     case wordLength > 500 && wordLength <= 700:
+  //       this.game.gameTime = this.PASSAGE_500_700.time;
+  //       this.game.activeConfig = this.PASSAGE_500_700;
+  //       break;
+
+  //     case wordLength > 700 && wordLength <= 1000:
+  //       this.game.gameTime = this.PASSAGE_700_1000.time;
+  //       this.game.activeConfig = this.PASSAGE_700_1000;
+  //       break;
+  //     case wordLength > 1000:
+  //       this.game.gameTime = this.PASSAGE_GREATER_1000.time;
+  //       this.game.activeConfig = this.PASSAGE_GREATER_1000;
+  //       break;
+
+  //     default:
+  //       this.game.gameTime = 1;
+  //   }
+
+  //   return this.game.gameTime;
+  // }
 
   /**
    * Load best time from player history
@@ -171,6 +244,18 @@ class GameManager {
       .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .replace(/[^\p{L}\p{N}']/gu, "")
       .trim();
+  }
+
+  setScore(gameType, foundCount, hintsUsed) {
+    this.wordTypes = this.game.wordTypes;
+    this.nounCount = this.wordTypes.nouns.length;
+    this.verbCount = this.wordTypes.verbs.length;
+    this.adjectiveCount = this.wordTypes.adjectives.length;
+
+    if (gameType == this.game.nounGameKey) {
+      return this.helper.calculateScore(foundCount, this.nounCount, hintsUsed);
+    }
+    return null;
   }
 }
 

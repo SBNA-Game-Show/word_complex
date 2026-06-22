@@ -61,7 +61,7 @@ class ControlPanel {
 
     this.eyeEmojiWrapper.tap(() => {
       if (this.isProcessingClick) return;
-      this.maxHints = this.game.activeConfig.maxHints;
+      this.maxHints = this.game.allowedHints;
 
       if (this.isClosed && this.hintCounter >= this.maxHints) {
         const targetLabel = this.eyeEmojiWrapper.label;

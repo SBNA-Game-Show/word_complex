@@ -14,7 +14,6 @@ class Game {
     this.width = setup.W;
     this.height = setup.H;
     this.zim = setup.zim;
-    this.manager = new GameManger(this);
     this.serviceManager = new GameServiceManager(this);
 
     this.data = null;
@@ -40,33 +39,35 @@ class Game {
     this.currentStoryId = "04e9ae48-5570-4cd0-8968-a2179353164b";
     this.gameTime = 0;
     this.isInputLocked = false;
-    this.activeConfig = null
 
     // Player
     this.player = "Jack";
     this.playerCoins = 0;
     this.totalScore = 0;
+    this.maxScore = 0;
+    this.allowedHints = 0;
+    this.hintPenalty = 0;
     this.playerInfo = [
-      // {
-      //   storyId: "04e9ae48-5570-4cd0-8968-a2179353164b",
-      //   games: {
-      //     Noun: {
-      //       bestTime: "0.20",
-      //       coins: 0,
-      //       totalScore: 0,
-      //     },
-      //     Verb: {
-      //       bestTime: "0.00",
-      //       coins: 0,
-      //       totalScore: 0,
-      //     },
-      //     Adjective: {
-      //       bestTime: "0.00",
-      //       coins: 0,
-      //       totalScore: 0,
-      //     },
-      //   },
-      // },
+      {
+        storyId: "04e9ae48-5570-4cd0-8968-a2179353164b",
+        games: {
+          Noun: {
+            bestTime: "0.30",
+            coins: 0,
+            totalScore: 0,
+          },
+          Verb: {
+            bestTime: "0.00",
+            coins: 0,
+            totalScore: 0,
+          },
+          Adjective: {
+            bestTime: "0.00",
+            coins: 0,
+            totalScore: 0,
+          },
+        },
+      },
     ];
   }
 
