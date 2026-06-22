@@ -50,6 +50,7 @@ class FindNounsGame {
     // Initializing RunTime Parameters
     //-----------------------------------
     this.manager.setGameTime(this.game.nounGameKey);
+    console.log("Nouns From Game: ", this.nouns);
     //-----------------------------------
     // BOARD
     //-----------------------------------

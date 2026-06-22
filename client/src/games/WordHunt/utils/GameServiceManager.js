@@ -106,33 +106,65 @@ class GameServiceManager {
     console.log("Word Types:", this.wordTypes);
   }
 
+  // splitPOSByTypeSanskrit() {
+  //   const nouns = [];
+  //   const verbs = [];
+  //   const adjectives = [];
+
+  //   // console.log("tokenizedArray =", this.tokenizedArray);
+
+  //   this.game.tokenizedArray.forEach((sentence, i) => {
+  //     // console.log("sentence", i, sentence);
+
+  //     sentence.forEach((token) => {
+  //       // console.log("text:", token.text, "upos:", token.upos);
+
+  //       if (token.upos === "NOUN")
+  //         nouns.push(this.manager.normalize(token.text));
+  //       if (token.upos === "VERB")
+  //         verbs.push(this.manager.normalize(token.text));
+  //       if (token.upos === "ADJ")
+  //         adjectives.push(this.manager.normalize(token.text));
+  //     });
+  //   });
+
+  //   console.log("NOUNS", nouns);
+  //   // console.log("VERBS", verbs);
+  //   // console.log("ADJECTIVES", adjectives);
+
+  //   return { nouns, verbs, adjectives };
+  // }
   splitPOSByTypeSanskrit() {
     const nouns = [];
     const verbs = [];
     const adjectives = [];
 
-    // console.log("tokenizedArray =", this.tokenizedArray);
-
     this.game.tokenizedArray.forEach((sentence, i) => {
-      // console.log("sentence", i, sentence);
-
       sentence.forEach((token) => {
-        // console.log("text:", token.text, "upos:", token.upos);
+        // 1. Normalize the word first
+        const cleanedText = this.manager.normalize(token.text);
 
-        if (token.upos === "NOUN")
-          nouns.push(this.manager.normalize(token.text));
-        if (token.upos === "VERB")
-          verbs.push(this.manager.normalize(token.text));
-        if (token.upos === "ADJ")
-          adjectives.push(this.manager.normalize(token.text));
+        // 2. ONLY push if the word is not empty or whitespace
+        if (cleanedText && cleanedText.trim() !== "") {
+          if (token.upos === "NOUN") nouns.push(cleanedText);
+          if (token.upos === "VERB") verbs.push(cleanedText);
+          if (token.upos === "ADJ") adjectives.push(cleanedText);
+        }
       });
     });
 
-    // console.log("NOUNS", nouns);
-    // console.log("VERBS", verbs);
-    // console.log("ADJECTIVES", adjectives);
+    // 3. Remove all duplicates using a Set right before returning
+    const uniqueNouns = [...new Set(nouns)];
+    const uniqueVerbs = [...new Set(verbs)];
+    const uniqueAdjectives = [...new Set(adjectives)];
 
-    return { nouns, verbs, adjectives };
+    console.log("CLEAN UNIQUE NOUNS:", uniqueNouns);
+
+    return {
+      nouns: uniqueNouns,
+      verbs: uniqueVerbs,
+      adjectives: uniqueAdjectives,
+    };
   }
 }
 
