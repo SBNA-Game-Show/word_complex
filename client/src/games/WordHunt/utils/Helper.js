@@ -47,18 +47,13 @@ class Helper {
   }
 
   calculateScore(foundCount, totalCount, hintsUsed) {
-    // 1. Core performance accuracy ratio (0.0 to 1.0)
-    const accuracy = totalCount > 0 ? foundCount / totalCount : 0;
+    // Gives 100 flat points per found word
+    const baseScore = foundCount * 100;
 
-    // 2. Compute deduction based on how many times hint engine was opened
-    const penaltyDeduction = hintsUsed * this.game.hintPenalty;
-    console.log("CONFIG HINT PENALTY: ", this.game.hintPenalty);
+    // Deducts a flat score penalty per hint used
+    const penaltyDeduction = hintsUsed * (this.game.hintPenalty * 100);
 
-    // 3. Normalize score baseline to 100 points maximum
-    let finalScore = (accuracy - penaltyDeduction) * 100;
-
-    // Safety check: Bound score so it never falls into negative points
-    return Math.floor(0, Math.round(finalScore));
+    return Math.max(0, Math.round(baseScore - penaltyDeduction));
   }
 }
 

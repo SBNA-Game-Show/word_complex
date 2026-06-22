@@ -18,7 +18,7 @@ class GameManager {
     this.wordTypes = null;
     this.totalWordsToFind = 0;
     this.baseHints = 1;
-    this.basePenalty = 0.025;
+    this.basePenalty = 0.25;
     this.maxScore = 0;
     this.minScore = 0;
 
@@ -28,7 +28,7 @@ class GameManager {
 
     // GAME TIMINGS
     this.WORD_TIMING = 2 / 60;
-    this.BASE_SCORE = 1;
+    this.BASE_SCORE = 100;
     this.PASSAGE_LESS_50 = { time: 0.5, maxHints: 1, hintPenalty: 0.25 }; // 30 SECONDS
     this.PASSAGE_50_100 = { time: 1, maxHints: 2, hintPenalty: 0.2 }; // 1 MINUTE
     this.PASSAGE_100_150 = { time: 5, maxHints: 5, hintPenalty: 0.1 }; //5 MINUTE
@@ -80,7 +80,7 @@ class GameManager {
     }
 
     // 2. Compute Dynamic Score Ceiling & Time Allocations
-    this.maxScore = this.BASE_SCORE * targetCount * 100;
+    this.maxScore = this.BASE_SCORE * targetCount;
     console.log("MAX SCORE: ", this.maxScore);
     this.game.gameTime = targetCount * this.WORD_TIMING;
     console.log("Game Time: ", this.game.gameTime.toFixed(2));
@@ -95,7 +95,7 @@ class GameManager {
 
     if (tenWordBlocks > 0) {
       this.game.allowedHints = this.baseHints + tenWordBlocks;
-      this.game.hintPenalty = this.basePenalty + tenWordBlocks * 0.25;
+      this.game.hintPenalty = this.basePenalty + tenWordBlocks*0.025;
     } else {
       this.game.allowedHints = this.baseHints;
       this.game.hintPenalty = this.basePenalty;
