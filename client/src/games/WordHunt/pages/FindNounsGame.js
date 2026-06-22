@@ -246,9 +246,9 @@ class FindNounsGame {
           label.cursor = "default"; // Revert cursor back once found
 
           this.foundWords.push(cleanWord);
-          this.score++;
+          // this.score++;
           this.hintsUsed = this.controlPanel.hintCounter;
-          this.newScore = this.manager.setScore(
+          this.score = this.manager.setScore(
             this.game.nounGameKey,
             this.foundWords.length,
             this.hintsUsed,

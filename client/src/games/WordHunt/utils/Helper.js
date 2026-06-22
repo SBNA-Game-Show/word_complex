@@ -47,13 +47,19 @@ class Helper {
   }
 
   calculateScore(foundCount, totalCount, hintsUsed) {
-    // Gives 100 flat points per found word
-    const baseScore = foundCount * 100;
+    // 1. Calculate how much a single word is worth after hint deductions
+    // Example: If hintPenalty is 0.05, 1 hint used means pointsPerWord = 100 - (1 * 5) = 95
+    const penaltyPerWord = hintsUsed * (this.game.hintPenalty * 100);
+    const pointsPerWord = Math.max(0, 100 - penaltyPerWord);
 
-    // Deducts a flat score penalty per hint used
-    const penaltyDeduction = hintsUsed * (this.game.hintPenalty * 100);
+    // 2. Multiply the degraded word value by the number of words found
+    const finalScore = foundCount * pointsPerWord;
 
-    return Math.max(0, Math.round(baseScore - penaltyDeduction));
+    console.log(
+      `[Score Calc] Words Found: ${foundCount} | Value Per Word: ${pointsPerWord} | Total Score: ${finalScore}`,
+    );
+
+    return Math.round(finalScore);
   }
 }
 
