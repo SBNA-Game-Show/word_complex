@@ -1,4 +1,3 @@
-// Need to call this method
 const connectTokenizedStories = require("../config/dataConnectConfig");
 
 const retrieveStoryById = async (storyId) => {
@@ -19,19 +18,4 @@ const retrieveStoryById = async (storyId) => {
   return story;
 };
 
-const retrieveRandomStory = async () => {
-  const db = await connectTokenizedStories();
-
-  const results = await db
-    .collection("tokenized_stories")
-    .aggregate([{ $sample: { size: 1 } }])
-    .toArray();
-
-  if (!results.length) {
-    throw new Error("No stories found in collection");
-  }
-
-  return results[0];
-};
-
-module.exports = { retrieveStoryById, retrieveRandomStory };
+module.exports = { retrieveStoryById };
