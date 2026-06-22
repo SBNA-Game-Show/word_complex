@@ -40,6 +40,12 @@ class Game {
     this.gameTime = 0;
     this.isInputLocked = false;
 
+    // GAME TIMINGS
+    this.WORD_TIMING = 2 / 60;
+    this.BASE_SCORE = 1;
+    this.BASE_PENALTY = 0.25;
+    this.BASE_HINTS = 1;
+
     // Player
     this.player = "Jack";
     this.playerCoins = 0;
@@ -52,7 +58,7 @@ class Game {
       //   storyId: "04e9ae48-5570-4cd0-8968-a2179353164b",
       //   games: {
       //     Noun: {
-      //       bestTime: "0.11",
+      //       bestTime: "0.13",
       //       coins: 0,
       //       totalScore: 0,
       //     },

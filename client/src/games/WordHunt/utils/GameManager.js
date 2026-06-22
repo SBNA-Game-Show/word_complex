@@ -17,18 +17,13 @@ class GameManager {
 
     this.wordTypes = null;
     this.totalWordsToFind = 0;
-    this.baseHints = 1;
-    this.basePenalty = 0.25;
+
     this.maxScore = 0;
     this.minScore = 0;
 
     this.nounCount = 0;
     this.verbCount = 0;
     this.adjectiveCount = 0;
-
-    // GAME TIMINGS
-    this.WORD_TIMING = 2 / 60;
-    this.BASE_SCORE = 1;
   }
 
   /**
@@ -49,6 +44,7 @@ class GameManager {
     this.setInitialGameTime(gameType);
     return this.game.gameTime;
   }
+
   setInitialGameTime(gameType) {
     this.wordTypes = this.game.wordTypes;
     if (!this.wordTypes) return 0;
@@ -67,30 +63,35 @@ class GameManager {
       targetCount = this.nounCount;
     } else if (gameType === this.game.verbGameKey) {
       targetCount = this.verbCount;
-    } else if (gameType === this.game.adjectiveGameKey) {
+    } else if (gameType === this.game.adjGameKey) {
+      // 🛠️ FIXED: Changed from adjectiveGameKey to match Game.js property adjGameKey
       targetCount = this.adjectiveCount;
     }
 
-    // 2. Compute Dynamic Score Ceiling & Time Allocations
-    this.maxScore = this.BASE_SCORE * targetCount;
+    // 2. Pull variables directly from central Game config
+    const baseScore = this.game.BASE_SCORE ?? 1;
+    const wordTiming = this.game.WORD_TIMING ?? 2 / 60;
+
+    // 3. Compute Dynamic Score Ceiling & Time Allocations
+    this.maxScore = baseScore * targetCount;
     console.log("MAX SCORE: ", this.maxScore);
-    this.game.gameTime = targetCount * this.WORD_TIMING;
+
+    this.game.gameTime = targetCount * wordTiming;
     console.log("Game Time: ", this.game.gameTime.toFixed(2));
-    console.log("Targer Count: ", targetCount);
+    console.log("Target Count: ", targetCount);
 
-    // 3. Dynamic Scaling for Hints & Penalties (Multiples of 10)
-    // Base configuration for targetCount <= 9
-
-    // Calculate how many times 10 fits completely into the targetCount
-    // e.g., 12 words = 1 block of ten | 25 words = 2 blocks of ten
+    // 4. Dynamic Scaling for Hints & Penalties (Multiples of 10)
     const tenWordBlocks = Math.floor(targetCount / 10);
 
+    const baseHints = this.game.BASE_HINTS ?? 1;
+    const basePenalty = this.game.BASE_PENALTY ?? 0.25;
+
     if (tenWordBlocks > 0) {
-      this.game.allowedHints = this.baseHints + tenWordBlocks;
-      this.game.hintPenalty = this.basePenalty + tenWordBlocks * 0.025;
+      this.game.allowedHints = baseHints + tenWordBlocks;
+      this.game.hintPenalty = basePenalty + tenWordBlocks * 0.25;
     } else {
-      this.game.allowedHints = this.baseHints;
-      this.game.hintPenalty = this.basePenalty;
+      this.game.allowedHints = baseHints;
+      this.game.hintPenalty = basePenalty;
     }
 
     console.log(
@@ -136,37 +137,19 @@ class GameManager {
 
     return this.game.gameTime;
   }
-  /**
-   * Getting Definitions to display in character
-   */
 
   defineNoun() {
-    const definition = this.definitions.getRandomDefinition(
-      this.definitions.nounDefEng,
-    );
-
-    return definition;
+    return this.definitions.getRandomDefinition(this.definitions.nounDefEng);
   }
+
   defineVerb() {
-    const definition = this.definitions.getRandomDefinition(
-      this.definitions.VerbDefEng,
-    );
-    return definition;
+    return this.definitions.getRandomDefinition(this.definitions.VerbDefEng);
   }
+
   defineAdjective() {
-    const definition = this.definitions.getRandomDefinition(
-      this.definitions.adjDefEng,
-    );
-    return definition;
+    return this.definitions.getRandomDefinition(this.definitions.adjDefEng);
   }
 
-  /**
-   *SET HINTS BASED ON
-   */
-
-  /**
-   * Normalize word
-   */
   normalize(word) {
     return String(word)
       .toLowerCase()
@@ -181,7 +164,8 @@ class GameManager {
     this.verbCount = this.wordTypes.verbs.length;
     this.adjectiveCount = this.wordTypes.adjectives.length;
 
-    if (gameType == this.game.nounGameKey) {
+    // We pass down gameType to helper if you expand game scoring modes later
+    if (gameType === this.game.nounGameKey) {
       return this.helper.calculateScore(foundCount, this.nounCount, hintsUsed);
     }
     return null;

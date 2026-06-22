@@ -248,12 +248,13 @@ class FindNounsGame {
           this.foundWords.push(cleanWord);
           // this.score++;
           this.hintsUsed = this.controlPanel.hintCounter;
-          this.score = this.manager.setScore(
+          const pointsEarned = this.manager.setScore(
             this.game.nounGameKey,
             this.foundWords.length,
             this.hintsUsed,
           );
-          console.log("New Score: ", this.newScore);
+          this.score += pointsEarned;
+          console.log("New Score: ", this.score);
           this.playerInformation.update(this.score);
           this.progressBar.setFound(this.foundWords.length);
 
