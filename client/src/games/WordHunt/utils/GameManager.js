@@ -161,6 +161,7 @@ class GameManager {
   setScore(gameType, foundCount, hintsUsed) {
     this.wordTypes = this.game.wordTypes;
     this.nounCount = this.wordTypes.nouns.length;
+    console.log("NOUN COUNT: ", this.nounCount);
     this.verbCount = this.wordTypes.verbs.length;
     this.adjectiveCount = this.wordTypes.adjectives.length;
 
