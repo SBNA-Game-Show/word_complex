@@ -6,12 +6,139 @@ const {
   generateAntonymMatchPuzzle,
   generateWordDefinitionPuzzle,
 } = require("../service/generatepuzzle");
-const { saveRoundFallback, getRoundFallback } = require("../service/roundstore");
-const { saveScoreFallback, getPlayerLeaderboardFallback } = require("../service/scorestore");
+const {
+  saveRoundFallback,
+  getRoundFallback,
+} = require("../service/roundstore");
+const {
+  saveScoreFallback,
+  getPlayerLeaderboardFallback,
+} = require("../service/scorestore");
 const { scoreMeaningBridgeRound } = require("../service/scoreround");
-const { retrieveStoryById } = require("../../raw-data-connect/retrieveTokenizedStoryById");
+const {
+  retrieveStoryById,
+} = require("../../raw-data-connect/retrieveTokenizedStoryById");
+const retrieveAllStories = require("../../raw-data-connect/retrieveAllTokenizedStories");
 
 const HARDCODED_STORY_ID = "292f2009-96bb-4a3c-b856-e04214e852f8";
+
+const DEFAULT_MEANING_BRIDGE_SOURCE = "mongo-eligible-story";
+
+function getStoryTitle(story) {
+  if (story?.title?.englishversion) {
+    return story.title.englishversion;
+  }
+
+  if (story?.title?.sanskritversion) {
+    return story.title.sanskritversion;
+  }
+
+  if (typeof story?.title === "string" && story.title.trim()) {
+    return story.title.trim();
+  }
+
+  return "Untitled Story";
+}
+
+function buildPassageFromStory(story, source) {
+  return {
+    passageId: String(story._id),
+    title: getStoryTitle(story),
+    text: String(story.englishVersion || "").slice(0, 300),
+    difficulty: "medium",
+    theme: story.category || "Story",
+    source,
+  };
+}
+
+function hasStory(candidateStories, story) {
+  return candidateStories.some(
+    (candidate) => String(candidate.story?._id) === String(story?._id),
+  );
+}
+
+async function getMeaningBridgeCandidateStories({ requestedStoryId } = {}) {
+  const candidates = [];
+
+  const preferredIds = [requestedStoryId, HARDCODED_STORY_ID].filter(Boolean);
+
+  for (const storyId of preferredIds) {
+    try {
+      const story = await retrieveStoryById(storyId);
+
+      if (story && !hasStory(candidates, story)) {
+        candidates.push({
+          story,
+          source:
+            storyId === requestedStoryId
+              ? "mongo-requested-story"
+              : "mongo-preferred-story",
+        });
+      }
+    } catch (error) {
+      console.warn(
+        `[MeaningBridge] Story ${storyId} unavailable: ${error.message}`,
+      );
+    }
+  }
+
+  try {
+    const stories = await retrieveAllStories();
+
+    for (const story of stories) {
+      if (story && !hasStory(candidates, story)) {
+        candidates.push({
+          story,
+          source: DEFAULT_MEANING_BRIDGE_SOURCE,
+        });
+      }
+    }
+  } catch (error) {
+    console.warn(
+      `[MeaningBridge] Could not retrieve all tokenized stories: ${error.message}`,
+    );
+  }
+
+  return candidates;
+}
+
+function buildPuzzleFromCandidateStories({ candidates, mode, pairCount }) {
+  let lastError = null;
+
+  for (const candidate of candidates) {
+    try {
+      const puzzle = buildPuzzle({
+        story: candidate.story,
+        mode,
+        pairCount,
+      });
+
+      if ((puzzle.leftItems || []).length < pairCount) {
+        throw new Error(
+          `Story only produced ${(puzzle.leftItems || []).length} pairs; ${pairCount} required.`,
+        );
+      }
+
+      return {
+        story: candidate.story,
+        source: candidate.source,
+        puzzle,
+      };
+    } catch (error) {
+      lastError = error;
+      console.warn(
+        `[MeaningBridge] Story ${candidate.story?._id || "unknown"} could not generate ${mode}: ${error.message}`,
+      );
+    }
+  }
+
+  throw (
+    lastError ||
+    new Error(
+      "No eligible tokenized story could generate this Meaning Bridge round.",
+    )
+  );
+}
 
 const SUPPORTED_PAIR_COUNTS = new Set([4, 5, 6]);
 
@@ -28,8 +155,10 @@ const SUPPORTED_MODES = new Set([
 
 const getMeaningBridgeHealth = async (req, res) => {
   return res.status(200).json({
-    success: true, ok: true,
-    game: "meaning_bridge", status: "ready",
+    success: true,
+    ok: true,
+    game: "meaning_bridge",
+    status: "ready",
     message: "Meaning Bridge backend module is registered.",
   });
 };
@@ -95,70 +224,108 @@ function buildPuzzle({ story, mode, pairCount }) {
 
 const generateMeaningBridgeRound = async (req, res) => {
   try {
-    const { pairCount = 4, mode = "word-to-synonym" } = req.body || {};
+    const {
+      pairCount = 4,
+      mode = "word-to-synonym",
+      storyId = null,
+    } = req.body || {};
+
     const normalizedPairCount = Number(pairCount);
 
     if (!SUPPORTED_MODES.has(mode)) {
       return res.status(400).json({
-        success: false, ok: false,
+        success: false,
+        ok: false,
         error: "Unsupported Meaning Bridge mode.",
       });
     }
 
     if (!SUPPORTED_PAIR_COUNTS.has(normalizedPairCount)) {
       return res.status(400).json({
-        success: false, ok: false,
+        success: false,
+        ok: false,
         error: "Unsupported pair count. Use 4, 5, or 6.",
       });
     }
 
-    const story = await retrieveStoryById(HARDCODED_STORY_ID);
-    const puzzle = buildPuzzle({ story, mode, pairCount: normalizedPairCount });
+    const candidates = await getMeaningBridgeCandidateStories({
+      requestedStoryId: storyId,
+    });
+
+    if (!candidates.length) {
+      return res.status(500).json({
+        success: false,
+        ok: false,
+        error: "No tokenized stories were available for Meaning Bridge.",
+      });
+    }
+
+    const { story, source, puzzle } = buildPuzzleFromCandidateStories({
+      candidates,
+      mode,
+      pairCount: normalizedPairCount,
+    });
 
     saveRoundFallback(puzzle);
 
     return res.status(200).json({
-      success: true, ok: true,
+      success: true,
+      ok: true,
+      source,
       puzzle,
-      passage: {
-        passageId: String(story._id),
-        title: story.title && story.title.englishversion ? story.title.englishversion : story.title && story.title.sanskritversion ? story.title.sanskritversion : "Untitled Story",
-        text: (story.englishVersion || "").slice(0, 300),
-        difficulty: "medium",
-        theme: story.category || "Story",
-      },
+      passage: buildPassageFromStory(story, source),
     });
   } catch (error) {
     return res.status(500).json({
-      success: false, ok: false,
-      error: error instanceof Error ? error.message : "Failed to generate round.",
+      success: false,
+      ok: false,
+      error:
+        error instanceof Error ? error.message : "Failed to generate round.",
     });
   }
 };
 
 const generateSentenceMatchRound = async (req, res) => {
   try {
-    const { pairCount = 3 } = req.body || {};
-    const story = await retrieveStoryById(HARDCODED_STORY_ID);
-    const puzzle = generateSentenceMatchPuzzle({ story, pairCount: Number(pairCount) });
+    const { pairCount = 3, storyId = null } = req.body || {};
+
+    const normalizedPairCount = Number(pairCount) || 3;
+
+    const candidates = await getMeaningBridgeCandidateStories({
+      requestedStoryId: storyId,
+    });
+
+    if (!candidates.length) {
+      return res.status(500).json({
+        success: false,
+        ok: false,
+        error: "No tokenized stories were available for Meaning Bridge.",
+      });
+    }
+
+    const { story, source, puzzle } = buildPuzzleFromCandidateStories({
+      candidates,
+      mode: "sentence-match",
+      pairCount: normalizedPairCount,
+    });
 
     saveRoundFallback(puzzle);
 
     return res.status(200).json({
-      success: true, ok: true,
+      success: true,
+      ok: true,
+      source,
       puzzle,
-      passage: {
-        passageId: String(story._id),
-        title: story.title && story.title.englishversion ? story.title.englishversion : story.title && story.title.sanskritversion ? story.title.sanskritversion : "Untitled Story",
-        text: (story.englishVersion || "").slice(0, 300),
-        difficulty: "medium",
-        theme: story.category || "Story",
-      },
+      passage: buildPassageFromStory(story, source),
     });
   } catch (error) {
     return res.status(500).json({
-      success: false, ok: false,
-      error: error instanceof Error ? error.message : "Failed to generate sentence match round.",
+      success: false,
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to generate sentence match round.",
     });
   }
 };
@@ -166,15 +333,36 @@ const generateSentenceMatchRound = async (req, res) => {
 const submitMeaningBridgeRound = async (req, res) => {
   try {
     const {
-      roundId, playerName = "Guest Player", matches = [],
-      timeSeconds = 0, hintsUsed = 0, wrongAttempts = 0,
+      roundId,
+      playerName = "Guest Player",
+      matches = [],
+      timeSeconds = 0,
+      hintsUsed = 0,
+      wrongAttempts = 0,
     } = req.body || {};
 
-    if (!roundId) return res.status(400).json({ success: false, ok: false, error: "roundId is required." });
-    if (!Array.isArray(matches)) return res.status(400).json({ success: false, ok: false, error: "matches must be an array." });
+    if (!roundId)
+      return res
+        .status(400)
+        .json({ success: false, ok: false, error: "roundId is required." });
+    if (!Array.isArray(matches))
+      return res
+        .status(400)
+        .json({
+          success: false,
+          ok: false,
+          error: "matches must be an array.",
+        });
 
     const storedRound = getRoundFallback(roundId);
-    if (!storedRound) return res.status(404).json({ success: false, ok: false, error: "Round was not found or has expired." });
+    if (!storedRound)
+      return res
+        .status(404)
+        .json({
+          success: false,
+          ok: false,
+          error: "Round was not found or has expired.",
+        });
 
     const { puzzle } = storedRound;
     const scoreResult = scoreMeaningBridgeRound({
@@ -208,7 +396,8 @@ const submitMeaningBridgeRound = async (req, res) => {
     const updatedPlayer = saveScoreFallback(scoreRecord);
 
     return res.status(200).json({
-      success: true, ok: true,
+      success: true,
+      ok: true,
       roundId,
       playerName: scoreRecord.playerName,
       score: scoreResult.score,
@@ -227,7 +416,8 @@ const submitMeaningBridgeRound = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      success: false, ok: false,
+      success: false,
+      ok: false,
       error: error instanceof Error ? error.message : "Failed to submit round.",
     });
   }
@@ -235,9 +425,14 @@ const submitMeaningBridgeRound = async (req, res) => {
 
 const getMeaningBridgeLeaderboard = async (req, res) => {
   const rawLimit = Number(req.query.limit || 10);
-  const limit = Math.max(1, Math.min(50, Number.isFinite(rawLimit) ? rawLimit : 10));
+  const limit = Math.max(
+    1,
+    Math.min(50, Number.isFinite(rawLimit) ? rawLimit : 10),
+  );
   const scores = getPlayerLeaderboardFallback(limit);
-  return res.status(200).json({ success: true, ok: true, source: "fallback", scores });
+  return res
+    .status(200)
+    .json({ success: true, ok: true, source: "fallback", scores });
 };
 
 module.exports = {
