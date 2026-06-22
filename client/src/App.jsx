@@ -108,7 +108,7 @@ function AuthenticatedApp() {
         />
       ) : screen === "launcher" ? (
         <Launcher
-          onStart={openGame}
+          onStart={launchGame}
           onAbout={() => setScreen("about")}
           onHowToPlay={openHowToPlay}
           onChooseCharacter={openCharacters}
