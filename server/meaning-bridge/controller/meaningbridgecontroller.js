@@ -42,7 +42,12 @@ const getMeaningBridgeHealth = async (req, res) => {
 
 const generateMeaningBridgeRound = async (req, res) => {
   try {
-    const { pairCount = 4, mode = "word-to-synonym" } = req.body || {};
+    const {
+      pairCount = 4,
+      mode = "word-to-synonym",
+      storyId = null,
+    } = req.body || {};
+
     const normalizedPairCount = Number(pairCount);
 
     if (!SUPPORTED_MODES.has(mode)) {
@@ -61,8 +66,23 @@ const generateMeaningBridgeRound = async (req, res) => {
       });
     }
 
-    const story = await retrieveStoryById(HARDCODED_STORY_ID);
-    const puzzle = buildPuzzle({ story, mode, pairCount: normalizedPairCount });
+    const candidates = await getMeaningBridgeCandidateStories({
+      requestedStoryId: storyId,
+    });
+
+    if (!candidates.length) {
+      return res.status(500).json({
+        success: false,
+        ok: false,
+        error: "No tokenized stories were available for Meaning Bridge.",
+      });
+    }
+
+    const { story, source, puzzle } = buildPuzzleFromCandidateStories({
+      candidates,
+      mode,
+      pairCount: normalizedPairCount,
+    });
 
     return res.status(200).json({
       success: true,
