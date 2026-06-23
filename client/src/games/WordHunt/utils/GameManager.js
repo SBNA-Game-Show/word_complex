@@ -171,7 +171,25 @@ class GameManager {
     }
     return null;
   }
-  setGameTotal(gameType,timeElapsed,score){}
+
+  setGameTotal(gameType, foundCount, elapsedMs, score) {
+    // 1. Convert the elapsed time from milliseconds to decimal minutes
+    // to match the scale used by this.game.gameTime
+    const timeElapsedInMinutes = elapsedMs / 60000;
+
+    const hintsUsed = this.controlPanel.hintCounter;
+
+    // 2. Pass all 5 correctly aligned parameters down to the Helper
+    const result = this.helper.calculateGameTotal(
+      foundCount,
+      this.nounCount,
+      timeElapsedInMinutes,
+      score,
+      hintsUsed,
+    );
+
+    return result;
+  }
 }
 
 export default GameManager;

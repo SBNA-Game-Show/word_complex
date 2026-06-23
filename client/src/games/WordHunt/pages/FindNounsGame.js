@@ -42,7 +42,7 @@ class FindNounsGame {
 
     this.gameOver = false;
 
-    this.newScore = 0;
+    this.newTotal = 0;
   }
 
   displayPassage() {
@@ -191,7 +191,6 @@ class FindNounsGame {
 
     foundWordsLabel.addTo(this.blackboard);
 
-
     //-----------------------------------
     // Timer to start the game
     //-----------------------------------
@@ -310,8 +309,15 @@ class FindNounsGame {
       const seconds = Math.floor((elapsedMs % 60000) / 1000);
 
       console.log(`TIME USED: ${minutes}:${seconds}`);
+      this.newTotal = this.manager.setGameTotal(
+        this.game.findNounsGame,
+        this.foundWords.length,
+        elapsedMs,
+        this.score,
+      );
+      console.log("New Game Total: ", this.newTotal);
 
-      // this.game.inputLocked = true;
+      this.game.inputLocked = true;
 
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 

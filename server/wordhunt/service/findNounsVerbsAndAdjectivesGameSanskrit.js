@@ -1,4 +1,6 @@
-const retrieveStoryById = require("../../raw-data-connect/retrieveTokenizedStoryById");
+const {
+  retrieveStoryById,
+} = require("../../raw-data-connect/retrieveTokenizedStoryById");
 
 const findNounVerbAndAdjSanskrit = async (storyId) => {
   if (!storyId) {

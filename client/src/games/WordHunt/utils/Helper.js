@@ -75,27 +75,86 @@ class Helper {
 
     // 2. Partial completion: Player found some words but not all before time ran out
     if (foundCount > 0 && foundCount < wordsToFind) {
-      return Math.round(score);
+      return score;
     }
 
-    // 3. Perfect completion: Player found ALL words!
-    if (foundCount > 0 && foundCount === wordsToFind) {
-      const allowedTime = this.game.gameTime; // e.g., 5.00 minutes
+    // 🛠️ UNIT FIX: Convert both total clock and elapsed parameters to SECONDS
+    // This stops decimal minute scaling mismatches permanently!
+    const totalTimeInSeconds = this.game.gameTime * 60;
 
-      // Calculate remaining time left over
-      const timeRemaining = allowedTime - timeElapsed;
+    // If timeElapsed is coming in as minutes, convert it.
+    // If it's already in seconds, remove the "* 60" multiplier below:
+    const elapsedSeconds = timeElapsed < 1 ? timeElapsed * 60 : timeElapsed;
 
-      // Award a small time bonus if they finished early (e.g., 0.1 points per minute saved)
-      const timeBonus = timeRemaining * 100;
-      const finalResult = score + timeBonus;
+    // 3. Perfect completion: Player found ALL words within the allowed game time!
+    if (foundCount === wordsToFind && elapsedSeconds <= totalTimeInSeconds) {
+      const quarterTime = totalTimeInSeconds / 4;
+      const halfTime = totalTimeInSeconds / 2;
+      const threeQuarterTime = quarterTime * 3;
 
-      console.log(
-        `[Game Total] Perfect Run! Base Score: ${score.toFixed(2)} | Time Bonus: +${timeBonus.toFixed(2)} | Final Saved: ${finalResult.toFixed(2)}`,
-      );
+      // Quarter of the time or less
+      if (elapsedSeconds <= quarterTime) {
+        if (hintsUsed <= 0) {
+          const result = score * 10;
+          console.log(
+            `[Game Total] Elite Run (0 Hints)! Multiplier x10. Final: ${result}`,
+          );
+          return result;
+        }
+        if (hintsUsed > 0) {
+          const result = score * 8;
+          console.log(
+            `[Game Total] Elite Run (With Hints)! Multiplier x8. Final: ${result}`,
+          );
+          return result;
+        }
+      }
 
-      return finalResult;
+      // Half of the time or less
+      if (elapsedSeconds <= halfTime) {
+        if (hintsUsed <= 0) {
+          const result = score * 5;
+          console.log(
+            `[Game Total] Speed Run (0 Hints)! Multiplier x5. Final: ${result}`,
+          );
+          return result;
+        }
+        if (hintsUsed > 0) {
+          const result = score * 4;
+          console.log(
+            `[Game Total] Speed Run (With Hints)! Multiplier x4. Final: ${result}`,
+          );
+          return result;
+        }
+      }
+
+      // 75% of the time or less
+      if (elapsedSeconds <= threeQuarterTime) {
+        if (hintsUsed <= 1) {
+          const result = score * 3;
+          console.log(
+            `[Game Total] Great Run (<=1 Hint)! Multiplier x3. Final: ${result}`,
+          );
+          return result;
+        }
+        if (hintsUsed > 1) {
+          const result = score * 2;
+          console.log(
+            `[Game Total] Great Run (>1 Hint)! Multiplier x2. Final: ${result}`,
+          );
+          return result;
+        }
+      }
+
+      // Standard Run (Took more than 75% of the clock)
+      if (hintsUsed === 1) {
+        return score * 1.5;
+      }
+
+      return score;
     }
 
+    // Fallback security check
     return score;
   }
 }
