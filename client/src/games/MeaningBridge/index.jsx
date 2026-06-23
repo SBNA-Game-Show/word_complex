@@ -1,4985 +1,1351 @@
-import { useState, useEffect } from "react";
 import { createZimGame } from "../createZimGame";
-import { emit } from "../../scenes/sceneBus";
-import {
-  generateMeaningBridgeRound,
-  getMeaningBridgeLeaderboard,
-  submitMeaningBridgeRound,
-} from "../../services/api";
-import landingBackgroundUrl from "./assets/meaning-bridge-landing.png";
+import { fetchMeaningBridgeRound } from "../../services/meaningBridgeApi";
+
+const PAIR_COUNTS = [4, 5, 6];
 
 export const meta = {
   id: "meaning-bridge",
   cardNumber: "02",
   cardArt: "art-sea",
   title: "Meaning Bridge",
-  description: "Connect words to Sanskrit, meanings, synonyms, and antonyms.",
+  description: "Connect words to their synonyms, antonyms, and definitions.",
 };
 
-const MODES = [
-  {
-    value: "english-to-sanskrit",
-    label: "English → Sanskrit",
-  },
-  {
-    value: "sanskrit-to-english",
-    label: "Sanskrit → English",
-  },
-  {
-    value: "word-to-definition",
-    label: "Word → Definition",
-  },
-  {
-    value: "word-to-synonym",
-    label: "Word → Synonym",
-  },
-  {
-    value: "word-to-antonym",
-    label: "Word → Antonym",
-  },
-];
-
-const DIFFICULTIES = ["easy", "medium", "hard"];
-const PAIR_COUNTS = [4, 5, 6];
-
-/*
-  Round type options
-  ------------------
-  Practice mode has no countdown pressure.
-  Timed mode will later use timerSeconds during gameplay.
-*/
-const ROUND_TYPES = [
-  {
-    value: "practice",
-    label: "Practice",
-    description: "No timer. Learn at your pace.",
-  },
-  {
-    value: "timed",
-    label: "Timed",
-    description: "Race against the clock.",
-  },
-];
-
-const TIMER_OPTIONS = [
-  {
-    value: 120,
-    label: "2:00",
-  },
-  {
-    value: 300,
-    label: "5:00",
-  },
-  {
-    value: 600,
-    label: "10:00",
-  },
-];
-
-const FONT = "Arial";
-
-function formatTimer(seconds) {
-  const totalSeconds = Number(seconds) || 0;
-  const minutes = Math.floor(totalSeconds / 60);
-  const remainingSeconds = totalSeconds % 60;
-
-  return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
-}
-
-function clampCustomTimerMinutes(value) {
-  const parsed = Number.parseInt(String(value || "1"), 10);
-
-  if (!Number.isFinite(parsed)) {
-    return 1;
-  }
-
-  return Math.min(60, Math.max(1, parsed));
-}
-
-/*
-  Landing layout constants
-  ------------------------
-  The landing image already contains the visual title, bridge, characters,
-  Start Adventure button, How to Play button, and Settings button.
-
-  These coordinates create real ZIMJS click zones over the artwork.
-*/
-const LANDING_LAYOUT = {
-  startHotspot: {
-    x: 386,
-    y: 455,
-    width: 330,
-    height: 72,
-  },
-  howToPlayHotspot: {
-    x: 388,
-    y: 585,
-    width: 190,
-    height: 56,
-  },
-  settingsHotspot: {
-    x: 590,
-    y: 585,
-    width: 190,
-    height: 56,
-  },
-  soundHotspot: {
-    x: 1010,
-    y: 28,
-    width: 68,
-    height: 68,
-  },
-  playerHotspot: {
-    x: 24,
-    y: 28,
-    width: 220,
-    height: 76,
-  },
-  leaderboardHotspot: {
-    x: 880,
-    y: 620,
-    width: 190,
-    height: 72,
-  },
-};
-
-/*
-  Gameplay layout constants
-  -------------------------
-  This is the main in-round screen.
-
-  The goal is to move from a simple POC layout toward a polished adventure game
-  layout while keeping the existing game logic stable.
-*/
-const GAMEPLAY_LAYOUT = {
-  header: {
-    titleY: 24,
-    progressY: 64,
-    timerY: 92,
-  },
-  passage: {
-    x: 120,
-    y: 132,
-    width: 860,
-    height: 112,
-  },
-  leftPanel: {
-    x: 70,
-    y: 276,
-    width: 306,
-    height: 330,
-  },
-  rightPanel: {
-    x: 724,
-    y: 276,
-    width: 306,
-    height: 330,
-  },
-  centerPanel: {
-    x: 404,
-    y: 276,
-    width: 292,
-  },
-  feedback: {
-    y: 392,
-    height: 82,
-  },
-  controls: {
-    y: 488,
-    secondaryY: 548,
-  },
-  card: {
-    width: 258,
-    height: 40,
-    step: 46,
-    xOffset: 24,
-    yOffset: 36,
-  },
-  leaderboard: {
-    x: 120,
-    y: 638,
-    width: 860,
-    height: 54,
-  },
-};
-
-/*
-  Setup/menu layout constants
-  ---------------------------
-  This screen prepares the player before gameplay:
-  - player name
-  - round type
-  - timer length
-  - challenge type
-  - difficulty
-  - pair count
-
-  Timer now has its own panel because custom timers need more room.
-*/
-const MENU_LAYOUT = {
-  panel: {
-    x: 110,
-    y: 64,
-    width: 880,
-    height: 610,
-  },
-  playerPanel: {
-    x: 708,
-    y: 92,
-    width: 220,
-    height: 64,
-  },
-  roundType: {
-    x: 142,
-    y: 190,
-    cardWidth: 210,
-    cardHeight: 66,
-    gap: 16,
-  },
-  timerPanel: {
-    x: 594,
-    y: 166,
-    width: 344,
-    height: 112,
-  },
-  timer: {
-    x: 612,
-    y: 206,
-    buttonWidth: 60,
-    buttonHeight: 34,
-    gap: 8,
-    customWidth: 86,
-  },
-  modeTitle: {
-    x: 142,
-    y: 292,
-  },
-  modeGrid: {
-    x: 142,
-    y: 326,
-    cardWidth: 216,
-    cardHeight: 56,
-    columnGap: 34,
-    rowGap: 16,
-  },
-  difficulty: {
-    labelX: 238,
-    labelY: 500,
-    x: 156,
-    y: 528,
-    buttonWidth: 92,
-    buttonHeight: 36,
-    gap: 12,
-  },
-  pairs: {
-    labelX: 790,
-    labelY: 500,
-    x: 708,
-    y: 528,
-    buttonWidth: 76,
-    buttonHeight: 36,
-    gap: 12,
-  },
-  startButton: {
-    x: 445,
-    y: 590,
-    width: 210,
-    height: 48,
-  },
-};
-
-/*
-  Short helper for menu subtitles.
-  This gives each challenge mode a clearer purpose without adding extra data
-  to the backend.
-*/
-function getModeDescription(modeValue) {
-  switch (modeValue) {
-    case "english-to-sanskrit":
-      return "Match English words to Sanskrit.";
-    case "sanskrit-to-english":
-      return "Read Sanskrit and find English.";
-    case "word-to-definition":
-      return "Connect words to meanings.";
-    case "word-to-synonym":
-      return "Find similar meanings.";
-    case "word-to-antonym":
-      return "Find opposite meanings.";
-    default:
-      return "Build word connections.";
-  }
-}
-
-function shortText(value, maxLength) {
-  const text = String(value || "").trim();
-
-  if (text.length <= maxLength) {
-    return text;
-  }
-
-  return `${text.slice(0, Math.max(0, maxLength - 1))}…`;
-}
-
-function wrapText(value, maxCharsPerLine, maxLines) {
-  const words = String(value || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  const lines = [];
-  let currentLine = "";
-
-  for (const word of words) {
-    const candidate = currentLine ? `${currentLine} ${word}` : word;
-
-    if (candidate.length > maxCharsPerLine && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-
-      if (lines.length === maxLines) {
-        break;
-      }
-    } else {
-      currentLine = candidate;
-    }
-  }
-
-  if (currentLine && lines.length < maxLines) {
-    lines.push(currentLine);
-  }
-
-  const original = words.join(" ");
-  const displayed = lines.join(" ");
-
-  if (original.length > displayed.length && lines.length > 0) {
-    lines[lines.length - 1] = `${lines[lines.length - 1]}…`;
-  }
-
-  return lines;
-}
-
-const ZimGame = createZimGame({
-  id: "zim-meaning-bridge-game",
+export default createZimGame({
+  id: "zim-meaning-bridge",
   width: 1100,
   height: 720,
-  color: "#dff6ff",
-  outerColor: "#151019",
+  color: "#fde8f2",
+  outerColor: "#1d2b66",
 
   setup({ stage, W, H, zim }) {
-    if (typeof stage.enableMouseOver === "function") {
-      stage.enableMouseOver(20);
+    const FONT = "Fredoka";
+
+    // ── Palette ──────────────────────────────────────────────────────
+    const C = {
+      ink: "#1d2b66",
+      bg: "#fef5e4", // warm ivory — light and clean
+      sunshine: "#ffd84d",
+      tangerine: "#ff9a3c",
+      bubblegum: "#ff6fb5",
+      grape: "#9b6bff",
+      leaf: "#46c97a",
+      ocean: "#2fb6d6",
+      white: "#ffffff",
+      sub: "#8892b0",
+    };
+
+    // 6 pair colors — each pair gets its own identity
+    const PC = [
+      "#ff6fb5",
+      "#2fb6d6",
+      "#9b6bff",
+      "#ff9a3c",
+      "#46c97a",
+      "#ffc42e",
+    ];
+    const PD = [
+      "#c94f8a",
+      "#1f8fb5",
+      "#6b48cc",
+      "#c97428",
+      "#2ea85e",
+      "#c9a010",
+    ];
+
+    function rgba(hex, a) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${a})`;
     }
 
-    let screen = "landing";
+    // ── Session state ────────────────────────────────────────────────
+    let roundIndex = 0;
+    let totalScore = 0;
+    let sessionBest = 0; // tracks best score across plays in this session
+    let currentMode = "word-to-synonym";
+    let puzzle = null;
 
-    let playerName = "Guest Player";
-    let isEditingPlayerName = false;
-    let replacePlayerNameOnNextInput = false;
+    // Per-round state
+    let selectedLeft = null;
+    let selectedRight = null;
+    let matches = {};
+    let flashWrong = null;
+    let lastMatchLeft = null;
+    let freshRound = true; // true only on first render after loading; suppresses re-entrance animation on clicks
 
-    let mode = "word-to-synonym";
-    let difficulty = "easy";
-    let pairCount = 4;
-    let roundType = "practice";
+    // ── Layout ───────────────────────────────────────────────────────
+    // Header bar (dark navy) contains title + mode tabs + score
+    const HEADER_H = 82; // height including 4px accent strip at bottom
+    const CARD_W = 308;
+    const LEFT_X = 55;
+    const RIGHT_X = W - 55 - CARD_W; // 675, bridge zone = 250px
 
-    /*
-  Timer setup state
-  -----------------
-  timerOption can be:
-  - 120
-  - 300
-  - 600
-  - "custom"
+    let CARD_H = 80;
+    let RIGHT_CARD_H = 100;
+    let START_Y = 148;
+    let GAP = 140;
+    let BOTTOM_BAR_H = 62; // taller for 4-pair round only
 
-  timerSeconds is the actual countdown value used by gameplay.
-*/
-    let timerOption = 120;
-    let timerSeconds = 120;
-    let customTimerMinutes = "3";
-    let isEditingCustomTimer = false;
-    let replaceCustomTimerOnNextInput = false;
+    function calcLayout() {
+      const n = puzzle.leftItems.length;
+      const isDef = currentMode === "word-to-definition";
+      // Left and right cards are the same height; definitions mode gets extra height on right only
+      if (n >= 6) {
+        CARD_H = 54;
+        RIGHT_CARD_H = isDef ? 72 : 54;
+      } else if (n >= 5) {
+        CARD_H = 60;
+        RIGHT_CARD_H = isDef ? 82 : 60;
+      } else {
+        CARD_H = 68;
+        RIGHT_CARD_H = isDef ? 93 : 68;
+      }
+      // instruction(12+18) + col-header(+28) + gap(+16) = 74
+      const baseStartY = HEADER_H + 74;
+      // 4-pair round gets a taller bottom bar and slightly more breathing room
+      BOTTOM_BAR_H = n === 4 ? 78 : 62;
+      const avail = H - baseStartY - RIGHT_CARD_H - BOTTOM_BAR_H;
+      if (n <= 1) {
+        GAP = 0;
+        START_Y = baseStartY;
+      } else {
+        // For 4 pairs: slightly wider gap + push cards down to split dead space top/bottom
+        const MAX_GAP = n === 4 ? 105 : 95;
+        GAP = Math.min(Math.floor(avail / (n - 1)), MAX_GAP);
+        START_Y = n === 4 ? baseStartY + 40 : baseStartY;
+      }
+    }
 
-    let roundData = null;
-    let leaderboard = [];
-    let leaderboardReturnScreen = "menu";
-    let rulesReturnScreen = "landing";
-    let selectedLeftId = null;
-    let matches = [];
-    let hintsUsed = 0;
-    let wrongAttempts = 0;
-    let cardFlash = null; // { type: "correct"|"wrong", leftId, rightId }
-    let result = null;
-    let status = "Loading Meaning Bridge...";
-    let feedback = "Generating your first bridge round...";
-    let feedbackType = "neutral";
-    let roundStartedAt = Date.now();
+    // ── HEADER (dark bar with embedded mode tabs) ─────────────────────
+    function drawHeader({ showExit = true } = {}) {
+      // Dark bar
+      new zim.Rectangle(W, HEADER_H - 4, "#7ec87e").addTo(stage).loc(0, 0);
+      // Darker green accent line
+      new zim.Rectangle(W, 4, "#5aaa5a").addTo(stage).loc(0, HEADER_H - 4);
 
-    /*
-  Quit confirmation state
-  -----------------------
-  Used when the player tries to leave an active round.
-
-  quitConfirmAction can be:
-  - "menu"
-  - "new-round"
-*/
-    let quitConfirmVisible = false;
-    let quitConfirmAction = null;
-
-    /*
-  Timed round runtime state
-  -------------------------
-  roundType and timerSeconds are selected on the setup screen.
-
-  These runtime values control the active gameplay countdown:
-  - remainingRoundSeconds: what the player sees
-  - timerDeadlineAt: browser timestamp for accurate countdown
-  - roundTimerId: active interval id
-  - timedRoundEnded: prevents repeated auto-submit calls
-  - isSubmittingRound: prevents double submit
-*/
-    let remainingRoundSeconds = timerSeconds;
-    let timerDeadlineAt = null;
-    let roundTimerId = null;
-    let timedRoundEnded = false;
-    let isSubmittingRound = false;
-
-    /*
-  Landing art image
-  -----------------
-  This image is imported through Vite, preloaded with the browser Image API,
-  and then drawn into the ZIM stage as a Bitmap.
-
-  If the image is still loading or Bitmap is unavailable, the game falls back
-  to the existing drawn ZIM background.
-*/
-    let landingImageElement = null;
-    let landingImageReady = false;
-    let landingImageFailed = false;
-
-    /*
-  Sound state
-  -----------
-  Uses browser Web Audio API, so we do not need audio files.
-
-  soundMuted controls whether game sound effects play.
-  audioContext is created lazily after user interaction.
-  lastTimerWarningSecond prevents timer warning sounds from repeating too much.
-*/
-    let soundMuted = false;
-    let audioContext = null;
-    let lastTimerWarningSecond = null;
-
-    /*
-  Readability state
-  -----------------
-  Large Text mode improves readability without zooming the whole page/canvas.
-
-  This is better than relying on page zoom because it keeps hit areas and the
-  ZIMJS canvas layout stable.
-*/
-    let largeTextMode = false;
-
-    function publishDebugState() {
-      if (typeof window === "undefined") {
-        return;
+      // ── Exit button left ─────────────────────────────────────────
+      if (showExit) {
+        const eb = new zim.Container()
+          .addTo(stage)
+          .loc(18, (HEADER_H - 36) / 2);
+        eb.mouseChildren = false;
+        new zim.Rectangle({
+          width: 90,
+          height: 36,
+          color: C.white,
+          borderColor: "transparent",
+          borderWidth: 0,
+          corner: 18,
+        }).addTo(eb);
+        new zim.Label({
+          text: "← Exit",
+          size: 15,
+          font: FONT,
+          color: "#2e6b2e",
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(eb)
+          .loc(45, 18);
+        eb.cursor = "pointer";
+        eb.on("click", () => {
+          roundIndex = 0;
+          totalScore = 0;
+          loadRound();
+        });
       }
 
-      window.__meaningBridgeZimDebug = {
-        screen,
-        playerName,
-        isEditingPlayerName,
-        mode,
-        difficulty,
-        pairCount,
-        roundType,
-        timerOption,
-        timerSeconds,
-        customTimerMinutes,
-        isEditingCustomTimer,
-        remainingRoundSeconds,
-        timerRunning: Boolean(roundTimerId),
-        timedRoundEnded,
-        isSubmittingRound,
-        roundId: roundData?.puzzle?.roundId || null,
-        passageTitle: roundData?.passage?.title || "",
-        matches,
-        selectedLeftId,
-        hintsUsed,
-        wrongAttempts,
-        resultVisible: Boolean(result),
-        quitConfirmVisible,
-        quitConfirmAction,
-        soundMuted,
-        largeTextMode,
-        leaderboard,
-        leaderboardReturnScreen,
-        rulesReturnScreen,
-      };
-    }
+      // ── Mode tabs (centered in header) ──────────────────────────
+      const TABS = [
+        { mode: "word-to-synonym", label: "Synonyms", accent: "#3a8a3a" },
+        { mode: "word-to-antonym", label: "Antonyms", accent: "#1a7a99" },
+        { mode: "word-to-definition", label: "Definitions", accent: "#6b48cc" },
+      ];
+      const TW = 186,
+        TH = 44,
+        TGAP = 10;
+      const totalTW = TABS.length * TW + (TABS.length - 1) * TGAP;
+      const TX = (W - totalTW) / 2;
+      const TY = (HEADER_H - 4 - TH) / 2;
 
-    function addLabel({
-      text,
-      x,
-      y,
-      size = 16,
-      color = "#0f172a",
-      bold = false,
-      align = "left",
-      valign = "top",
-      container = stage,
-    }) {
-      const label = new zim.Label({
-        text: String(text || ""),
-        size,
-        font: FONT,
-        color,
-        align,
-        valign,
-        bold,
+      TABS.forEach(({ mode, label, accent }, i) => {
+        const active = mode === currentMode;
+        const x = TX + i * (TW + TGAP);
+        const t = new zim.Container().addTo(stage).loc(x, TY);
+        t.mouseChildren = false;
+
+        new zim.Rectangle({
+          width: TW,
+          height: TH,
+          color: active ? accent : C.white,
+          borderColor: "transparent",
+          borderWidth: 0,
+          corner: TH / 2,
+        }).addTo(t);
+
+        new zim.Label({
+          text: label,
+          size: 20,
+          font: FONT,
+          color: active ? C.white : "#2e6b2e",
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(t)
+          .loc(TW / 2, TH / 2);
+
+        if (!active) {
+          t.cursor = "pointer";
+          t.on("click", () => {
+            currentMode = mode;
+            roundIndex = 0;
+            totalScore = 0;
+            loadRound();
+          });
+        }
       });
 
-      /*
-    Labels are visual only.
-
-    Without this, text labels can sit above cards/buttons and steal pointer
-    events from the real clickable object underneath.
-  */
-      label.mouseEnabled = false;
-
-      label.addTo(container).loc(x, y);
-      return label;
-    }
-
-    function addWrappedLabel({
-      text,
-      x,
-      y,
-      maxCharsPerLine,
-      maxLines,
-      size = 14,
-      lineHeight = 18,
-      color = "#334155",
-      bold = false,
-    }) {
-      wrapText(text, maxCharsPerLine, maxLines).forEach((line, index) => {
-        addLabel({
-          text: line,
-          x,
-          y: y + index * lineHeight,
-          size,
-          color,
-          bold,
-        });
-      });
-    }
-
-    function addPanel({ x, y, width, height, fill, stroke, corner = 22 }) {
-      return new zim.Rectangle(width, height, fill, stroke, 2, corner)
+      // ── Score badge right ────────────────────────────────────────
+      const sb = new zim.Container()
         .addTo(stage)
-        .loc(x, y);
-    }
-
-    function addButton({
-      x,
-      y,
-      width,
-      height,
-      label,
-      background = "#4f46e5",
-      rollBackground = "#6366f1",
-      color = "#ffffff",
-      borderColor = null,
-      onClick,
-    }) {
-      const buttonLabel = new zim.Label({
-        text: label,
-        size: largeTextMode ? 16 : 15,
+        .loc(W - 180, (HEADER_H - 4 - 36) / 2);
+      sb.mouseChildren = false;
+      new zim.Rectangle({
+        width: 162,
+        height: 36,
+        color: C.white,
+        borderColor: "#c9a010",
+        borderWidth: 1.5,
+        corner: 18,
+      }).addTo(sb);
+      new zim.Label({
+        text: `Round ${roundIndex + 1}/3`,
+        size: 13,
         font: FONT,
-        color,
-        bold: true,
+        color: "#3a7a3a",
         align: "center",
         valign: "center",
+        bold: true,
+      })
+        .addTo(sb)
+        .loc(81, 11);
+      new zim.Label({
+        text: `⭐ ${totalScore} pts`,
+        size: 15,
+        font: FONT,
+        color: "#7a5800",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(sb)
+        .loc(81, 26);
+    }
+
+    // ── BRIDGES (bezier arcs with glow) ──────────────────────────────
+    function drawBridgeLine(li, ri, color, lw, dashed) {
+      const offsetY = (RIGHT_CARD_H - CARD_H) / 2;
+      const x1 = LEFT_X + CARD_W + 6;
+      const x2 = RIGHT_X - 6;
+      const y1 = START_Y + li * GAP + offsetY + CARD_H / 2;
+      const y2 = START_Y + ri * GAP + RIGHT_CARD_H / 2;
+
+      // bezier control point — arc bows upward by 25% of vertical distance
+      const cx = (x1 + x2) / 2;
+      const bow = Math.abs(y2 - y1) * 0.28 + 16;
+      const cy = Math.min(y1, y2) - bow;
+
+      if (!dashed) {
+        // outer glow
+        const g = new zim.Shape().addTo(stage);
+        g.s(rgba(color, 0.2)).ss(lw * 4, "round", "round");
+        g.mt(x1, y1).bt(cx, cy, cx, cy, x2, y2);
+
+        // mid glow
+        const g2 = new zim.Shape().addTo(stage);
+        g2.s(rgba(color, 0.15)).ss(lw * 2.2, "round", "round");
+        g2.mt(x1, y1).bt(cx, cy, cx, cy, x2, y2);
+      }
+
+      // core line
+      const ln = new zim.Shape().addTo(stage);
+      if (dashed) ln.s(rgba(color, 0.55)).ss(lw, "round", "round").sd([10, 9]);
+      else ln.s(color).ss(lw, "round", "round");
+      ln.mt(x1, y1).bt(cx, cy, cx, cy, x2, y2);
+
+      // endpoint dots
+      const d = new zim.Shape().addTo(stage);
+      d.f(color).dc(x1, y1, 5.5).dc(x2, y2, 5.5);
+    }
+
+    function drawBridges() {
+      Object.entries(matches).forEach(([leftId, rightId]) => {
+        const li = puzzle.leftItems.findIndex((l) => l.id === leftId);
+        const ri = puzzle.rightItems.findIndex((r) => r.id === rightId);
+        drawBridgeLine(li, ri, PC[li % PC.length], 3, false);
       });
-
-      const button = new zim.Button({
-        width,
-        height,
-        label: buttonLabel,
-        backgroundColor: background,
-        rollBackgroundColor: rollBackground,
-        color,
-        rollColor: color,
-        borderColor,
-        borderWidth: borderColor ? 2 : 0,
-        corner: 18,
-      });
-
-      button.addTo(stage).loc(x, y);
-      button.cursor = "pointer";
-      button.on("click", () => {
-        playSound("button");
-
-        if (typeof onClick === "function") {
-          onClick();
-        }
-      });
-
-      return button;
-    }
-
-    function setFeedback(message, type = "neutral") {
-      feedback = message;
-      feedbackType = type;
-    }
-
-    function getAudioContext() {
-      if (typeof window === "undefined") {
-        return null;
+      if (flashWrong) {
+        const li = puzzle.leftItems.findIndex(
+          (l) => l.id === flashWrong.leftId,
+        );
+        const ri = puzzle.rightItems.findIndex(
+          (r) => r.id === flashWrong.rightId,
+        );
+        drawBridgeLine(li, ri, "#ff3333", 3, false);
       }
-
-      const AudioContextClass =
-        window.AudioContext || window.webkitAudioContext;
-
-      if (!AudioContextClass) {
-        return null;
-      }
-
-      if (!audioContext) {
-        audioContext = new AudioContextClass();
-      }
-
-      if (audioContext.state === "suspended") {
-        void audioContext.resume();
-      }
-
-      return audioContext;
-    }
-
-    function playTone({
-      frequency = 440,
-      duration = 0.08,
-      volume = 0.035,
-      type = "sine",
-      delay = 0,
-    } = {}) {
-      if (soundMuted) {
-        return;
-      }
-
-      const context = getAudioContext();
-
-      if (!context) {
-        return;
-      }
-
-      const startAt = context.currentTime + delay;
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-
-      oscillator.type = type;
-      oscillator.frequency.setValueAtTime(frequency, startAt);
-
-      gain.gain.setValueAtTime(0.0001, startAt);
-      gain.gain.exponentialRampToValueAtTime(volume, startAt + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
-
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-
-      oscillator.start(startAt);
-      oscillator.stop(startAt + duration + 0.03);
-    }
-
-    function playSound(kind = "button") {
-      /*
-    Small generated sound effects.
-
-    No external files are needed. These are intentionally short so they feel
-    like game UI feedback instead of music.
-  */
-
-      if (soundMuted) {
-        return;
-      }
-
-      switch (kind) {
-        case "correct":
-          playTone({ frequency: 660, duration: 0.07, volume: 0.04 });
-          playTone({
-            frequency: 880,
-            duration: 0.09,
-            volume: 0.035,
-            delay: 0.07,
-          });
-          break;
-
-        case "wrong":
-          playTone({
-            frequency: 180,
-            duration: 0.1,
-            volume: 0.045,
-            type: "sawtooth",
-          });
-          playTone({
-            frequency: 130,
-            duration: 0.11,
-            volume: 0.035,
-            type: "sawtooth",
-            delay: 0.08,
-          });
-          break;
-
-        case "hint":
-          playTone({
-            frequency: 480,
-            duration: 0.07,
-            volume: 0.03,
-            type: "triangle",
-          });
-          playTone({
-            frequency: 620,
-            duration: 0.07,
-            volume: 0.03,
-            type: "triangle",
-            delay: 0.06,
-          });
-          break;
-
-        case "submit":
-          playTone({ frequency: 520, duration: 0.07, volume: 0.035 });
-          playTone({
-            frequency: 660,
-            duration: 0.07,
-            volume: 0.035,
-            delay: 0.06,
-          });
-          playTone({
-            frequency: 780,
-            duration: 0.09,
-            volume: 0.035,
-            delay: 0.12,
-          });
-          break;
-
-        case "result":
-          playTone({ frequency: 740, duration: 0.08, volume: 0.035 });
-          playTone({
-            frequency: 880,
-            duration: 0.12,
-            volume: 0.035,
-            delay: 0.08,
-          });
-          break;
-
-        case "perfect":
-          playTone({ frequency: 660, duration: 0.07, volume: 0.04 });
-          playTone({
-            frequency: 880,
-            duration: 0.08,
-            volume: 0.04,
-            delay: 0.07,
-          });
-          playTone({
-            frequency: 990,
-            duration: 0.12,
-            volume: 0.035,
-            delay: 0.15,
-          });
-          break;
-
-        case "warning":
-          playTone({
-            frequency: 740,
-            duration: 0.08,
-            volume: 0.035,
-            type: "square",
-          });
-          break;
-
-        case "button":
-        default:
-          playTone({
-            frequency: 520,
-            duration: 0.045,
-            volume: 0.025,
-            type: "triangle",
-          });
-          break;
+      if (selectedLeft && selectedRight) {
+        const li = puzzle.leftItems.findIndex((l) => l.id === selectedLeft.id);
+        const ri = puzzle.rightItems.findIndex(
+          (r) => r.id === selectedRight.id,
+        );
+        drawBridgeLine(li, ri, "#aaaacc", 2, true);
       }
     }
 
-    function toggleSoundMuted() {
-      const wasMuted = soundMuted;
-      soundMuted = !soundMuted;
-
-      // When turning sound back on, play one confirmation sound.
-      if (wasMuted) {
-        playSound("button");
-      }
-
-      renderScene();
-    }
-
-    function drawSoundToggle({ x, y, width = 112, height = 34 } = {}) {
-      addButton({
-        x,
-        y,
-        width,
-        height,
-        label: soundMuted ? "Muted" : "Sound On",
-        background: soundMuted ? "#475569" : "#059669",
-        rollBackground: soundMuted ? "#334155" : "#047857",
-        onClick: toggleSoundMuted,
-      });
-    }
-
-    function readableSize(baseSize, increase = 2) {
-      return largeTextMode ? baseSize + increase : baseSize;
-    }
-
-    function readableMaxChars(baseChars, reduction = 6) {
-      return largeTextMode ? Math.max(8, baseChars - reduction) : baseChars;
-    }
-
-    function getCardLayout() {
-      /*
-    Dynamic card layout
-    -------------------
-    Large Text mode slightly increases card height and text size while keeping
-    the cards inside the existing left/right panels.
-  */
-
-      if (!largeTextMode) {
-        return GAMEPLAY_LAYOUT.card;
-      }
-
-      return {
-        ...GAMEPLAY_LAYOUT.card,
-        height: 44,
-        step: 50,
-        yOffset: 38,
-      };
-    }
-
-    function toggleLargeTextMode({ playFeedbackSound = true } = {}) {
-      largeTextMode = !largeTextMode;
-
-      if (playFeedbackSound) {
-        playSound("button");
-      }
-
-      renderScene();
-    }
-
-    function drawTextModeToggle({ x, y, width = 116, height = 34 } = {}) {
-      addButton({
-        x,
-        y,
-        width,
-        height,
-        label: largeTextMode ? "Large Text" : "Text Normal",
-        background: largeTextMode ? "#7c3aed" : "#475569",
-        rollBackground: largeTextMode ? "#6d28d9" : "#334155",
-        onClick: () => {
-          toggleLargeTextMode({ playFeedbackSound: false });
-        },
-      });
-    }
-
-    function preloadLandingImage() {
-      if (typeof window === "undefined") {
-        return;
-      }
-
-      const image = new Image();
-
-      image.onload = () => {
-        landingImageElement = image;
-        landingImageReady = true;
-        landingImageFailed = false;
-        renderScene();
-      };
-
-      image.onerror = () => {
-        landingImageElement = null;
-        landingImageReady = false;
-        landingImageFailed = true;
-        renderScene();
-      };
-
-      image.src = landingBackgroundUrl;
-    }
-
-    function goToSetupMenu() {
-      screen = "menu";
-      status = "Choose your bridge challenge.";
-      setFeedback(
-        "Choose a mode, difficulty, and pair count to begin.",
-        "neutral",
-      );
-      renderScene();
-    }
-
-    function openLeaderboardScreen(returnScreen = screen) {
-      /*
-    Dedicated leaderboard screen
-    ----------------------------
-    This screen is safe to open from landing, setup, or result.
-
-    During active gameplay we avoid interrupting the timed/matching flow.
-  */
-
-      leaderboardReturnScreen =
-        returnScreen === "leaderboard" ? "menu" : returnScreen || "menu";
-
-      screen = "leaderboard";
-      status = "Viewing Top Explorers.";
-      setFeedback("Top Explorers leaderboard opened.", "neutral");
-
-      renderScene();
-
-      void loadLeaderboard(10).then(() => {
-        renderScene();
-      });
-    }
-
-    function closeLeaderboardScreen() {
-      screen = leaderboardReturnScreen || "menu";
-      status = "Choose your bridge challenge.";
-      renderScene();
-    }
-
-    function openRulesScreen(returnScreen = screen) {
-      /*
-    Rules / How to Play screen
-    --------------------------
-    This screen explains Meaning Bridge rules, scoring, timed mode,
-    custom timers, keyboard shortcuts, and future multiplayer ideas.
-
-    We avoid opening it during active gameplay because it should not hide a
-    running timed round.
-  */
-
-      rulesReturnScreen =
-        returnScreen === "rules" ? "landing" : returnScreen || "landing";
-
-      screen = "rules";
-      status = "Viewing How to Play.";
-      setFeedback("How to Play opened.", "neutral");
-      renderScene();
-    }
-
-    function closeRulesScreen() {
-      screen = rulesReturnScreen || "landing";
-      status = "Choose your bridge challenge.";
-      renderScene();
-    }
-
-    function stopRoundTimer({ reset = false } = {}) {
-      if (roundTimerId) {
-        window.clearInterval(roundTimerId);
-      }
-
-      roundTimerId = null;
-      timerDeadlineAt = null;
-
-      if (reset) {
-        remainingRoundSeconds = timerSeconds;
-        timedRoundEnded = false;
-      }
-    }
-
-    function updateRemainingRoundSeconds() {
-      if (roundType !== "timed" || !timerDeadlineAt) {
-        remainingRoundSeconds = timerSeconds;
-        return remainingRoundSeconds;
-      }
-
-      remainingRoundSeconds = Math.max(
-        0,
-        Math.ceil((timerDeadlineAt - Date.now()) / 1000),
-      );
-
-      return remainingRoundSeconds;
-    }
-
-    function startRoundTimer() {
-      stopRoundTimer({ reset: true });
-
-      if (roundType !== "timed") {
-        return;
-      }
-
-      remainingRoundSeconds = timerSeconds;
-      timerDeadlineAt = Date.now() + timerSeconds * 1000;
-      timedRoundEnded = false;
-      lastTimerWarningSecond = null;
-
-      roundTimerId = window.setInterval(() => {
-        const remaining = updateRemainingRoundSeconds();
-
-        if (
-          [10, 5, 3, 2, 1].includes(remaining) &&
-          lastTimerWarningSecond !== remaining
-        ) {
-          lastTimerWarningSecond = remaining;
-          playSound("warning");
-        }
-
-        if (remaining <= 0) {
-          stopRoundTimer();
-          void handleTimerExpired();
-          return;
-        }
-
-        renderScene();
-      }, 1000);
-    }
-
-    async function handleTimerExpired() {
-      if (timedRoundEnded || result || isSubmittingRound) {
-        return;
-      }
-
-      timedRoundEnded = true;
-      remainingRoundSeconds = 0;
-      status = "Time expired.";
-      setFeedback("Time is up. Submitting your bridge automatically.", "error");
-      renderScene();
-
-      await submitRound({
-        force: true,
-        reason: "timer",
-      });
-    }
-
-    function isGameplayLocked() {
-      return (
-        Boolean(result) ||
-        isSubmittingRound ||
-        timedRoundEnded ||
-        quitConfirmVisible
-      );
-    }
-
-    function getNormalizedPlayerName() {
-      return String(playerName || "").trim() || "Guest Player";
-    }
-
-    function getCustomTimerSeconds() {
-      return clampCustomTimerMinutes(customTimerMinutes) * 60;
-    }
-
-    function getSelectedTimerSeconds() {
-      return timerOption === "custom" ? getCustomTimerSeconds() : timerOption;
-    }
-
-    function syncTimerSecondsFromSelection() {
-      timerSeconds = getSelectedTimerSeconds();
-    }
-
-    function beginCustomTimerEdit() {
-      roundType = "timed";
-      timerOption = "custom";
-      isEditingCustomTimer = true;
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-      replaceCustomTimerOnNextInput = true;
-      syncTimerSecondsFromSelection();
-
-      setFeedback(
-        "Type a custom timer in minutes from 1 to 60, then press Enter.",
-        "neutral",
-      );
-
-      renderScene();
-    }
-
-    function finishCustomTimerEdit() {
-      customTimerMinutes = String(clampCustomTimerMinutes(customTimerMinutes));
-      timerOption = "custom";
-      isEditingCustomTimer = false;
-      replaceCustomTimerOnNextInput = false;
-      syncTimerSecondsFromSelection();
-      renderScene();
-    }
-
-    function beginPlayerNameEdit() {
-      isEditingCustomTimer = false;
-      replaceCustomTimerOnNextInput = false;
-
-      isEditingPlayerName = true;
-      replacePlayerNameOnNextInput =
-        getNormalizedPlayerName() === "Guest Player";
-      setFeedback(
-        "Type your player name, then press Enter to save.",
-        "neutral",
-      );
-      renderScene();
-    }
-
-    function finishPlayerNameEdit() {
-      playerName = getNormalizedPlayerName();
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-      renderScene();
-    }
-
-    function handlePlayerNameKeyDown(event) {
-      /*
-    Global Meaning Bridge keyboard handler
-    --------------------------------------
-    Supports:
-    - player name editing
-    - custom timer editing
-    - landing shortcuts
-    - setup shortcuts
-    - rules shortcuts
-    - leaderboard shortcuts
-    - quit confirmation shortcuts
-    - gameplay shortcuts
-    - result shortcuts
-  */
-
-      if (event.ctrlKey || event.metaKey || event.altKey) {
-        return;
-      }
-
-      const key = String(event.key || "").toLowerCase();
-      const isSpace = event.key === " " || event.code === "Space";
-      const isHelpKey =
-        event.key === "?" || key === "/" || event.code === "Slash";
-
-      /*
-    Custom timer editing
-  */
-      if (screen === "menu" && isEditingCustomTimer) {
-        if (event.key === "Enter" || event.key === "Escape") {
-          event.preventDefault();
-          finishCustomTimerEdit();
-          return;
-        }
-
-        if (event.key === "Backspace") {
-          event.preventDefault();
-
-          if (replaceCustomTimerOnNextInput) {
-            customTimerMinutes = "";
-            replaceCustomTimerOnNextInput = false;
-          } else {
-            customTimerMinutes = customTimerMinutes.slice(0, -1);
-          }
-
-          syncTimerSecondsFromSelection();
-          renderScene();
-          return;
-        }
-
-        if (/^\d$/.test(event.key)) {
-          event.preventDefault();
-
-          if (replaceCustomTimerOnNextInput) {
-            customTimerMinutes = "";
-            replaceCustomTimerOnNextInput = false;
-          }
-
-          if (customTimerMinutes.length < 2) {
-            customTimerMinutes += event.key;
-          }
-
-          syncTimerSecondsFromSelection();
-          renderScene();
-          return;
-        }
-
-        return;
-      }
-
-      /*
-    Player name editing
-  */
-      if (screen === "menu" && isEditingPlayerName) {
-        if (event.key === "Enter" || event.key === "Escape") {
-          event.preventDefault();
-          finishPlayerNameEdit();
-          return;
-        }
-
-        if (event.key === "Backspace") {
-          event.preventDefault();
-
-          if (replacePlayerNameOnNextInput) {
-            playerName = "";
-            replacePlayerNameOnNextInput = false;
-          } else {
-            playerName = playerName.slice(0, -1);
-          }
-
-          renderScene();
-          return;
-        }
-
-        if (event.key.length === 1) {
-          event.preventDefault();
-
-          if (replacePlayerNameOnNextInput) {
-            playerName = "";
-            replacePlayerNameOnNextInput = false;
-          }
-
-          if (playerName.length < 24) {
-            playerName += event.key;
-          }
-
-          renderScene();
-          return;
-        }
-
-        return;
-      }
-
-      /*
-  Global sound toggle
-*/
-      if (key === "v") {
-        event.preventDefault();
-        toggleSoundMuted();
-        return;
-      }
-
-      /*
-  Global readability toggle
-*/
-      if (key === "z") {
-        event.preventDefault();
-        toggleLargeTextMode();
-        return;
-      }
-
-      /*
-    Rules screen shortcuts
-  */
-      if (screen === "rules") {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          goToSetupMenu();
-          return;
-        }
-
-        if (key === "m" || event.key === "Escape" || isHelpKey) {
-          event.preventDefault();
-          closeRulesScreen();
-          return;
-        }
-
-        return;
-      }
-
-      /*
-    Leaderboard screen shortcuts
-  */
-      if (screen === "leaderboard") {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          goToSetupMenu();
-          return;
-        }
-
-        if (key === "m" || key === "l" || event.key === "Escape") {
-          event.preventDefault();
-          closeLeaderboardScreen();
-          return;
-        }
-
-        return;
-      }
-
-      /*
-    Quit confirmation shortcuts
-  */
-      if (screen === "gameplay" && quitConfirmVisible) {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          confirmQuitRound();
-          return;
-        }
-
-        if (event.key === "Escape" || key === "m") {
-          event.preventDefault();
-          cancelQuitConfirmation();
-          return;
-        }
-
-        return;
-      }
-
-      /*
-    Landing shortcuts
-  */
-      if (screen === "landing") {
-        if (event.key === "Enter" || isSpace) {
-          event.preventDefault();
-          goToSetupMenu();
-          return;
-        }
-
-        if (key === "l") {
-          event.preventDefault();
-          openLeaderboardScreen("landing");
-          return;
-        }
-
-        if (key === "h" || isHelpKey) {
-          event.preventDefault();
-          openRulesScreen("landing");
-          return;
-        }
-
-        return;
-      }
-
-      /*
-    Setup/menu shortcuts
-  */
-      if (screen === "menu") {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          startBridgeRound();
-          return;
-        }
-
-        if (key === "p") {
-          event.preventDefault();
-          selectMenuRoundType("practice");
-          return;
-        }
-
-        if (key === "t") {
-          event.preventDefault();
-          selectMenuRoundType("timed");
-          return;
-        }
-
-        if (key === "1") {
-          event.preventDefault();
-          selectMenuTimerSeconds(120);
-          return;
-        }
-
-        if (key === "2") {
-          event.preventDefault();
-          selectMenuTimerSeconds(300);
-          return;
-        }
-
-        if (key === "3") {
-          event.preventDefault();
-          selectMenuTimerSeconds(600);
-          return;
-        }
-
-        if (key === "c") {
-          event.preventDefault();
-          beginCustomTimerEdit();
-          return;
-        }
-
-        if (key === "e") {
-          event.preventDefault();
-          beginPlayerNameEdit();
-          return;
-        }
-
-        if (key === "l") {
-          event.preventDefault();
-          openLeaderboardScreen("menu");
-          return;
-        }
-
-        if (key === "h" || isHelpKey) {
-          event.preventDefault();
-          openRulesScreen("menu");
-          return;
-        }
-
-        return;
-      }
-
-      /*
-    Result overlay shortcuts
-  */
-      if (screen === "gameplay" && result) {
-        if (event.key === "Enter" || key === "n") {
-          event.preventDefault();
-          void loadRound();
-          return;
-        }
-
-        if (key === "l") {
-          event.preventDefault();
-          openLeaderboardScreen("gameplay");
-          return;
-        }
-
-        if (key === "h" || isHelpKey) {
-          event.preventDefault();
-          openRulesScreen("gameplay");
-          return;
-        }
-
-        if (key === "m" || event.key === "Escape") {
-          event.preventDefault();
-          backToMenu();
-          return;
-        }
-
-        return;
-      }
-
-      /*
-    Active gameplay shortcuts
-  */
-      if (screen === "gameplay") {
-        if (/^[1-6]$/.test(key)) {
-          event.preventDefault();
-          activateGameplayNumberShortcut(Number(key));
-          return;
-        }
-
-        if (key === "h") {
-          event.preventDefault();
-          useHint();
-          return;
-        }
-
-        if (key === "r") {
-          event.preventDefault();
-          resetRound();
-          return;
-        }
-
-        if (key === "s" || event.key === "Enter") {
-          event.preventDefault();
-
-          if (!isSubmittingRound) {
-            void submitRound();
-          }
-
-          return;
-        }
-
-        if (key === "n") {
-          event.preventDefault();
-          requestNewRound();
-          return;
-        }
-
-        if (key === "l") {
-          event.preventDefault();
-          setFeedback(
-            "Finish or submit the round to view the full leaderboard.",
-            "neutral",
-          );
-          renderScene();
-          return;
-        }
-
-        if (isHelpKey) {
-          event.preventDefault();
-          setFeedback(
-            "Submit or return to the menu to view the full How to Play screen.",
-            "neutral",
-          );
-          renderScene();
-          return;
-        }
-
-        if (key === "m" || event.key === "Escape") {
-          event.preventDefault();
-          requestBackToMenu();
-        }
-      }
-    }
-
-    function selectMenuMode(nextMode) {
-      mode = nextMode;
-      renderScene();
-    }
-
-    function selectMenuDifficulty(nextDifficulty) {
-      difficulty = nextDifficulty;
-      renderScene();
-    }
-
-    function selectMenuPairCount(nextPairCount) {
-      pairCount = nextPairCount;
-      renderScene();
-    }
-
-    function selectMenuRoundType(nextRoundType) {
-      roundType = nextRoundType;
-      isEditingCustomTimer = false;
-      replaceCustomTimerOnNextInput = false;
-
-      if (nextRoundType === "timed") {
-        syncTimerSecondsFromSelection();
-      }
-
-      renderScene();
-    }
-
-    function selectMenuTimerSeconds(nextTimerSeconds) {
-      roundType = "timed";
-      timerOption = nextTimerSeconds;
-      timerSeconds = nextTimerSeconds;
-      isEditingCustomTimer = false;
-      replaceCustomTimerOnNextInput = false;
-      renderScene();
-    }
-
-    function hasActiveGameplayRound() {
-      /*
-    Active round means:
-    - player is on gameplay screen
-    - a puzzle exists
-    - result screen is not open
-    - submit is not currently running
-  */
-      return (
-        screen === "gameplay" &&
-        Boolean(roundData?.puzzle) &&
-        !result &&
-        !isSubmittingRound
-      );
-    }
-
-    function openQuitConfirmation(action = "menu") {
-      if (!hasActiveGameplayRound()) {
-        if (action === "new-round") {
-          void loadRound();
-          return;
-        }
-
-        backToMenu();
-        return;
-      }
-
-      quitConfirmVisible = true;
-      quitConfirmAction = action;
-      setFeedback(
-        "Confirm before leaving this round. Your current progress will be lost.",
-        "neutral",
-      );
-      renderScene();
-    }
-
-    function cancelQuitConfirmation() {
-      quitConfirmVisible = false;
-      quitConfirmAction = null;
-      setFeedback("Keep playing. Your round is still active.", "neutral");
-      renderScene();
-    }
-
-    function confirmQuitRound() {
-      const action = quitConfirmAction || "menu";
-
-      quitConfirmVisible = false;
-      quitConfirmAction = null;
-
-      if (action === "new-round") {
-        void loadRound();
-        return;
-      }
-
-      backToMenu();
-    }
-
-    function requestBackToMenu() {
-      openQuitConfirmation("menu");
-    }
-
-    function requestNewRound() {
-      openQuitConfirmation("new-round");
-    }
-
-    function startBridgeRound() {
-      quitConfirmVisible = false;
-      quitConfirmAction = null;
-
-      playerName = getNormalizedPlayerName();
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-
-      if (isEditingCustomTimer) {
-        finishCustomTimerEdit();
-      } else {
-        syncTimerSecondsFromSelection();
-      }
-
-      screen = "gameplay";
-
-      void loadRound({
-        mode,
-        difficulty,
-        pairCount,
-      });
-    }
-
-    function backToMenu() {
-      stopRoundTimer({ reset: true });
-
-      quitConfirmVisible = false;
-      quitConfirmAction = null;
-
-      screen = "menu";
-      selectedLeftId = null;
-      matches = [];
-      hintsUsed = 0;
-      wrongAttempts = 0;
-      result = null;
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-      status = "Choose your bridge challenge.";
-      setFeedback(
-        "Choose a mode, difficulty, and pair count to begin.",
-        "neutral",
-      );
-      renderScene();
-    }
-
-    async function loadLeaderboard(limit = 10) {
-      try {
-        const response = await getMeaningBridgeLeaderboard(limit);
-        leaderboard = response.scores || [];
-      } catch {
-        leaderboard = [];
-      }
-    }
-
-    async function loadRound(options = {}) {
-      stopRoundTimer({ reset: true });
-
-      quitConfirmVisible = false;
-      quitConfirmAction = null;
-
-      screen = "gameplay";
-      status = "Generating round...";
-      setFeedback("Building a new Meaning Bridge round...", "neutral");
-      result = null;
-      selectedLeftId = null;
-      matches = [];
-      hintsUsed = 0;
-      wrongAttempts = 0;
-      timedRoundEnded = false;
-      isSubmittingRound = false;
-      roundStartedAt = Date.now();
-      renderScene();
-
-      try {
-        mode = options.mode || mode;
-        difficulty = options.difficulty || difficulty;
-        pairCount = options.pairCount || pairCount;
-
-        // These modes are not yet connected to real data — show waiting state in panels
-        if (mode === "english-to-sanskrit" || mode === "sanskrit-to-english") {
-          status = "Coming soon";
-          setFeedback("Select a different mode to play.", "neutral");
-          renderScene();
-          return;
-        }
-
-        const response = await generateMeaningBridgeRound({
-          mode,
-          difficulty,
-          pairCount,
-          previousPassageId: roundData?.passage?.passageId || null,
+    // ── CARDS ─────────────────────────────────────────────────────────
+    function drawCards() {
+      puzzle.leftItems.forEach((item, i) => {
+        const offsetY = (RIGHT_CARD_H - CARD_H) / 2;
+        drawCard({
+          item,
+          x: LEFT_X,
+          y: START_Y + i * GAP + offsetY,
+          cardH: CARD_H,
+          side: "left",
+          pairIdx: i,
+          matchPairIdx: i,
+          isMatched: !!matches[item.id],
+          isSelected: selectedLeft?.id === item.id,
+          isWrong: flashWrong?.leftId === item.id,
+          isJustMatched: lastMatchLeft === item.id,
         });
-
-        roundData = response;
-        status = "ZIMJS gameplay connected to Express backend.";
-        setFeedback(
-          "Select a word card, then select its matching meaning card.",
-          "neutral",
-        );
-
-        await loadLeaderboard();
-
-        roundStartedAt = Date.now();
-        startRoundTimer();
-      } catch (error) {
-        status = "Unable to generate round.";
-        setFeedback(
-          error instanceof Error
-            ? error.message
-            : "Failed to generate Meaning Bridge round.",
-          "error",
-        );
-        stopRoundTimer({ reset: true });
-      }
-
-      renderScene();
-    }
-
-    function isLeftMatched(leftId) {
-      return matches.some((match) => match.leftId === leftId);
-    }
-
-    function isRightMatched(rightId) {
-      return matches.some((match) => match.rightId === rightId);
-    }
-
-    function getCompletionPercent() {
-      const totalPairs = roundData?.puzzle?.leftItems?.length || 0;
-
-      if (totalPairs === 0) {
-        return 0;
-      }
-
-      return Math.round((matches.length / totalPairs) * 100);
-    }
-
-    function getResultTitle() {
-      if (!result) {
-        return "Round Complete";
-      }
-
-      if (result.perfectRound && result.roundPoints > 0) {
-        return "Perfect Bridge!";
-      }
-
-      if (result.accuracy >= 75) {
-        return "Strong Attempt!";
-      }
-
-      return "Keep Practicing!";
-    }
-
-    function getResultBadge() {
-      if (!result) {
-        return "⭐";
-      }
-
-      if (result.perfectRound && result.roundPoints > 0) {
-        return "🏆";
-      }
-
-      if (result.accuracy >= 75) {
-        return "⭐";
-      }
-
-      return "🌱";
-    }
-
-    function handleLeftCard(item) {
-      if (isGameplayLocked()) {
-        return;
-      }
-
-      if (isLeftMatched(item.id)) {
-        setFeedback("That word is already matched.", "neutral");
-        renderScene();
-        return;
-      }
-
-      selectedLeftId = item.id;
-      setFeedback(
-        `Selected "${item.label}". Now choose the matching card.`,
-        "neutral",
-      );
-      renderScene();
-    }
-
-    function handleRightCard(item) {
-      if (isGameplayLocked()) {
-        return;
-      }
-      const puzzle = roundData?.puzzle;
-
-      if (!puzzle) {
-        return;
-      }
-
-      if (!selectedLeftId) {
-        setFeedback("Choose a word card first.", "neutral");
-        renderScene();
-        return;
-      }
-
-      if (isRightMatched(item.id)) {
-        setFeedback("That meaning card is already matched.", "neutral");
-        renderScene();
-        return;
-      }
-
-      const expectedRightId = puzzle.answerKey[selectedLeftId];
-
-      if (expectedRightId === item.id) {
-        const matchedLeftId = selectedLeftId;
-
-        matches = [
-          ...matches,
-          {
-            leftId: selectedLeftId,
-            rightId: item.id,
-          },
-        ];
-
-        playSound("correct");
-        cardFlash = {
-          type: "correct",
-          leftId: matchedLeftId,
-          rightId: item.id,
-        };
-        selectedLeftId = null;
-
-        const completed = matches.length === puzzle.leftItems.length;
-
-        emit(completed ? "complete" : "correct");
-
-        setFeedback(
-          completed
-            ? "All pairs matched. Submit your bridge!"
-            : "Correct match! Keep building the bridge.",
-          "success",
-        );
-
-        renderScene();
-        setTimeout(() => {
-          cardFlash = null;
-          renderScene();
-        }, 700);
-      } else {
-        wrongAttempts += 1;
-        playSound("wrong");
-        cardFlash = { type: "wrong", leftId: selectedLeftId, rightId: item.id };
-        setFeedback("Not quite. Try another meaning card.", "error");
-        renderScene();
-        setTimeout(() => {
-          cardFlash = null;
-          renderScene();
-        }, 700);
-      }
-    }
-
-    function activateGameplayNumberShortcut(cardNumber) {
-      /*
-    Number-key card selection
-    -------------------------
-    If no word card is selected, number keys select from the left word cards.
-    If a word card is already selected, number keys select from the right
-    meaning cards.
-
-    Example:
-    - Press 1 to select the first word card.
-    - Press 3 to match it with the third meaning card.
-  */
-
-      if (isGameplayLocked()) {
-        return;
-      }
-
-      const puzzle = roundData?.puzzle;
-
-      if (!puzzle) {
-        return;
-      }
-
-      const index = cardNumber - 1;
-
-      if (selectedLeftId) {
-        const rightItem = puzzle.rightItems[index];
-
-        if (!rightItem) {
-          setFeedback(
-            `There is no meaning card ${cardNumber} in this round.`,
-            "neutral",
-          );
-          renderScene();
-          return;
-        }
-
-        handleRightCard(rightItem);
-        return;
-      }
-
-      const leftItem = puzzle.leftItems[index];
-
-      if (!leftItem) {
-        setFeedback(
-          `There is no word card ${cardNumber} in this round.`,
-          "neutral",
-        );
-        renderScene();
-        return;
-      }
-
-      handleLeftCard(leftItem);
-    }
-
-    function resetRound() {
-      if (isSubmittingRound) {
-        return;
-      }
-
-      stopRoundTimer({ reset: true });
-
-      selectedLeftId = null;
-      matches = [];
-      hintsUsed = 0;
-      wrongAttempts = 0;
-      result = null;
-      timedRoundEnded = false;
-      roundStartedAt = Date.now();
-
-      setFeedback("Round reset. Select a word card to begin again.", "neutral");
-
-      if (roundType === "timed") {
-        startRoundTimer();
-      }
-
-      renderScene();
-    }
-
-    function useHint() {
-      if (isGameplayLocked()) {
-        return;
-      }
-      const puzzle = roundData?.puzzle;
-
-      if (!puzzle) {
-        return;
-      }
-
-      if (!selectedLeftId) {
-        setFeedback(
-          "Select a word card first, then ask for a hint.",
-          "neutral",
-        );
-        renderScene();
-        return;
-      }
-
-      hintsUsed += 1;
-
-      playSound("hint");
-
-      const imageUrl = puzzle.hintImages?.[selectedLeftId];
-      if (imageUrl) {
-        window.dispatchEvent(
-          new CustomEvent("mb-hint", { detail: { imageUrl } }),
-        );
-      }
-      setFeedback(
-        puzzle.hints[selectedLeftId] || "No hint available.",
-        "neutral",
-      );
-      renderScene();
-    }
-
-    async function submitRound({ force = false, reason = "manual" } = {}) {
-      const puzzle = roundData?.puzzle;
-
-      if (!puzzle || result || isSubmittingRound) {
-        return;
-      }
-
-      if (!force && matches.length === 0) {
-        setFeedback("Match at least one pair before submitting.", "neutral");
-        renderScene();
-        return;
-      }
-
-      if (roundType === "timed") {
-        updateRemainingRoundSeconds();
-      }
-
-      isSubmittingRound = true;
-      stopRoundTimer();
-      playSound(reason === "timer" ? "warning" : "submit");
-
-      status =
-        reason === "timer"
-          ? "Time expired. Submitting round..."
-          : "Submitting round...";
-
-      setFeedback(
-        reason === "timer"
-          ? "Time is up. Your current matches are being scored."
-          : "Submitting your bridge round...",
-        reason === "timer" ? "error" : "neutral",
-      );
-
-      renderScene();
-
-      try {
-        const elapsedSeconds = Math.max(
-          1,
-          Math.round((Date.now() - roundStartedAt) / 1000),
-        );
-
-        const timeSeconds =
-          roundType === "timed"
-            ? Math.min(timerSeconds, elapsedSeconds)
-            : elapsedSeconds;
-
-        result = await submitMeaningBridgeRound({
-          roundId: puzzle.roundId,
-          playerName: getNormalizedPlayerName(),
-          matches,
-          timeSeconds,
-          hintsUsed,
-          wrongAttempts,
+      });
+
+      puzzle.rightItems.forEach((item, i) => {
+        const isMatched = Object.values(matches).includes(item.id);
+        const matchedLeftId = isMatched
+          ? Object.keys(matches).find((k) => matches[k] === item.id)
+          : null;
+        const matchPairIdx = matchedLeftId
+          ? puzzle.leftItems.findIndex((l) => l.id === matchedLeftId)
+          : 0;
+        drawCard({
+          item,
+          x: RIGHT_X,
+          y: START_Y + i * GAP,
+          cardH: RIGHT_CARD_H,
+          side: "right",
+          pairIdx: i,
+          matchPairIdx,
+          isMatched,
+          isSelected: selectedRight?.id === item.id,
+          isWrong: flashWrong?.rightId === item.id,
+          isJustMatched: matchedLeftId === lastMatchLeft,
         });
-
-        playSound(result.perfectRound ? "perfect" : "result");
-
-        status =
-          reason === "timer"
-            ? "Time expired. Round submitted."
-            : "Round submitted.";
-
-        setFeedback(
-          reason === "timer"
-            ? "Time expired. Your score has been submitted."
-            : result.message || "Round submitted.",
-          reason === "timer" ? "error" : "success",
-        );
-
-        await loadLeaderboard();
-      } catch (error) {
-        isSubmittingRound = false;
-        timedRoundEnded = false;
-        lastTimerWarningSecond = null;
-
-        setFeedback(
-          error instanceof Error
-            ? error.message
-            : "Failed to submit Meaning Bridge round.",
-          "error",
-        );
-
-        status = "Submit failed.";
-
-        if (roundType === "timed" && remainingRoundSeconds > 0 && !force) {
-          timerDeadlineAt = Date.now() + remainingRoundSeconds * 1000;
-
-          roundTimerId = window.setInterval(() => {
-            const remaining = updateRemainingRoundSeconds();
-
-            if (
-              [10, 5, 3, 2, 1].includes(remaining) &&
-              lastTimerWarningSecond !== remaining
-            ) {
-              lastTimerWarningSecond = remaining;
-              playSound("warning");
-            }
-
-            if (remaining <= 0) {
-              stopRoundTimer();
-              void handleTimerExpired();
-              return;
-            }
-
-            renderScene();
-          }, 1000);
-        }
-      }
-
-      isSubmittingRound = false;
-      renderScene();
+      });
     }
 
-    function drawLandingImageBackground() {
-      /*
-    Draw imported landing art inside ZIM.
-
-    The Bitmap is scaled with "cover" logic:
-    - fill the whole 1100x720 canvas
-    - crop gently if aspect ratio differs
-    - keep the artwork centered
-  */
-
-      if (!landingImageReady || !landingImageElement || !zim.Bitmap) {
-        drawBackground();
-        return;
-      }
-
-      const bitmap = new zim.Bitmap(landingImageElement);
-      const scale = Math.max(
-        W / landingImageElement.width,
-        H / landingImageElement.height,
-      );
-
-      bitmap.scaleX = scale;
-      bitmap.scaleY = scale;
-      bitmap.x = (W - landingImageElement.width * scale) / 2;
-      bitmap.y = (H - landingImageElement.height * scale) / 2;
-      stage.addChild(bitmap);
-
-      // Soft readability overlay so ZIM text/buttons stay readable.
-      new zim.Rectangle(W, H, "rgba(7,22,79,0.18)").addTo(stage).loc(0, 0);
-    }
+    const G = { base: "#5aaa5a", dark: "#3a7a3a" };
 
     function drawBackground() {
-      /*
-    Adventure-style ZIM background
-    ------------------------------
-    This is still drawn with ZIM shapes, not a baked screenshot.
-
-    Later we can replace this with a clean layered background asset, but this
-    version already gives the gameplay screen a more polished game feel.
-  */
-
-      new zim.Rectangle(W, H, "#dff6ff").addTo(stage).loc(0, 0);
-
-      // Sky glow.
-      new zim.Circle(300, "rgba(255,255,255,0.38)").addTo(stage).loc(550, 144);
-
-      // Sun.
-      new zim.Circle(44, "#facc15").addTo(stage).loc(982, 78);
-      new zim.Circle(58, "rgba(250,204,21,0.16)").addTo(stage).loc(982, 78);
-
-      // Clouds.
-      new zim.Circle(20, "#ffffff").addTo(stage).loc(110, 72);
-      new zim.Circle(28, "#ffffff").addTo(stage).loc(140, 62);
-      new zim.Circle(20, "#ffffff").addTo(stage).loc(172, 72);
-      new zim.Rectangle(86, 20, "#ffffff", null, 0, 14)
-        .addTo(stage)
-        .loc(100, 72);
-
-      new zim.Circle(18, "rgba(255,255,255,0.9)").addTo(stage).loc(814, 88);
-      new zim.Circle(26, "rgba(255,255,255,0.9)").addTo(stage).loc(846, 78);
-      new zim.Rectangle(86, 18, "rgba(255,255,255,0.9)", null, 0, 14)
-        .addTo(stage)
-        .loc(796, 88);
-
-      // Distant hills.
-      const hills = new zim.Shape().addTo(stage);
-      hills
-        .f("#bbf7d0")
-        .mt(0, 192)
-        .bt(180, 92, 330, 210, 500, 138)
-        .bt(680, 62, 850, 185, W, 106)
-        .lt(W, H)
-        .lt(0, H)
-        .cp();
-
-      const farHills = new zim.Shape().addTo(stage);
-      farHills
-        .f("rgba(134,239,172,0.48)")
-        .mt(0, 260)
-        .bt(160, 160, 290, 276, 470, 206)
-        .bt(650, 142, 830, 250, W, 198)
-        .lt(W, H)
-        .lt(0, H)
-        .cp();
-
-      // River.
-      const river = new zim.Shape().addTo(stage);
-      river
-        .f("#7dd3fc")
-        .mt(0, 300)
-        .bt(220, 250, 330, 355, 540, 300)
-        .bt(720, 250, 840, 360, W, 312)
-        .lt(W, H)
-        .lt(0, H)
-        .cp();
-
-      const riverHighlight = new zim.Shape().addTo(stage);
-      riverHighlight
-        .s("rgba(255,255,255,0.42)")
-        .ss(4)
-        .mt(322, 420)
-        .bt(450, 392, 520, 470, 650, 430)
-        .bt(740, 402, 790, 448, 900, 418);
-
-      // Grass banks.
-      new zim.Rectangle(300, 92, "#65a30d", null, 0, 42)
-        .addTo(stage)
-        .loc(-40, 348);
-
-      new zim.Rectangle(300, 92, "#65a30d", null, 0, 42)
-        .addTo(stage)
-        .loc(840, 348);
-
-      // Soft vignette to frame the game.
-      new zim.Rectangle(W, H, "rgba(7,22,79,0.05)").addTo(stage).loc(0, 0);
-    }
-
-    function drawBridge() {
-      /*
-    Adventure bridge center
-    -----------------------
-    This is the visual heart of the gameplay screen.
-
-    It shows:
-    - stone bridge arch
-    - match slots
-    - completion badge
-    - progress glow
-  */
-
-      const progress = getCompletionPercent();
-      const puzzle = roundData?.puzzle;
-      const totalPairs = puzzle?.leftItems?.length || pairCount;
-      const completedPairs = matches.length;
-
-      const bridgeX = 404;
-      const bridgeY = 330;
-      const bridgeWidth = 292;
-
-      // Soft bridge shadow.
-      const shadow = new zim.Shape().addTo(stage);
-      shadow.mouseEnabled = false;
-      shadow
-        .s("rgba(120,53,15,0.18)")
-        .ss(18)
-        .mt(bridgeX + 18, bridgeY + 112)
-        .bt(
-          bridgeX + 78,
-          bridgeY + 52,
-          bridgeX + 214,
-          bridgeY + 52,
-          bridgeX + 274,
-          bridgeY + 112,
-        );
-
-      // Main stone arch.
-      const arch = new zim.Shape().addTo(stage);
-      arch.mouseEnabled = false;
-      arch
-        .s("#8b5e34")
-        .ss(13)
-        .mt(bridgeX + 18, bridgeY + 104)
-        .bt(
-          bridgeX + 78,
-          bridgeY + 42,
-          bridgeX + 214,
-          bridgeY + 42,
-          bridgeX + 274,
-          bridgeY + 104,
-        );
-
-      // Bridge deck.
-      const deck = new zim.Shape().addTo(stage);
-      deck.mouseEnabled = false;
-      deck
-        .s("#b45309")
-        .ss(14)
-        .mt(bridgeX + 10, bridgeY + 126)
-        .lt(bridgeX + bridgeWidth - 10, bridgeY + 126);
-
-      // Stone blocks.
-      for (let index = 0; index < 8; index += 1) {
-        const block = new zim.Rectangle(30, 18, "#d6b078", "#8b5e34", 1, 5)
-          .addTo(stage)
-          .loc(bridgeX + 28 + index * 30, bridgeY + 116);
-
-        block.mouseEnabled = false;
-      }
-
-      // Match slots on the arch.
-      for (let index = 0; index < totalPairs; index += 1) {
-        const slotX =
-          bridgeX + 44 + index * (200 / Math.max(1, totalPairs - 1));
-        const slotY =
-          bridgeY +
-          76 -
-          Math.sin((index / Math.max(1, totalPairs - 1)) * Math.PI) * 28;
-
-        const complete = index < completedPairs;
-
-        const slot = new zim.Circle(
-          17,
-          complete ? "#22c55e" : "rgba(255,255,255,0.82)",
-          complete ? "#16a34a" : "#d6b078",
-          3,
-        )
-          .addTo(stage)
-          .loc(slotX, slotY);
-
-        slot.mouseEnabled = false;
-
-        if (complete) {
-          addLabel({
-            text: "✓",
-            x: slotX,
-            y: slotY - 11,
-            size: 17,
-            color: "#ffffff",
-            bold: true,
-            align: "center",
-          });
-        }
-      }
-
-      // Progress badge removed — same info already shown in Round Summary panel above.
-    }
-
-    function drawHeader() {
-      addPanel({
-        x: 28,
-        y: 22,
-        width: 112,
-        height: 36,
-        fill: "#ffffff",
-        stroke: "#bfdbfe",
-        corner: 18,
-      });
-
-      addLabel({
-        text: "Game 02",
-        x: 84,
-        y: 32,
-        size: 13,
-        color: "#1e3a8a",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "Meaning Bridge",
-        x: W / 2,
-        y: GAMEPLAY_LAYOUT.header.titleY,
-        size: 34,
-        color: "#07164f",
-        bold: true,
-        align: "center",
-      });
-
-      addPanel({
-        x: W / 2 - 116,
-        y: GAMEPLAY_LAYOUT.header.progressY,
-        width: 232,
-        height: 32,
-        fill: "rgba(255,255,255,0.9)",
-        stroke: "#a7f3d0",
-        corner: 16,
-      });
-
-      addLabel({
-        text: `${getCompletionPercent()}% complete`,
-        x: W / 2,
-        y: GAMEPLAY_LAYOUT.header.progressY + 8,
-        size: 15,
-        color: "#047857",
-        bold: true,
-        align: "center",
-      });
-
-      if (roundType === "timed") {
-        const danger = remainingRoundSeconds <= 10;
-
-        addPanel({
-          x: W / 2 - 78,
-          y: GAMEPLAY_LAYOUT.header.timerY,
-          width: 156,
-          height: 36,
-          fill: danger ? "#fef2f2" : "#fff7ed",
-          stroke: danger ? "#fca5a5" : "#fed7aa",
-          corner: 18,
-        });
-
-        addLabel({
-          text: `⏱ ${formatTimer(remainingRoundSeconds)}`,
-          x: W / 2,
-          y: GAMEPLAY_LAYOUT.header.timerY + 8,
-          size: 17,
-          color: danger ? "#b91c1c" : "#c2410c",
-          bold: true,
-          align: "center",
-        });
-      }
-
-      addPanel({
-        x: W - 356,
-        y: 24,
-        width: 316,
-        height: 42,
-        fill: "rgba(255,255,255,0.9)",
-        stroke: "#bfdbfe",
-        corner: 18,
-      });
-
-      addLabel({
-        text: shortText(status, 44),
-        x: W - 338,
-        y: 38,
-        size: 12,
-        color: "#1e3a8a",
-        bold: true,
-      });
-
-      drawTextModeToggle({
-        x: 28,
-        y: 68,
-        width: 110,
-        height: 30,
-      });
-
-      drawSoundToggle({
-        x: 144,
-        y: 68,
-        width: 104,
-        height: 30,
-      });
-    }
-
-    function drawMenuPlayerNamePanel() {
-      /*
-    Player name panel
-    -----------------
-    This stays inside the ZIMJS menu canvas.
-
-    Click behavior:
-    - Click panel to edit.
-    - Type name.
-    - Enter/Escape saves.
-    - Empty name falls back to "Guest Player".
-  */
-
-      const { x, y, width, height } = MENU_LAYOUT.playerPanel;
-
-      addPanel({
-        x,
-        y,
-        width,
-        height,
-        fill: isEditingPlayerName ? "#eff6ff" : "#ffffff",
-        stroke: isEditingPlayerName ? "#2563eb" : "#bfdbfe",
-        corner: 18,
-      });
-
-      addLabel({
-        text: "Player",
-        x: x + 16,
-        y: y + 10,
-        size: 11,
-        color: "#64748b",
-        bold: true,
-      });
-
-      const displayName = isEditingPlayerName
-        ? playerName || "Type name..."
-        : getNormalizedPlayerName();
-
-      addLabel({
-        text: shortText(displayName, 17),
-        x: x + 16,
-        y: y + 30,
-        size: 15,
-        color: isEditingPlayerName ? "#1d4ed8" : "#07164f",
-        bold: true,
-      });
-
-      addLabel({
-        text: isEditingPlayerName ? "Enter to save" : "Click to edit",
-        x: x + 16,
-        y: y + 50,
-        size: 10,
-        color: "#94a3b8",
-        bold: true,
-      });
-
-      const clickLayer = new zim.Rectangle(
-        width,
-        height,
-        "rgba(255,255,255,0.01)",
-        null,
+      // Milky pink → milky green gradient top-to-bottom
+      const grad = new zim.GradientColor(
+        ["#fde8f2", "#e8f5ee"],
+        [0, 1],
         0,
-        18,
+        0,
+        0,
+        H,
       );
-
-      clickLayer.addTo(stage).loc(x, y);
-      clickLayer.cursor = "pointer";
-      clickLayer.on("click", beginPlayerNameEdit);
+      new zim.Rectangle(W, H, grad).addTo(stage);
     }
 
-    function addLandingHotspot({ x, y, width, height, onClick }) {
-      /*
-    Invisible ZIMJS click zone.
-
-    The landing image already has the button artwork baked in, so we only need
-    a transparent rectangle to make that area interactive.
-  */
-      const hotspot = new zim.Rectangle(
-        width,
-        height,
-        "rgba(255,255,255,0.01)",
-        null,
-        0,
-        18,
-      );
-
-      hotspot.addTo(stage).loc(x, y);
-      hotspot.cursor = "pointer";
-      hotspot.on("click", onClick);
-
-      return hotspot;
-    }
-
-    function drawLandingScene() {
-      /*
-    ZIMJS landing scene
-    -------------------
-    The illustrated landing image is the visual UI.
-
-    We do not draw extra title panels or duplicate buttons here because the
-    artwork already includes them. Instead, we place real transparent ZIMJS
-    click zones over the visible image buttons.
-  */
-
-      drawLandingImageBackground();
-
-      addLandingHotspot({
-        ...LANDING_LAYOUT.startHotspot,
-        onClick: goToSetupMenu,
-      });
-
-      addLandingHotspot({
-        ...LANDING_LAYOUT.settingsHotspot,
-        onClick: goToSetupMenu,
-      });
-
-      addLandingHotspot({
-        ...LANDING_LAYOUT.playerHotspot,
-        onClick: goToSetupMenu,
-      });
-
-      addLandingHotspot({
-        ...LANDING_LAYOUT.howToPlayHotspot,
-        onClick: () => {
-          openRulesScreen("landing");
-        },
-      });
-
-      addLandingHotspot({
-        ...LANDING_LAYOUT.leaderboardHotspot,
-        onClick: () => {
-          openLeaderboardScreen("landing");
-        },
-      });
-
-      addLandingHotspot({
-        ...LANDING_LAYOUT.soundHotspot,
-        onClick: toggleSoundMuted,
-      });
-
-      if (soundMuted) {
-        addPanel({
-          x: 940,
-          y: 96,
-          width: 126,
-          height: 34,
-          fill: "rgba(15,23,42,0.72)",
-          stroke: "#475569",
-          corner: 17,
-        });
-
-        addLabel({
-          text: "Sound Muted",
-          x: 1003,
-          y: 106,
-          size: 12,
-          color: "#ffffff",
-          bold: true,
-          align: "center",
-        });
-      }
-
-      if (landingImageFailed) {
-        addPanel({
-          x: 350,
-          y: 300,
-          width: 400,
-          height: 120,
-          fill: "rgba(255,255,255,0.9)",
-          stroke: "#bfdbfe",
-          corner: 24,
-        });
-
-        addLabel({
-          text: "Meaning Bridge",
-          x: W / 2,
-          y: 324,
-          size: 34,
-          color: "#07164f",
-          bold: true,
-          align: "center",
-        });
-
-        addLabel({
-          text: "Landing art fallback active",
-          x: W / 2,
-          y: 374,
-          size: 14,
-          color: "#64748b",
-          bold: true,
-          align: "center",
-        });
-      }
-    }
-
-    function drawMenuScene() {
-      /*
-    ZIMJS setup/menu scene
-    ----------------------
-    This is the real setup screen before gameplay.
-
-    The landing screen is the front page.
-    This setup screen lets the player configure the round:
-    - player name
-    - practice/timed mode
-    - timer length
-    - challenge type
-    - difficulty
-    - pair count
-  */
-
-      const panel = MENU_LAYOUT.panel;
-
-      addPanel({
-        x: panel.x,
-        y: panel.y,
-        width: panel.width,
-        height: panel.height,
-        fill: "rgba(255,255,255,0.95)",
-        stroke: "#bfdbfe",
-        corner: 34,
-      });
-
-      addLabel({
-        text: "Setup Your Bridge",
-        x: panel.x + 42,
-        y: panel.y + 34,
-        size: readableSize(38, 2),
-        color: "#07164f",
-        bold: true,
-      });
-
-      addLabel({
-        text: "Choose the rules for this round before starting.",
-        x: panel.x + 44,
-        y: panel.y + 80,
-        size: readableSize(15, 1),
-        color: "#475569",
-        bold: true,
-      });
-
-      drawMenuPlayerNamePanel();
-
-      /*
-    Round type cards
-  */
-      addLabel({
-        text: "Round Type",
-        x: MENU_LAYOUT.roundType.x,
-        y: MENU_LAYOUT.roundType.y - 30,
-        size: readableSize(18, 2),
-        color: "#065f46",
-        bold: true,
-      });
-
-      ROUND_TYPES.forEach((entry, index) => {
-        const selected = entry.value === roundType;
-        const x =
-          MENU_LAYOUT.roundType.x +
-          index * (MENU_LAYOUT.roundType.cardWidth + MENU_LAYOUT.roundType.gap);
-        const y = MENU_LAYOUT.roundType.y;
-
-        addPanel({
-          x,
-          y,
-          width: MENU_LAYOUT.roundType.cardWidth,
-          height: MENU_LAYOUT.roundType.cardHeight,
-          fill: selected ? "#ecfdf5" : "#ffffff",
-          stroke: selected ? "#059669" : "#dbeafe",
-          corner: 20,
-        });
-
-        addLabel({
-          text: entry.label,
-          x: x + 18,
-          y: y + 12,
-          size: readableSize(18, 2),
-          color: selected ? "#047857" : "#07164f",
-          bold: true,
-        });
-
-        addLabel({
-          text: entry.description,
-          x: x + 18,
-          y: y + 40,
-          size: readableSize(11, 1),
-          color: selected ? "#047857" : "#64748b",
-          bold: true,
-        });
-
-        if (selected) {
-          new zim.Rectangle(46, 22, "#059669", null, 0, 11)
-            .addTo(stage)
-            .loc(x + MENU_LAYOUT.roundType.cardWidth - 64, y + 12);
-
-          addLabel({
-            text: "ON",
-            x: x + MENU_LAYOUT.roundType.cardWidth - 41,
-            y: y + 16,
-            size: 11,
-            color: "#ffffff",
-            bold: true,
-            align: "center",
-          });
-        }
-
-        const clickLayer = new zim.Rectangle(
-          MENU_LAYOUT.roundType.cardWidth,
-          MENU_LAYOUT.roundType.cardHeight,
-          "rgba(255,255,255,0.01)",
-          null,
-          0,
-          20,
-        );
-
-        clickLayer.addTo(stage).loc(x, y);
-        clickLayer.cursor = "pointer";
-        clickLayer.on("click", () => {
-          selectMenuRoundType(entry.value);
-        });
-      });
-
-      /*
-  Timer selector
-  --------------
-  Timer now lives inside its own visual panel so the Custom option does not
-  crowd the round type cards or player panel.
-*/
-      addPanel({
-        x: MENU_LAYOUT.timerPanel.x,
-        y: MENU_LAYOUT.timerPanel.y,
-        width: MENU_LAYOUT.timerPanel.width,
-        height: MENU_LAYOUT.timerPanel.height,
-        fill: roundType === "timed" ? "#faf5ff" : "#f8fafc",
-        stroke: roundType === "timed" ? "#ddd6fe" : "#e2e8f0",
-        corner: 22,
-      });
-
-      addLabel({
-        text: "Timer",
-        x: MENU_LAYOUT.timerPanel.x + 18,
-        y: MENU_LAYOUT.timerPanel.y + 14,
-        size: readableSize(18, 2),
-        color: roundType === "timed" ? "#5b21b6" : "#94a3b8",
-        bold: true,
-      });
-
-      TIMER_OPTIONS.forEach((entry, index) => {
-        const selected = timerOption === entry.value;
-        const disabled = roundType !== "timed";
-
-        addButton({
-          x:
-            MENU_LAYOUT.timer.x +
-            index * (MENU_LAYOUT.timer.buttonWidth + MENU_LAYOUT.timer.gap),
-          y: MENU_LAYOUT.timer.y,
-          width: MENU_LAYOUT.timer.buttonWidth,
-          height: MENU_LAYOUT.timer.buttonHeight,
-          label: entry.label,
-          background: disabled ? "#e2e8f0" : selected ? "#7c3aed" : "#ffffff",
-          rollBackground: disabled
-            ? "#e2e8f0"
-            : selected
-              ? "#6d28d9"
-              : "#f5f3ff",
-          color: disabled ? "#94a3b8" : selected ? "#ffffff" : "#5b21b6",
-          borderColor: disabled || selected ? null : "#ddd6fe",
-          onClick: () => {
-            if (!disabled) {
-              selectMenuTimerSeconds(entry.value);
-            }
-          },
-        });
-      });
-
-      const customTimerSelected = timerOption === "custom";
-      const customTimerDisabled = roundType !== "timed";
-      const customTimerX =
-        MENU_LAYOUT.timer.x +
-        TIMER_OPTIONS.length *
-          (MENU_LAYOUT.timer.buttonWidth + MENU_LAYOUT.timer.gap);
-
-      addButton({
-        x: customTimerX,
-        y: MENU_LAYOUT.timer.y,
-        width: MENU_LAYOUT.timer.customWidth,
-        height: MENU_LAYOUT.timer.buttonHeight,
-        label: customTimerSelected
-          ? formatTimer(getCustomTimerSeconds())
-          : "Custom",
-        background: customTimerDisabled
-          ? "#e2e8f0"
-          : customTimerSelected
-            ? "#7c3aed"
-            : "#ffffff",
-        rollBackground: customTimerDisabled
-          ? "#e2e8f0"
-          : customTimerSelected
-            ? "#6d28d9"
-            : "#f5f3ff",
-        color: customTimerDisabled
-          ? "#94a3b8"
-          : customTimerSelected
-            ? "#ffffff"
-            : "#5b21b6",
-        borderColor:
-          customTimerDisabled || customTimerSelected ? null : "#ddd6fe",
-        onClick: () => {
-          if (!customTimerDisabled) {
-            beginCustomTimerEdit();
-          }
-        },
-      });
-
-      addLabel({
-        text: isEditingCustomTimer
-          ? `Custom: ${customTimerMinutes || "_"} min · Enter to save`
-          : roundType === "timed"
-            ? `Selected: ${formatTimer(getSelectedTimerSeconds())}`
-            : "Practice mode: no countdown",
-        x: MENU_LAYOUT.timerPanel.x + 18,
-        y: MENU_LAYOUT.timerPanel.y + 84,
-        size: readableSize(11, 1),
-        color: roundType === "timed" ? "#5b21b6" : "#64748b",
-        bold: true,
-      });
-
-      /*
-  Challenge mode section
-  ----------------------
-  Large Text mode also affects the setup challenge cards, not only the
-  gameplay cards.
-*/
-      addLabel({
-        text: "Challenge Mode",
-        x: MENU_LAYOUT.modeTitle.x,
-        y: MENU_LAYOUT.modeTitle.y,
-        size: readableSize(20, 2),
-        color: "#1e3a8a",
-        bold: true,
-      });
-
-      const modeCardHeight = largeTextMode
-        ? 62
-        : MENU_LAYOUT.modeGrid.cardHeight;
-
-      const modeRowGap = largeTextMode ? 14 : MENU_LAYOUT.modeGrid.rowGap;
-
-      MODES.forEach((entry, index) => {
-        const selected = entry.value === mode;
-        const col = index % 3;
-        const row = Math.floor(index / 3);
-
-        const x =
-          MENU_LAYOUT.modeGrid.x +
-          col *
-            (MENU_LAYOUT.modeGrid.cardWidth + MENU_LAYOUT.modeGrid.columnGap);
-
-        const y = MENU_LAYOUT.modeGrid.y + row * (modeCardHeight + modeRowGap);
-
-        addPanel({
-          x,
-          y,
-          width: MENU_LAYOUT.modeGrid.cardWidth,
-          height: modeCardHeight,
-          fill: selected ? "#eff6ff" : "#ffffff",
-          stroke: selected ? "#2563eb" : "#dbeafe",
-          corner: 18,
-        });
-
-        addLabel({
-          text: shortText(entry.label, largeTextMode ? 20 : 22),
-          x: x + 16,
-          y: y + (largeTextMode ? 7 : 8),
-          size: readableSize(14, 2),
-          color: selected ? "#1d4ed8" : "#07164f",
-          bold: true,
-        });
-
-        addLabel({
-          text: shortText(
-            getModeDescription(entry.value),
-            largeTextMode ? 30 : 34,
-          ),
-          x: x + 16,
-          y: y + (largeTextMode ? 35 : 30),
-          size: readableSize(9, 2),
-          color: selected ? "#2563eb" : "#64748b",
-          bold: true,
-        });
-
-        const clickLayer = new zim.Rectangle(
-          MENU_LAYOUT.modeGrid.cardWidth,
-          modeCardHeight,
-          "rgba(255,255,255,0.01)",
-          null,
-          0,
-          18,
-        );
-
-        clickLayer.addTo(stage).loc(x, y);
-        clickLayer.cursor = "pointer";
-        clickLayer.on("click", () => {
-          selectMenuMode(entry.value);
-        });
-      });
-
-      /*
-    Difficulty selector
-  */
-      addLabel({
-        text: "Difficulty",
-        x: MENU_LAYOUT.difficulty.labelX,
-        y: MENU_LAYOUT.difficulty.labelY,
-        size: readableSize(16, 2),
-        color: "#047857",
-        bold: true,
-        align: "center",
-      });
-
-      DIFFICULTIES.forEach((entry, index) => {
-        const selected = entry === difficulty;
-
-        addButton({
-          x:
-            MENU_LAYOUT.difficulty.x +
-            index *
-              (MENU_LAYOUT.difficulty.buttonWidth + MENU_LAYOUT.difficulty.gap),
-          y: MENU_LAYOUT.difficulty.y,
-          width: MENU_LAYOUT.difficulty.buttonWidth,
-          height: MENU_LAYOUT.difficulty.buttonHeight,
-          label: entry,
-          background: selected ? "#059669" : "#ffffff",
-          rollBackground: selected ? "#047857" : "#ecfdf5",
-          color: selected ? "#ffffff" : "#047857",
-          borderColor: selected ? null : "#a7f3d0",
-          onClick: () => {
-            selectMenuDifficulty(entry);
-          },
-        });
-      });
-
-      /*
-    Pair-count selector
-  */
-      addLabel({
-        text: "Pairs",
-        x: MENU_LAYOUT.pairs.labelX,
-        y: MENU_LAYOUT.pairs.labelY,
-        size: readableSize(16, 2),
-        color: "#5b21b6",
-        bold: true,
-        align: "center",
-      });
-
-      PAIR_COUNTS.forEach((entry, index) => {
-        const selected = entry === pairCount;
-
-        addButton({
-          x:
-            MENU_LAYOUT.pairs.x +
-            index * (MENU_LAYOUT.pairs.buttonWidth + MENU_LAYOUT.pairs.gap),
-          y: MENU_LAYOUT.pairs.y,
-          width: MENU_LAYOUT.pairs.buttonWidth,
-          height: MENU_LAYOUT.pairs.buttonHeight,
-          label: `${entry}`,
-          background: selected ? "#7c3aed" : "#ffffff",
-          rollBackground: selected ? "#6d28d9" : "#f5f3ff",
-          color: selected ? "#ffffff" : "#5b21b6",
-          borderColor: selected ? null : "#ddd6fe",
-          onClick: () => {
-            selectMenuPairCount(entry);
-          },
-        });
-      });
-
-      drawTextModeToggle({
-        x: 700,
-        y: MENU_LAYOUT.startButton.y + 5,
-        width: 122,
-        height: 38,
-      });
-
-      drawSoundToggle({
-        x: 836,
-        y: MENU_LAYOUT.startButton.y + 5,
-        width: 110,
-        height: 38,
-      });
-
-      /*
-    Start action
-  */
-
-      addButton({
-        x: 170,
-        y: MENU_LAYOUT.startButton.y + 5,
-        width: 138,
-        height: 38,
-        label: "Leaderboard",
-        background: "#f59e0b",
-        rollBackground: "#d97706",
-        onClick: () => {
-          openLeaderboardScreen("menu");
-        },
-      });
-
-      addButton({
-        x: 322,
-        y: MENU_LAYOUT.startButton.y + 5,
-        width: 108,
-        height: 38,
-        label: "Rules",
-        background: "#2563eb",
-        rollBackground: "#1d4ed8",
-        onClick: () => {
-          openRulesScreen("menu");
-        },
-      });
-
-      addButton({
-        x: MENU_LAYOUT.startButton.x,
-        y: MENU_LAYOUT.startButton.y,
-        width: MENU_LAYOUT.startButton.width,
-        height: MENU_LAYOUT.startButton.height,
-        label:
-          roundType === "timed"
-            ? `Start ${formatTimer(getSelectedTimerSeconds())}`
-            : "Start Practice",
-        background: "#4f46e5",
-        rollBackground: "#4338ca",
-        onClick: startBridgeRound,
-      });
-
-      addLabel({
-        text: `${
-          MODES.find((entry) => entry.value === mode)?.label || "Mode"
-        } · ${difficulty} · ${pairCount} pairs · ${
-          roundType === "timed"
-            ? formatTimer(getSelectedTimerSeconds())
-            : "practice"
-        }`,
-        x: W / 2,
-        y: 648,
-        size: readableSize(12, 1),
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
-    }
-
-    function drawPassagePanel() {
-      const passage = roundData?.passage;
-      const { x, y, width, height } = GAMEPLAY_LAYOUT.passage;
-
-      addPanel({
-        x,
-        y,
-        width,
-        height,
-        fill: "rgba(255,255,255,0.96)",
-        stroke: "#fed7aa",
-        corner: 28,
-      });
-
-      new zim.Circle(28, "#7c3aed").addTo(stage).loc(x + 42, y + 52);
-
-      addLabel({
-        text: "📖",
-        x: x + 42,
-        y: y + 34,
-        size: 25,
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-      });
-
-      if (!passage) {
-        addLabel({
-          text: "Loading passage...",
-          x: x + 90,
-          y: y + 38,
-          size: 20,
-          color: "#475569",
-          bold: true,
-        });
-        return;
-      }
-
-      addLabel({
-        text: passage.title,
-        x: x + 90,
-        y: y + 20,
-        size: readableSize(26, 3),
-        color: "#07164f",
-        bold: true,
-      });
-
-      addLabel({
-        text: `${passage.difficulty} · ${passage.theme}`,
-        x: x + width - 180,
-        y: y + 24,
-        size: 12,
-        color: "#047857",
-        bold: true,
-      });
-
-      addWrappedLabel({
-        text: passage.text,
-        x: x + 90,
-        y: y + 58,
-        maxCharsPerLine: readableMaxChars(96, 12),
-        maxLines: 2,
-        size: readableSize(13, 2),
-        lineHeight: largeTextMode ? 20 : 17,
-        color: "#334155",
-        bold: true,
-      });
-    }
-
-    function drawCard({ item, side, x, y, index = 0 }) {
-      const cardLayout = getCardLayout();
-
-      const matched =
-        side === "left" ? isLeftMatched(item.id) : isRightMatched(item.id);
-
-      const selected = side === "left" && selectedLeftId === item.id;
-
-      const isLeft = side === "left";
-
-      // State-driven colours — cards are white/near-white so they pop off the coloured panels
-      const fill = matched
-        ? "#f0fdf4"
-        : selected
-          ? isLeft
-            ? "#eff6ff"
-            : "#f0fdf4"
-          : "#ffffff";
-      const stroke = matched
-        ? "#22c55e"
-        : selected
-          ? isLeft
-            ? "#3b82f6"
-            : "#22c55e"
-          : "rgba(255,255,255,0.9)";
-      const strokeW = matched ? 2.5 : selected ? 2.5 : 1.5;
-      const textColor = matched ? "#14532d" : selected ? "#1e3a8a" : "#1e293b";
-      const subTextColor = matched
-        ? "#16a34a"
-        : selected
-          ? "#3b82f6"
-          : "#64748b";
-
-      const accentColor = isLeft
-        ? selected
-          ? "#1d4ed8"
-          : "#2563eb"
-        : matched
-          ? "#15803d"
-          : "#059669";
-
-      function activateCard() {
-        if (side === "left") {
-          handleLeftCard(item);
-        } else {
-          handleRightCard(item);
-        }
-      }
-
-      // Drop shadow
-      const shadow = new zim.Rectangle(
-        cardLayout.width,
-        cardLayout.height,
-        "rgba(15,23,42,0.10)",
-        null,
-        0,
-        14,
-      )
-        .addTo(stage)
-        .loc(x + 2, y + 3);
-      shadow.mouseEnabled = false;
-
-      // Card base
-      const base = new zim.Rectangle(
-        cardLayout.width,
-        cardLayout.height,
-        fill,
-        stroke,
-        strokeW,
-        14,
-      )
-        .addTo(stage)
-        .loc(x, y);
-      base.mouseEnabled = false;
-
-      // Shine strip — top highlight gives a glossy feel
-      const shine = new zim.Rectangle(
-        cardLayout.width - 10,
-        Math.floor(cardLayout.height * 0.38),
-        "rgba(255,255,255,0.62)",
-        null,
-        0,
-        [12, 12, 0, 0],
-      )
-        .addTo(stage)
-        .loc(x + 5, y + 2);
-      shine.mouseEnabled = false;
-
-      // Left accent bar (replaces dots)
-      const accent = new zim.Rectangle(
-        4,
-        cardLayout.height - 12,
-        accentColor,
-        null,
-        0,
-        2,
-      )
-        .addTo(stage)
-        .loc(x + 10, y + 6);
-      accent.mouseEnabled = false;
-
-      // Icon pill
-      const pillH = cardLayout.height - 10;
-      const iconPill = new zim.Rectangle(32, pillH, accentColor, null, 0, 10)
-        .addTo(stage)
-        .loc(x + 22, y + 5);
-      iconPill.mouseEnabled = false;
-
-      addLabel({
-        text: isLeft ? "A" : "M",
-        x: x + 38,
-        y: y + (cardLayout.height - 18) / 2,
-        size: readableSize(13, 2),
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-      });
-
-      // Main label
-      addLabel({
-        text: shortText(item.label, readableMaxChars(22, 4)),
-        x: x + 64,
-        y: y + 6,
-        size: readableSize(14, 2),
-        color: textColor,
-        bold: true,
-      });
-
-      // Sub label
-      addLabel({
-        text: shortText(item.sublabel, readableMaxChars(26, 5)),
-        x: x + 64,
-        y: y + 25,
-        size: readableSize(11, 1),
-        color: subTextColor,
-        bold: false,
-      });
-
-      // Right indicator — circle centered on card mid-line
-      const indX = x + cardLayout.width - 22;
-      const indY = y + cardLayout.height / 2; // true vertical centre of card
-      if (matched) {
-        const matchColor = isLeft ? "#1d4ed8" : "#15803d";
-        const mc = new zim.Circle(13, matchColor).addTo(stage).loc(indX, indY);
-        mc.mouseEnabled = false;
-        // label y: circle centre minus ~half a cap-height so ✓ sits in the middle
-        addLabel({
-          text: "✓",
-          x: indX,
-          y: indY - 8,
-          size: 13,
-          color: "#ffffff",
-          bold: true,
-          align: "center",
-        });
-      } else if (selected) {
-        const sc = new zim.Circle(13, "#2563eb").addTo(stage).loc(indX, indY);
-        sc.mouseEnabled = false;
-        addLabel({
-          text: "●",
-          x: indX,
-          y: indY - 7,
-          size: 11,
-          color: "#ffffff",
-          bold: true,
-          align: "center",
-        });
+    function drawCard({
+      item,
+      x,
+      y,
+      cardH,
+      side,
+      pairIdx,
+      matchPairIdx,
+      isMatched,
+      isSelected,
+      isWrong,
+      isJustMatched,
+    }) {
+      const mColor = PC[matchPairIdx % PC.length];
+      const mDark = PD[matchPairIdx % PD.length];
+
+      let accent, border, textCol, subCol;
+
+      const modeAccent =
+        currentMode === "word-to-synonym"
+          ? "#3a8a3a"
+          : currentMode === "word-to-antonym"
+            ? "#1a7a99"
+            : "#6b48cc";
+
+      if (isWrong) {
+        accent = "#ff3333";
+        border = rgba("#ff3333", 0.6);
+        textCol = "#c00000";
+        subCol = "#ff6666";
+      } else if (isMatched) {
+        accent = mColor;
+        border = rgba(mColor, 0.55);
+        textCol = mDark;
+        subCol = mDark;
+      } else if (isSelected) {
+        accent = modeAccent;
+        border = modeAccent;
+        textCol = G.dark;
+        subCol = G.dark;
       } else {
-        addLabel({
-          text: "›",
-          x: x + cardLayout.width - 18,
-          y: y + (cardLayout.height - 24) / 2,
-          size: readableSize(22, 2),
-          color: "#cbd5e1",
-          bold: true,
-          align: "center",
-        });
+        accent = modeAccent;
+        border = rgba(modeAccent, 0.35);
+        textCol = G.dark;
+        subCol = G.base;
       }
 
-      // Slide-in animation — staggered per card
-      const animWait = index * 70;
-      [shadow, base, shine, accent, iconPill].forEach((obj) => {
-        obj.alpha = 0;
-        obj.animate({
-          props: { alpha: 1 },
-          time: 220,
-          wait: animWait,
-          ease: "quadOut",
-        });
-      });
+      const cardBg =
+        isWrong || isMatched || isSelected ? C.white : rgba(modeAccent, 0.07);
 
-      // Correct / wrong flash overlay
-      if (
-        cardFlash &&
-        (cardFlash.leftId === item.id || cardFlash.rightId === item.id)
-      ) {
-        const isCorrectFlash = cardFlash.type === "correct";
-        const flashFill = isCorrectFlash
-          ? "rgba(34,197,94,0.40)"
-          : "rgba(239,68,68,0.40)";
-        const flashBorder = isCorrectFlash ? "#22c55e" : "#ef4444";
-        const flashOverlay = new zim.Rectangle(
-          cardLayout.width + 10,
-          cardLayout.height + 10,
-          flashFill,
-          flashBorder,
-          3,
-          16,
-        )
-          .addTo(stage)
-          .loc(x - 5, y - 5);
-        flashOverlay.mouseEnabled = false;
-        flashOverlay.alpha = 1;
-        flashOverlay.animate({
-          props: { alpha: 0 },
-          time: 680,
-          ease: "quadOut",
-        });
-      }
-
-      // Hit layer
-      const hitLayer = new zim.Rectangle(
-        cardLayout.width + 12,
-        cardLayout.height + 8,
-        "rgba(255,255,255,0.01)",
-        null,
-        0,
-        16,
-      )
+      const card = new zim.Container()
         .addTo(stage)
-        .loc(x - 6, y - 4);
-      hitLayer.cursor = "pointer";
-      hitLayer.on("click", activateCard);
-    }
+        .loc(x, isSelected ? y - 3 : y);
+      card.mouseChildren = false;
 
-    function drawCards() {
-      const puzzle = roundData?.puzzle;
-      const left = GAMEPLAY_LAYOUT.leftPanel;
-      const right = GAMEPLAY_LAYOUT.rightPanel;
-      const card = getCardLayout();
-
-      /*
-    Word card panel
-  */
-      addPanel({
-        x: left.x,
-        y: left.y,
-        width: left.width,
-        height: left.height,
-        fill: "#93c5fd",
-        stroke: "#1d4ed8",
-        corner: 28,
-      });
-
-      // Left panel inner glow strip
-      new zim.Rectangle(
-        left.width - 8,
-        left.height - 8,
-        "rgba(255,255,255,0.28)",
-        null,
-        0,
-        24,
-      )
-        .addTo(stage)
-        .loc(left.x + 4, left.y + 4);
-
-      new zim.Rectangle(left.width, 34, "#2563eb", null, 0, [28, 28, 0, 0])
-        .addTo(stage)
-        .loc(left.x, left.y);
-
-      addLabel({
-        text: "A  Word Cards",
-        x: left.x + left.width / 2,
-        y: left.y + 8,
-        size: 15,
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-      });
-
-      /*
-    Meaning card panel
-  */
-      addPanel({
-        x: right.x,
-        y: right.y,
-        width: right.width,
-        height: right.height,
-        fill: "#bbf7d0",
-        stroke: "#22c55e",
-        corner: 28,
-      });
-
-      // Right panel inner glow strip
-      new zim.Rectangle(
-        right.width - 8,
-        right.height - 8,
-        "rgba(255,255,255,0.28)",
-        null,
-        0,
-        24,
-      )
-        .addTo(stage)
-        .loc(right.x + 4, right.y + 4);
-
-      new zim.Rectangle(right.width, 34, "#059669", null, 0, [28, 28, 0, 0])
-        .addTo(stage)
-        .loc(right.x, right.y);
-
-      addLabel({
-        text: "📖  Meaning Cards",
-        x: right.x + right.width / 2,
-        y: right.y + 8,
-        size: 15,
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-      });
-
-      if (!puzzle) {
-        const isComingSoon = status === "Coming soon";
-        const panelMsg = isComingSoon ? "⏳ Coming Soon" : "Loading...";
-        const panelSub = isComingSoon ? "Data pipeline pending" : "Please wait";
-
-        // Left panel message
-        const leftCx = left.x + left.width / 2;
-        const leftCy = left.y + left.height / 2;
-        const leftBox = new zim.Rectangle(
-          left.width - 32,
-          70,
-          "rgba(255,255,255,0.55)",
-          "#2563eb",
-          2,
-          14,
-        )
-          .addTo(stage)
-          .loc(left.x + 16, leftCy - 35);
-        leftBox.mouseEnabled = false;
-        addLabel({
-          text: panelMsg,
-          x: leftCx,
-          y: leftCy - 22,
-          size: 16,
-          color: "#1e3a8a",
-          bold: true,
-          align: "center",
-        });
-        addLabel({
-          text: panelSub,
-          x: leftCx,
-          y: leftCy + 4,
-          size: 12,
-          color: "#3b82f6",
-          bold: false,
-          align: "center",
-        });
-        leftBox.animate({
-          props: { alpha: 0.4 },
-          time: 700,
-          rewind: true,
-          loop: true,
-          ease: "sineInOut",
-        });
-
-        // Right panel message
-        const rightCx = right.x + right.width / 2;
-        const rightCy = right.y + right.height / 2;
-        const rightBox = new zim.Rectangle(
-          right.width - 32,
-          70,
-          "rgba(255,255,255,0.55)",
-          "#059669",
-          2,
-          14,
-        )
-          .addTo(stage)
-          .loc(right.x + 16, rightCy - 35);
-        rightBox.mouseEnabled = false;
-        addLabel({
-          text: panelMsg,
-          x: rightCx,
-          y: rightCy - 22,
-          size: 16,
-          color: "#14532d",
-          bold: true,
-          align: "center",
-        });
-        addLabel({
-          text: panelSub,
-          x: rightCx,
-          y: rightCy + 4,
-          size: 12,
-          color: "#059669",
-          bold: false,
-          align: "center",
-        });
-        rightBox.animate({
-          props: { alpha: 0.4 },
-          time: 700,
-          rewind: true,
-          loop: true,
-          ease: "sineInOut",
-        });
-
-        return;
-      }
-
-      puzzle.leftItems.forEach((item, index) => {
-        drawCard({
-          item,
-          side: "left",
-          index,
-          x: left.x + card.xOffset,
-          y: left.y + card.yOffset + index * card.step,
-        });
-      });
-
-      puzzle.rightItems.forEach((item, index) => {
-        drawCard({
-          item,
-          side: "right",
-          index,
-          x: right.x + card.xOffset,
-          y: right.y + card.yOffset + index * card.step,
-        });
-      });
-    }
-
-    function drawConnections() {
-      const puzzle = roundData?.puzzle;
-
-      if (!puzzle) {
-        return;
-      }
-
-      /*
-    Connection vines
-    ----------------
-    These are drawn before the card panels in renderScene after the next step.
-    Mouse is disabled so the connectors never block card clicking.
-  */
-
-      const left = GAMEPLAY_LAYOUT.leftPanel;
-      const right = GAMEPLAY_LAYOUT.rightPanel;
-      const card = getCardLayout();
-
-      matches.forEach((match) => {
-        const leftIndex = puzzle.leftItems.findIndex(
-          (item) => item.id === match.leftId,
-        );
-
-        const rightIndex = puzzle.rightItems.findIndex(
-          (item) => item.id === match.rightId,
-        );
-
-        if (leftIndex < 0 || rightIndex < 0) {
-          return;
-        }
-
-        const leftX = left.x + card.xOffset + card.width;
-        const rightX = right.x + card.xOffset;
-
-        const y1 =
-          left.y + card.yOffset + leftIndex * card.step + card.height / 2;
-        const y2 =
-          right.y + card.yOffset + rightIndex * card.step + card.height / 2;
-
-        const connector = new zim.Shape().addTo(stage);
-        connector.mouseEnabled = false;
-
-        connector
-          .s("rgba(34,197,94,0.72)")
-          .ss(7)
-          .mt(leftX, y1)
-          .bt(470, y1 - 24, 630, y2 - 24, rightX, y2);
-
-        const connectorHighlight = new zim.Shape().addTo(stage);
-        connectorHighlight.mouseEnabled = false;
-
-        connectorHighlight
-          .s("#bbf7d0")
-          .ss(2)
-          .mt(leftX, y1)
-          .bt(470, y1 - 24, 630, y2 - 24, rightX, y2);
-
-        const leftDot = new zim.Circle(6, "#22c55e")
-          .addTo(stage)
-          .loc(leftX, y1);
-        const rightDot = new zim.Circle(6, "#22c55e")
-          .addTo(stage)
-          .loc(rightX, y2);
-
-        leftDot.mouseEnabled = false;
-        rightDot.mouseEnabled = false;
-      });
-    }
-    function drawFeedbackPanel() {
-      const fill =
-        feedbackType === "success"
-          ? "#ecfdf5"
-          : feedbackType === "error"
-            ? "#fef2f2"
-            : "#eff6ff";
-
-      const stroke =
-        feedbackType === "success"
-          ? "#86efac"
-          : feedbackType === "error"
-            ? "#fca5a5"
-            : "#93c5fd";
-
-      const color =
-        feedbackType === "success"
-          ? "#047857"
-          : feedbackType === "error"
-            ? "#b91c1c"
-            : "#1d4ed8";
-
-      const x = GAMEPLAY_LAYOUT.centerPanel.x;
-      const y = GAMEPLAY_LAYOUT.feedback.y;
-      const width = GAMEPLAY_LAYOUT.centerPanel.width;
-
-      addPanel({
-        x,
-        y,
-        width,
-        height: GAMEPLAY_LAYOUT.feedback.height,
-        fill,
-        stroke,
-        corner: 22,
-      });
-
-      addLabel({
-        text: "Guide Message",
-        x: x + 20,
-        y: y + 14,
-        size: 13,
-        color: "#64748b",
-        bold: true,
-      });
-
-      addWrappedLabel({
-        text: feedback,
-        x: x + 20,
-        y: y + 36,
-        maxCharsPerLine: readableMaxChars(34, 6),
-        maxLines: 2,
-        size: readableSize(14, 2),
-        lineHeight: largeTextMode ? 20 : 18,
-        color,
-        bold: true,
-      });
-
-      addLabel({
-        text: `Hints ${hintsUsed} · Wrong ${wrongAttempts}`,
-        x: x + 20,
-        y: y + 66,
-        size: 11,
-        color: "#475569",
-        bold: true,
-      });
-    }
-
-    function drawControls() {
-      const x = GAMEPLAY_LAYOUT.centerPanel.x;
-      const y = GAMEPLAY_LAYOUT.controls.y;
-
-      /*
-    Primary action row
-  */
-      addButton({
-        x,
-        y,
-        width: 84,
-        height: 38,
-        label: "Hint",
-        background: "#7c3aed",
-        rollBackground: "#6d28d9",
-        onClick: useHint,
-      });
-
-      addButton({
-        x: x + 100,
-        y,
-        width: 86,
-        height: 38,
-        label: "Reset",
-        background: "#f59e0b",
-        rollBackground: "#d97706",
-        onClick: resetRound,
-      });
-
-      addButton({
-        x: x + 202,
-        y: y - 4,
-        width: 116,
-        height: 46,
-        label: isSubmittingRound ? "Wait..." : "Submit",
-        background:
-          matches.length === roundData?.puzzle?.leftItems?.length
-            ? "#059669"
-            : "#10b981",
-        rollBackground: "#047857",
-        onClick: () => {
-          if (!isSubmittingRound) {
-            void submitRound();
-          }
-        },
-      });
-
-      /*
-    Secondary action row
-  */
-      addButton({
-        x: x + 34,
-        y: GAMEPLAY_LAYOUT.controls.secondaryY,
-        width: 104,
-        height: 38,
-        label: "Menu",
-        background: "#2563eb",
-        rollBackground: "#1d4ed8",
-        onClick: requestBackToMenu,
-      });
-
-      addButton({
-        x: x + 154,
-        y: GAMEPLAY_LAYOUT.controls.secondaryY,
-        width: 132,
-        height: 38,
-        label: "New Round",
-        background: "#ea580c",
-        rollBackground: "#c2410c",
-        onClick: requestNewRound,
-      });
-
-      /*
-    Tip ribbon.
-  */
-      addPanel({
-        x: x - 26,
-        y: GAMEPLAY_LAYOUT.controls.secondaryY + 52,
-        width: 344,
-        height: 30,
-        fill: "rgba(255,255,255,0.92)",
-        stroke: "#bfdbfe",
+      // Shadow
+      new zim.Rectangle({
+        width: CARD_W,
+        height: cardH,
+        color: rgba(C.ink, 0.07),
         corner: 15,
-      });
+      })
+        .addTo(card)
+        .loc(1, 4);
 
-      addLabel({
-        text: largeTextMode
-          ? "Keys: 1–6 cards · H hint · S submit · M menu"
-          : "Keys: 1–6 cards · H hint · R reset · S submit · N new · M menu · V mute · Z text",
-        x: x + 146,
-        y: GAMEPLAY_LAYOUT.controls.secondaryY + 60,
-        size: readableSize(11, 1),
-        color: "#2563eb",
-        bold: true,
-        align: "center",
-      });
-    }
+      // Card body
+      new zim.Rectangle({
+        width: CARD_W,
+        height: cardH,
+        color: cardBg,
+        borderColor: border,
+        borderWidth: isSelected ? 2.5 : 1.8,
+        corner: 15,
+      }).addTo(card);
 
-    function drawRoundSummary() {
-      const x = GAMEPLAY_LAYOUT.centerPanel.x;
-      const y = GAMEPLAY_LAYOUT.centerPanel.y;
-      const width = GAMEPLAY_LAYOUT.centerPanel.width;
+      // Left accent bar
+      new zim.Rectangle({
+        width: 7,
+        height: cardH - 10,
+        color: accent,
+        corner: [4, 0, 0, 4],
+      })
+        .addTo(card)
+        .loc(2, 5);
 
-      addPanel({
-        x,
-        y,
-        width,
-        height: 92,
-        fill: "rgba(255,255,255,0.96)",
-        stroke: "#fde68a",
-        corner: 24,
-      });
+      const n = puzzle.leftItems.length;
+      const fs = n >= 6 ? 18 : n >= 5 ? 20 : 22;
 
-      addLabel({
-        text: "Bridge Progress",
-        x: x + 20,
-        y: y + 14,
-        size: 14,
-        color: "#92400e",
-        bold: true,
-      });
+      if (side === "left") {
+        new zim.Label({
+          text: item.label,
+          size: fs,
+          font: FONT,
+          color: textCol,
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(card)
+          .loc(CARD_W / 2 + 4, cardH / 2 - 6);
 
-      addLabel({
-        text: shortText(getNormalizedPlayerName(), 22),
-        x: x + 20,
-        y: y + 36,
-        size: 13,
-        color: "#07164f",
-        bold: true,
-      });
-
-      addLabel({
-        text: `${matches.length}/${
-          roundData?.puzzle?.leftItems?.length || pairCount
-        } pairs · ${getCompletionPercent()}%`,
-        x: x + 20,
-        y: y + 58,
-        size: 18,
-        color: "#047857",
-        bold: true,
-      });
-
-      addLabel({
-        text:
-          roundType === "timed"
-            ? `Timer ${formatTimer(remainingRoundSeconds)}`
-            : "Practice Mode",
-        x: x + width - 20,
-        y: y + 18,
-        size: 12,
-        color: roundType === "timed" ? "#c2410c" : "#64748b",
-        bold: true,
-        align: "right",
-      });
-    }
-
-    function drawQuitConfirmationPanel() {
-      if (!quitConfirmVisible) {
-        return;
-      }
-
-      /*
-    Quit confirmation modal
-    -----------------------
-    Drawn on top of gameplay when the player tries to leave an active round.
-
-    The dim layer intentionally catches pointer input so underlying gameplay
-    buttons/cards are not accidentally clicked.
-  */
-
-      const dim = new zim.Rectangle(W, H, "rgba(15,23,42,0.42)")
-        .addTo(stage)
-        .loc(0, 0);
-
-      dim.cursor = "default";
-      dim.on("mousedown", () => {});
-
-      const panelX = 330;
-      const panelY = 220;
-      const panelWidth = 440;
-      const panelHeight = 250;
-
-      addPanel({
-        x: panelX,
-        y: panelY,
-        width: panelWidth,
-        height: panelHeight,
-        fill: "rgba(255,255,255,0.98)",
-        stroke: "#fca5a5",
-        corner: 30,
-      });
-
-      new zim.Circle(36, "#ef4444").addTo(stage).loc(panelX + 70, panelY + 68);
-
-      addLabel({
-        text: "!",
-        x: panelX + 70,
-        y: panelY + 44,
-        size: 34,
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text:
-          quitConfirmAction === "new-round"
-            ? "Start a new round?"
-            : "Quit current round?",
-        x: panelX + 126,
-        y: panelY + 42,
-        size: 28,
-        color: "#07164f",
-        bold: true,
-      });
-
-      addWrappedLabel({
-        text:
-          quitConfirmAction === "new-round"
-            ? "Your current matches, timer progress, hints, and wrong attempts will be lost if you start over."
-            : "Your current matches, timer progress, hints, and wrong attempts will be lost if you return to setup.",
-        x: panelX + 126,
-        y: panelY + 88,
-        maxCharsPerLine: 42,
-        maxLines: 3,
-        size: 13,
-        lineHeight: 18,
-        color: "#475569",
-        bold: true,
-      });
-
-      addButton({
-        x: panelX + 76,
-        y: panelY + 176,
-        width: 132,
-        height: 42,
-        label: "Cancel",
-        background: "#2563eb",
-        rollBackground: "#1d4ed8",
-        onClick: cancelQuitConfirmation,
-      });
-
-      addButton({
-        x: panelX + 232,
-        y: panelY + 176,
-        width: 148,
-        height: 42,
-        label: quitConfirmAction === "new-round" ? "Start Over" : "Quit Round",
-        background: "#dc2626",
-        rollBackground: "#b91c1c",
-        onClick: confirmQuitRound,
-      });
-
-      addLabel({
-        text: "Keys: Esc cancel · Enter confirm",
-        x: panelX + panelWidth / 2,
-        y: panelY + 228,
-        size: 11,
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
-    }
-
-    function drawResultPanel() {
-      if (!result) {
-        return;
-      }
-
-      /*
-    Adventure-style result screen
-    -----------------------------
-    This appears after the player submits or timed mode auto-submits.
-
-    It shows:
-    - final score
-    - round point result
-    - accuracy and performance stats
-    - top explorers leaderboard
-    - keyboard shortcuts for next/menu
-  */
-
-      const perfectScore = result.perfectRound && result.roundPoints > 0;
-      const title = getResultTitle();
-      const badgeIcon = getResultBadge();
-
-      const dim = new zim.Rectangle(W, H, "rgba(15,23,42,0.34)")
-        .addTo(stage)
-        .loc(0, 0);
-
-      dim.mouseEnabled = false;
-
-      const panelX = 190;
-      const panelY = 82;
-      const panelWidth = 720;
-      const panelHeight = 552;
-
-      addPanel({
-        x: panelX,
-        y: panelY,
-        width: panelWidth,
-        height: panelHeight,
-        fill: "rgba(255,255,255,0.985)",
-        stroke: perfectScore ? "#22c55e" : "#facc15",
-        corner: 34,
-      });
-
-      /*
-    Header badge
-  */
-      new zim.Circle(54, perfectScore ? "#22c55e" : "#f59e0b")
-        .addTo(stage)
-        .loc(panelX + 86, panelY + 82);
-
-      addLabel({
-        text: badgeIcon,
-        x: panelX + 86,
-        y: panelY + 50,
-        size: 42,
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "Bridge Complete",
-        x: panelX + 160,
-        y: panelY + 38,
-        size: 16,
-        color: perfectScore ? "#047857" : "#b45309",
-        bold: true,
-      });
-
-      addLabel({
-        text: title,
-        x: panelX + 160,
-        y: panelY + 66,
-        size: 34,
-        color: "#07164f",
-        bold: true,
-      });
-
-      addWrappedLabel({
-        text: result.message || "Your bridge round has been submitted.",
-        x: panelX + 160,
-        y: panelY + 112,
-        maxCharsPerLine: 56,
-        maxLines: 2,
-        size: 13,
-        lineHeight: 18,
-        color: "#475569",
-        bold: true,
-      });
-
-      /*
-    Main score card
-  */
-      addPanel({
-        x: panelX + 36,
-        y: panelY + 176,
-        width: 190,
-        height: 142,
-        fill: "#fff7ed",
-        stroke: "#fed7aa",
-        corner: 24,
-      });
-
-      addLabel({
-        text: "Score",
-        x: panelX + 58,
-        y: panelY + 194,
-        size: 14,
-        color: "#92400e",
-        bold: true,
-      });
-
-      addLabel({
-        text: `${result.score}`,
-        x: panelX + 130,
-        y: panelY + 218,
-        size: 54,
-        color: "#111827",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "points earned",
-        x: panelX + 130,
-        y: panelY + 284,
-        size: 13,
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
-
-      /*
-    Round point card
-  */
-      addPanel({
-        x: panelX + 36,
-        y: panelY + 336,
-        width: 190,
-        height: 92,
-        fill: perfectScore ? "#ecfdf5" : "#f8fafc",
-        stroke: perfectScore ? "#86efac" : "#e2e8f0",
-        corner: 22,
-      });
-
-      addLabel({
-        text: "Round Point",
-        x: panelX + 58,
-        y: panelY + 354,
-        size: 13,
-        color: "#64748b",
-        bold: true,
-      });
-
-      addLabel({
-        text: result.roundPoints > 0 ? "+1 earned" : "Not earned",
-        x: panelX + 58,
-        y: panelY + 382,
-        size: 22,
-        color: result.roundPoints > 0 ? "#047857" : "#475569",
-        bold: true,
-      });
-
-      /*
-    Performance stat grid
-  */
-      const stats = [
-        ["Accuracy", `${result.accuracy}%`],
-        ["Correct", `${result.correctMatches}/${result.totalMatches}`],
-        ["Time", `${result.timeSeconds}s`],
-        ["Hints", `${result.hintsUsed}`],
-        ["Wrong", `${result.wrongAttempts}`],
-        ["Perfect", result.perfectRound ? "Yes" : "No"],
-      ];
-
-      stats.forEach(([label, value], index) => {
-        const col = index % 3;
-        const row = Math.floor(index / 3);
-
-        const statX = panelX + 260 + col * 138;
-        const statY = panelY + 176 + row * 82;
-
-        addPanel({
-          x: statX,
-          y: statY,
-          width: 122,
-          height: 62,
-          fill: "#f8fafc",
-          stroke: "#e2e8f0",
-          corner: 18,
-        });
-
-        addLabel({
-          text: label,
-          x: statX + 14,
-          y: statY + 11,
+        // POS badge — pill in top-right corner
+        const badgeW = Math.max(item.sublabel.length * 9 + 14, 46);
+        new zim.Rectangle({
+          width: badgeW,
+          height: 20,
+          color: rgba(accent, 0.14),
+          corner: 10,
+        })
+          .addTo(card)
+          .loc(CARD_W - badgeW - 6, 6);
+        new zim.Label({
+          text: item.sublabel,
           size: 11,
-          color: "#64748b",
+          font: FONT,
+          color: isWrong ? "#c00000" : accent,
+          align: "center",
+          valign: "center",
           bold: true,
-        });
-
-        addLabel({
-          text: value,
-          x: statX + 14,
-          y: statY + 34,
-          size: 18,
-          color:
-            label === "Perfect" && value === "Yes"
-              ? "#047857"
-              : label === "Wrong" && Number(result.wrongAttempts) > 0
-                ? "#b91c1c"
-                : "#111827",
-          bold: true,
-        });
-      });
-
-      /*
-    Top Explorers result leaderboard
-  */
-      addPanel({
-        x: panelX + 260,
-        y: panelY + 350,
-        width: 404,
-        height: 114,
-        fill: "#f0fdf4",
-        stroke: "#bbf7d0",
-        corner: 22,
-      });
-
-      addLabel({
-        text: "🏆 Top Explorers",
-        x: panelX + 284,
-        y: panelY + 368,
-        size: 16,
-        color: "#065f46",
-        bold: true,
-      });
-
-      const topEntries = leaderboard.slice(0, 3);
-
-      if (topEntries.length === 0) {
-        addLabel({
-          text: "No scores yet.",
-          x: panelX + 284,
-          y: panelY + 410,
-          size: 13,
-          color: "#64748b",
-          bold: true,
-        });
+        })
+          .addTo(card)
+          .loc(CARD_W - badgeW / 2 - 6, 16);
       } else {
-        topEntries.forEach((entry, index) => {
-          const rowX = panelX + 284 + index * 122;
+        new zim.Label({
+          text: item.label,
+          size: fs,
+          font: FONT,
+          color: textCol,
+          align: "center",
+          valign: "center",
+          bold: true,
+          lineWidth: CARD_W - 26,
+        })
+          .addTo(card)
+          .loc(CARD_W / 2 + 4, cardH / 2 - 8);
 
-          new zim.Circle(14, index === 0 ? "#facc15" : "#e2e8f0")
-            .addTo(stage)
-            .loc(rowX, panelY + 420);
+        new zim.Label({
+          text: item.sublabel,
+          size: 11,
+          font: FONT,
+          color: subCol,
+          align: "center",
+          valign: "center",
+        })
+          .addTo(card)
+          .loc(CARD_W / 2 + 4, cardH - 13);
+      }
 
-          addLabel({
-            text: `${index + 1}`,
-            x: rowX,
-            y: panelY + 411,
-            size: 11,
-            color: index === 0 ? "#92400e" : "#475569",
-            bold: true,
-            align: "center",
-          });
-
-          addLabel({
-            text: shortText(entry.playerName, 10),
-            x: rowX + 22,
-            y: panelY + 402,
-            size: 11,
-            color: "#111827",
-            bold: true,
-          });
-
-          addLabel({
-            text: `${entry.totalScore} pts`,
-            x: rowX + 22,
-            y: panelY + 420,
-            size: 10,
-            color: "#64748b",
-            bold: true,
-          });
+      if (isJustMatched) {
+        card.animate({
+          props: { scaleX: 1.08, scaleY: 1.08 },
+          time: 0.13,
+          rewind: true,
         });
       }
 
-      /*
-    Action buttons
-  */
-      addButton({
-        x: panelX + 154,
-        y: panelY + 492,
-        width: 116,
-        height: 42,
-        label: "Menu",
-        background: "#2563eb",
-        rollBackground: "#1d4ed8",
-        onClick: backToMenu,
-      });
+      // Entrance animation — stagger by card index
+      if (freshRound && !isMatched && !isSelected && !isWrong) {
+        card.alpha = 0;
+        const delay =
+          (side === "left"
+            ? pairIdx
+            : puzzle.rightItems.findIndex((r) => r.id === item.id)) * 0.07;
+        card.animate({
+          props: { alpha: 1 },
+          time: 0.22,
+          wait: delay,
+          ease: "backOut",
+        });
+      }
 
-      addButton({
-        x: panelX + 292,
-        y: panelY + 492,
-        width: 142,
-        height: 42,
-        label: "Leaderboard",
-        background: "#f59e0b",
-        rollBackground: "#d97706",
-        onClick: () => {
-          openLeaderboardScreen("gameplay");
-        },
-      });
-
-      addButton({
-        x: panelX + 456,
-        y: panelY + 492,
-        width: 158,
-        height: 42,
-        label: "Next Round",
-        background: "#059669",
-        rollBackground: "#047857",
-        onClick: () => {
-          void loadRound();
-        },
-      });
-
-      addLabel({
-        text: "Keys: Enter/N next round · L leaderboard · M/Esc menu",
-        x: panelX + panelWidth / 2,
-        y: panelY + 538,
-        size: 11,
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
+      if (!isMatched && !isWrong) {
+        card.cursor = "pointer";
+        card.on("click", () => onCardClick(item, side, y, cardH));
+      }
     }
 
-    function drawLeaderboard() {
-      const { x, y, width, height } = GAMEPLAY_LAYOUT.leaderboard;
-
-      addPanel({
-        x,
-        y,
-        width,
-        height,
-        fill: "rgba(255,255,255,0.94)",
-        stroke: "#fde68a",
-        corner: 22,
-      });
-
-      addLabel({
-        text: "🏆 Top Explorers",
-        x: x + 28,
-        y: y + 17,
+    // ── COLUMN PILL BADGE ────────────────────────────────────────────
+    function drawColumnPill(text, cx, cy, color) {
+      const pw = text.length * 13 + 28,
+        ph = 30;
+      const pill = new zim.Container()
+        .addTo(stage)
+        .loc(cx - pw / 2, cy - ph / 2);
+      pill.mouseChildren = false;
+      new zim.Rectangle({
+        width: pw,
+        height: ph,
+        color: rgba(color, 0.12),
+        borderColor: color,
+        borderWidth: 1.5,
+        corner: ph / 2,
+      }).addTo(pill);
+      new zim.Label({
+        text,
         size: 16,
-        color: "#92400e",
+        font: FONT,
+        color,
+        align: "center",
+        valign: "center",
         bold: true,
-      });
-
-      if (leaderboard.length === 0) {
-        addLabel({
-          text: "No scores yet.",
-          x: x + 188,
-          y: y + 18,
-          size: 14,
-          color: "#64748b",
-          bold: true,
-        });
-        return;
-      }
-
-      leaderboard.slice(0, 4).forEach((entry, index) => {
-        const rowX = x + 210 + index * 155;
-
-        new zim.Circle(13, index === 0 ? "#facc15" : "#e2e8f0")
-          .addTo(stage)
-          .loc(rowX, y + 27);
-
-        addLabel({
-          text: `${index + 1}`,
-          x: rowX,
-          y: y + 18,
-          size: 11,
-          color: index === 0 ? "#92400e" : "#475569",
-          bold: true,
-          align: "center",
-        });
-
-        addLabel({
-          text: shortText(entry.playerName, 11),
-          x: rowX + 22,
-          y: y + 12,
-          size: 12,
-          color: "#111827",
-          bold: true,
-        });
-
-        addLabel({
-          text: `${entry.totalScore} pts`,
-          x: rowX + 22,
-          y: y + 30,
-          size: 10,
-          color: "#64748b",
-          bold: true,
-        });
-      });
+      })
+        .addTo(pill)
+        .loc(pw / 2, ph / 2);
     }
 
-    function drawLeaderboardScreen() {
-      /*
-    Full Top Explorers screen
-    -------------------------
-    Dedicated leaderboard scene for Meaning Bridge.
-
-    This is separate from:
-    - the small gameplay leaderboard strip
-    - the mini leaderboard shown on the result overlay
-  */
-
-      addPanel({
-        x: 130,
-        y: 74,
-        width: 840,
-        height: 570,
-        fill: "rgba(255,255,255,0.97)",
-        stroke: "#fde68a",
-        corner: 34,
-      });
-
-      addButton({
-        x: 160,
-        y: 100,
-        width: 102,
-        height: 36,
-        label: "Back",
-        background: "#2563eb",
-        rollBackground: "#1d4ed8",
-        onClick: closeLeaderboardScreen,
-      });
-
-      addLabel({
-        text: "🏆 Top Explorers",
-        x: W / 2,
-        y: 106,
-        size: 38,
-        color: "#07164f",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "Best Meaning Bridge players across submitted rounds.",
-        x: W / 2,
-        y: 156,
-        size: 15,
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
-
-      addPanel({
-        x: 190,
-        y: 200,
-        width: 720,
-        height: 54,
-        fill: "#f8fafc",
-        stroke: "#e2e8f0",
-        corner: 18,
-      });
-
-      addLabel({
-        text: "Rank",
-        x: 222,
-        y: 218,
-        size: 13,
-        color: "#64748b",
-        bold: true,
-      });
-
-      addLabel({
-        text: "Player",
-        x: 330,
-        y: 218,
-        size: 13,
-        color: "#64748b",
-        bold: true,
-      });
-
-      addLabel({
-        text: "Score",
-        x: 650,
-        y: 218,
-        size: 13,
-        color: "#64748b",
-        bold: true,
-      });
-
-      addLabel({
-        text: "Round Points",
-        x: 770,
-        y: 218,
-        size: 13,
-        color: "#64748b",
-        bold: true,
-      });
-
-      if (leaderboard.length === 0) {
-        addPanel({
-          x: 300,
-          y: 310,
-          width: 500,
-          height: 120,
-          fill: "#f8fafc",
-          stroke: "#e2e8f0",
-          corner: 24,
-        });
-
-        addLabel({
-          text: "No scores yet.",
-          x: W / 2,
-          y: 340,
-          size: 26,
-          color: "#07164f",
-          bold: true,
-          align: "center",
-        });
-
-        addLabel({
-          text: "Play a round and submit your bridge to appear here.",
-          x: W / 2,
-          y: 382,
-          size: 14,
-          color: "#64748b",
-          bold: true,
-          align: "center",
-        });
-      } else {
-        leaderboard.slice(0, 10).forEach((entry, index) => {
-          const rowY = 270 + index * 34;
-          const firstPlace = index === 0;
-
-          addPanel({
-            x: 190,
-            y: rowY,
-            width: 720,
-            height: 28,
-            fill: firstPlace
-              ? "#fffbeb"
-              : index % 2 === 0
-                ? "#ffffff"
-                : "#f8fafc",
-            stroke: firstPlace ? "#fde68a" : "#e2e8f0",
-            corner: 12,
-          });
-
-          const rankCircle = new zim.Circle(
-            12,
-            firstPlace ? "#facc15" : "#e2e8f0",
-          )
-            .addTo(stage)
-            .loc(236, rowY + 14);
-
-          rankCircle.mouseEnabled = false;
-
-          addLabel({
-            text: `${index + 1}`,
-            x: 236,
-            y: rowY + 6,
-            size: 10,
-            color: firstPlace ? "#92400e" : "#475569",
-            bold: true,
-            align: "center",
-          });
-
-          addLabel({
-            text: shortText(entry.playerName, 24),
-            x: 330,
-            y: rowY + 7,
-            size: 13,
-            color: "#111827",
-            bold: true,
-          });
-
-          addLabel({
-            text: `${entry.totalScore || 0}`,
-            x: 650,
-            y: rowY + 7,
-            size: 13,
-            color: "#047857",
-            bold: true,
-          });
-
-          addLabel({
-            text: `${entry.roundPoints || 0}`,
-            x: 820,
-            y: rowY + 7,
-            size: 13,
-            color: "#5b21b6",
-            bold: true,
-            align: "center",
-          });
-        });
-      }
-
-      addButton({
-        x: 370,
-        y: 586,
-        width: 150,
-        height: 42,
-        label: "Setup",
-        background: "#4f46e5",
-        rollBackground: "#4338ca",
-        onClick: goToSetupMenu,
-      });
-
-      addButton({
-        x: 546,
-        y: 586,
-        width: 170,
-        height: 42,
-        label: "Refresh",
-        background: "#059669",
-        rollBackground: "#047857",
-        onClick: () => {
-          void loadLeaderboard(10).then(() => {
-            renderScene();
-          });
-        },
-      });
-
-      addLabel({
-        text: "Keys: L leaderboard · Esc/M back · Enter setup",
-        x: W / 2,
-        y: 660,
-        size: 11,
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
-    }
-
-    function drawRulesScreen() {
-      /*
-    Full How to Play / Rules screen
-    -------------------------------
-    This explains the game now that Meaning Bridge has moved beyond POC.
-
-    It is intentionally separate from the setup screen so players can learn
-    the rules without starting a round.
-  */
-
-      addPanel({
-        x: 110,
-        y: 58,
-        width: 880,
-        height: 604,
-        fill: "rgba(255,255,255,0.97)",
-        stroke: "#bfdbfe",
-        corner: 34,
-      });
-
-      addButton({
-        x: 142,
-        y: 90,
-        width: 102,
-        height: 36,
-        label: "Back",
-        background: "#2563eb",
-        rollBackground: "#1d4ed8",
-        onClick: closeRulesScreen,
-      });
-
-      addLabel({
-        text: "How to Play",
-        x: W / 2,
-        y: 88,
-        size: 38,
-        color: "#07164f",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "Build a bridge by matching word cards with their correct meanings.",
-        x: W / 2,
-        y: 140,
-        size: 15,
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
-
-      const cards = [
-        {
-          title: "1. Choose a Challenge",
-          body: "Pick English → Sanskrit, Sanskrit → English, Word → Definition, Word → Synonym, or Word → Antonym.",
-          x: 150,
-          y: 190,
-          color: "#eff6ff",
-          stroke: "#bfdbfe",
-          titleColor: "#1d4ed8",
-        },
-        {
-          title: "2. Match the Cards",
-          body: "Select a word card, then select the meaning card that belongs with it. Correct matches build the bridge.",
-          x: 430,
-          y: 190,
-          color: "#ecfdf5",
-          stroke: "#a7f3d0",
-          titleColor: "#047857",
-        },
-        {
-          title: "3. Submit the Round",
-          body: "Submit when you are ready. Your score uses your matches, accuracy, time, hints, and wrong attempts.",
-          x: 710,
-          y: 190,
-          color: "#fff7ed",
-          stroke: "#fed7aa",
-          titleColor: "#c2410c",
-        },
-        {
-          title: "Practice Mode",
-          body: "Practice mode has no countdown. Use it to learn the words and improve your accuracy.",
-          x: 150,
-          y: 340,
-          color: "#f8fafc",
-          stroke: "#e2e8f0",
-          titleColor: "#334155",
-        },
-        {
-          title: "Timed Mode",
-          body: "Timed mode uses 2:00, 5:00, 10:00, or a custom timer. When time expires, the current round auto-submits.",
-          x: 430,
-          y: 340,
-          color: "#faf5ff",
-          stroke: "#ddd6fe",
-          titleColor: "#5b21b6",
-        },
-        {
-          title: "Perfect Bridge",
-          body: "A perfect round earns a round point. Wrong attempts and hints make it harder to earn a clean result.",
-          x: 710,
-          y: 340,
-          color: "#fffbeb",
-          stroke: "#fde68a",
-          titleColor: "#92400e",
-        },
-      ];
-
-      cards.forEach((card) => {
-        addPanel({
-          x: card.x,
-          y: card.y,
-          width: 230,
-          height: 118,
-          fill: card.color,
-          stroke: card.stroke,
-          corner: 22,
-        });
-
-        addLabel({
-          text: card.title,
-          x: card.x + 18,
-          y: card.y + 16,
-          size: 15,
-          color: card.titleColor,
-          bold: true,
-        });
-
-        addWrappedLabel({
-          text: card.body,
-          x: card.x + 18,
-          y: card.y + 44,
-          maxCharsPerLine: 27,
-          maxLines: 3,
-          size: 11,
-          lineHeight: 15,
-          color: "#475569",
-          bold: true,
-        });
-      });
-
-      /*
-    Keyboard shortcut strip
-  */
-      addPanel({
-        x: 150,
-        y: 492,
-        width: 790,
-        height: 72,
-        fill: "#f8fafc",
-        stroke: "#e2e8f0",
-        corner: 22,
-      });
-
-      addLabel({
-        text: "Keyboard Shortcuts",
-        x: 176,
-        y: 510,
-        size: 17,
-        color: "#07164f",
-        bold: true,
-      });
-
-      addWrappedLabel({
-        text: "Landing: Enter/Space start · Setup: P practice, T timed, 1/2/3 timers, C custom, E edit name · Gameplay: 1–6 cards, H hint, R reset, S submit, N new, M menu · Result: Enter/N next, L leaderboard · V mute · Z large text.",
-        x: 176,
-        y: 538,
-        maxCharsPerLine: 112,
-        maxLines: 2,
-        size: 11,
-        lineHeight: 15,
-        color: "#475569",
-        bold: true,
-      });
-
-      /*
-    Future feature note
-  */
-      addPanel({
-        x: 250,
-        y: 584,
-        width: 600,
-        height: 48,
-        fill: "#ecfeff",
-        stroke: "#a5f3fc",
+    // ── PANEL CONTAINER (wraps all cards on one side) ─────────────────
+    function drawPanelContainer(x, y, w, h) {
+      const PAD = 10;
+      // Shadow
+      new zim.Rectangle({
+        width: w + PAD * 2,
+        height: h + PAD * 2,
+        color: rgba(C.ink, 0.06),
         corner: 20,
-      });
-
-      addLabel({
-        text: "Coming later: Bridge Battle multiplayer with 2:00, 5:00, and 10:00 race modes.",
-        x: W / 2,
-        y: 600,
-        size: 13,
-        color: "#0e7490",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "Keys: ? or / help · Esc/M back · Enter setup",
-        x: W / 2,
-        y: 646,
-        size: 11,
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
+      })
+        .addTo(stage)
+        .loc(x - PAD + 2, y - PAD + 4);
+      // Panel body
+      new zim.Rectangle({
+        width: w + PAD * 2,
+        height: h + PAD * 2,
+        color: "rgba(254,248,240,0.9)",
+        borderColor: rgba("#5aaa5a", 0.22),
+        borderWidth: 1.5,
+        corner: 20,
+      })
+        .addTo(stage)
+        .loc(x - PAD, y - PAD);
     }
 
-    function renderScene() {
+    // ── RENDER GAME ───────────────────────────────────────────────────
+    function renderGame() {
+      calcLayout();
       stage.removeAllChildren();
 
-      if (screen === "landing") {
-        drawLandingScene();
-        publishDebugState();
-        stage.update();
-        return;
-      }
-
+      // Background
       drawBackground();
 
-      if (screen === "leaderboard") {
-        drawLeaderboardScreen();
-        publishDebugState();
-        stage.update();
-        return;
-      }
+      drawHeader({ showExit: true });
 
-      if (screen === "rules") {
-        drawRulesScreen();
-        publishDebugState();
-        stage.update();
-        return;
-      }
+      // Bridge zone — clean white strip with a very subtle green tint from the header
+      const bx = LEFT_X + CARD_W;
+      const bw = RIGHT_X - bx;
+      new zim.Rectangle(bw, H - HEADER_H, rgba("#7ec87e", 0.05))
+        .addTo(stage)
+        .loc(bx, HEADER_H);
 
-      if (screen === "menu") {
-        drawMenuScene();
-        publishDebugState();
-        stage.update();
-        return;
-      }
+      // Thin vertical dashed dividers at each edge of the bridge zone
+      [bx, bx + bw].forEach((dx) => {
+        const dv = new zim.Shape().addTo(stage);
+        dv.s(rgba("#5aaa5a", 0.18)).ss(1.5, "round", "round").sd([6, 7]);
+        dv.mt(dx, HEADER_H + 12).lt(dx, H - 12);
+      });
 
-      drawBridge();
-      drawHeader();
-      drawPassagePanel();
+      // Instruction text
+      const instrColor =
+        currentMode === "word-to-synonym"
+          ? "#3a8a3a"
+          : currentMode === "word-to-antonym"
+            ? "#1a7a99"
+            : "#6b48cc";
+      const instr = new zim.Label({
+        text: puzzle.instruction,
+        size: 21,
+        font: FONT,
+        color: instrColor,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .center(stage);
+      instr.y = HEADER_H + 18;
+      instr.alpha = 0;
+      instr.animate({
+        props: { y: HEADER_H + 32, alpha: 1 },
+        time: 0.4,
+        ease: "backOut",
+      });
 
-      /*
-  Connections are drawn before cards so they never sit above the transparent
-  card hit layers.
-*/
-      drawConnections();
+      // Column header pills — sit clearly above the first card row
+      const rightLabel =
+        currentMode === "word-to-synonym"
+          ? "Synonym"
+          : currentMode === "word-to-antonym"
+            ? "Antonym"
+            : "Definition";
+      const CHY = HEADER_H + 36;
+      drawColumnPill("Word", LEFT_X + CARD_W / 2, CHY, instrColor);
+      drawColumnPill(rightLabel, RIGHT_X + CARD_W / 2, CHY, instrColor);
+
+      // Single container wrapping both panels + bridge zone
+      const n = puzzle.leftItems.length;
+      const offsetY = (RIGHT_CARD_H - CARD_H) / 2;
+      // For 4 pairs: extend panel above first card and below last card symmetrically
+      const TOP_PAD = n === 4 ? 28 : 0;
+      const panelTop = START_Y + offsetY - TOP_PAD;
+      const panelH =
+        n === 4
+          ? H - BOTTOM_BAR_H - 8 - panelTop
+          : (n - 1) * GAP + RIGHT_CARD_H;
+      drawPanelContainer(LEFT_X, panelTop, RIGHT_X + CARD_W - LEFT_X, panelH);
+
+      // Bridges first (behind cards)
+      drawBridges();
       drawCards();
+      drawBottomBar();
+      stage.update();
+      freshRound = false; // entrance animation only plays on first render per round
+    }
 
-      drawRoundSummary();
-      drawFeedbackPanel();
-      drawControls();
+    function drawBottomBar() {
+      const barH = BOTTOM_BAR_H;
+      const barY = H - barH;
 
-      if (!result) {
-        drawLeaderboard();
+      // Bottom bar background
+      new zim.Rectangle(W, barH, rgba("#5aaa5a", 0.08))
+        .addTo(stage)
+        .loc(0, barY);
+      new zim.Rectangle(W, 2, "#5aaa5a").addTo(stage).loc(0, barY); // solid top border
+
+      const matched = Object.keys(matches).length;
+      const total = puzzle.leftItems.length;
+
+      // Progress bar (centered, wider, more prominent)
+      const progW = 320,
+        progH = 10,
+        progX = W / 2 - progW / 2,
+        progY = barY + 26;
+      new zim.Rectangle({
+        width: progW,
+        height: progH,
+        color: rgba("#5aaa5a", 0.18),
+        corner: progH / 2,
+      })
+        .addTo(stage)
+        .loc(progX, progY);
+      if (matched > 0) {
+        const fillW = Math.round((progW * matched) / total);
+        new zim.Rectangle({
+          width: fillW,
+          height: progH,
+          color: "#5aaa5a",
+          corner: progH / 2,
+        })
+          .addTo(stage)
+          .loc(progX, progY);
       }
+      // Progress label — above the bar
+      new zim.Label({
+        text: `${matched} of ${total} matched`,
+        size: 14,
+        font: FONT,
+        color: "#3a7a3a",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(W / 2, barY + 14);
 
-      if (quitConfirmVisible && !result) {
-        drawQuitConfirmationPanel();
-      }
+      // Hint button (right side)
+      const hintBtn = new zim.Container().addTo(stage).loc(W - 140, barY + 11);
+      hintBtn.mouseChildren = false;
+      new zim.Rectangle({
+        width: 110,
+        height: 38,
+        color: "#e8eaf6",
+        borderColor: "#7986cb",
+        borderWidth: 2,
+        corner: 19,
+      }).addTo(hintBtn);
+      new zim.Label({
+        text: "💡 Hint",
+        size: 16,
+        font: FONT,
+        color: "#3949ab",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(hintBtn)
+        .loc(55, 19);
+      hintBtn.cursor = "pointer";
+      hintBtn.on("click", () => {
+        if (!selectedLeft) {
+          showPrompt("👈 Pick a word from the left panel first!", H - 90, 38);
+          return;
+        }
+        const hint = puzzle.hints?.[selectedLeft.id];
+        if (hint) showHint(hint);
+      });
 
-      if (result) {
-        drawResultPanel();
-      }
+      // Skip button (left side)
+      const skipBtn = new zim.Container().addTo(stage).loc(30, barY + 11);
+      skipBtn.mouseChildren = false;
+      new zim.Rectangle({
+        width: 110,
+        height: 38,
+        color: "#e8eaf6",
+        borderColor: "#7986cb",
+        borderWidth: 2,
+        corner: 19,
+      }).addTo(skipBtn);
+      new zim.Label({
+        text: "⏭ Skip",
+        size: 16,
+        font: FONT,
+        color: "#3949ab",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(skipBtn)
+        .loc(55, 19);
+      skipBtn.cursor = "pointer";
+      skipBtn.on("click", () => {
+        roundIndex = Math.min(roundIndex + 1, PAIR_COUNTS.length - 1);
+        loadRound();
+      });
+    }
 
-      publishDebugState();
+    function showHint(text) {
+      const old = stage.getChildByName("hint_bubble");
+      if (old) stage.removeChild(old);
+
+      const bW = 420,
+        bH = 52;
+      const bx = (W - bW) / 2;
+      const by = H - 62 - bH - 10;
+
+      const bubble = new zim.Container().addTo(stage);
+      bubble.name = "hint_bubble";
+      bubble.mouseChildren = false;
+
+      new zim.Rectangle({
+        width: bW,
+        height: bH,
+        color: "#fffbe6",
+        borderColor: "#c9a830",
+        borderWidth: 1.5,
+        corner: 14,
+      }).addTo(bubble);
+      new zim.Label({
+        text: text,
+        size: 15,
+        font: FONT,
+        color: "#7a5800",
+        align: "center",
+        valign: "center",
+        lineWidth: bW - 24,
+      })
+        .addTo(bubble)
+        .loc(bW / 2, bH / 2);
+      bubble.loc(bx, by);
+      stage.update();
+
+      setTimeout(() => {
+        if (stage.contains(bubble)) {
+          stage.removeChild(bubble);
+          stage.update();
+        }
+      }, 3000);
+    }
+
+    // ── LOADING / ERROR ───────────────────────────────────────────────
+    function showLoading() {
+      stage.removeAllChildren();
+      drawBackground();
+      drawHeader({ showExit: false });
+
+      // Pulsing dots
+      const dots = new zim.Container().addTo(stage).center(stage);
+      [0, 1, 2].forEach((i) => {
+        const dot = new zim.Circle(9, PC[i]).addTo(dots).loc(i * 34 - 34, 0);
+        dot.animate({
+          props: { y: -14 },
+          time: 0.45,
+          ease: "backOut",
+          loop: true,
+          rewind: true,
+          wait: i * 0.15,
+        });
+      });
+      new zim.Label({
+        text: "Loading…",
+        size: 22,
+        font: FONT,
+        color: C.sub,
+        align: "center",
+        valign: "center",
+      })
+        .addTo(stage)
+        .loc(W / 2, H / 2 + 36);
+
       stage.update();
     }
 
-    if (typeof window !== "undefined") {
-      if (window.__meaningBridgePlayerNameKeyCleanup) {
-        window.__meaningBridgePlayerNameKeyCleanup();
-      }
-
-      if (window.__meaningBridgeTimerCleanup) {
-        window.__meaningBridgeTimerCleanup();
-      }
-
-      window.addEventListener("keydown", handlePlayerNameKeyDown);
-
-      window.__meaningBridgePlayerNameKeyCleanup = () => {
-        window.removeEventListener("keydown", handlePlayerNameKeyDown);
-      };
-
-      window.__meaningBridgeTimerCleanup = () => {
-        stopRoundTimer();
-      };
+    function showError(msg) {
+      stage.removeAllChildren();
+      drawBackground();
+      drawHeader({ showExit: true });
+      new zim.Label({
+        text: msg,
+        size: 20,
+        font: FONT,
+        color: "#cc0000",
+        lineWidth: 700,
+        align: "center",
+        valign: "center",
+      })
+        .addTo(stage)
+        .center(stage);
+      stage.update();
     }
 
-    status = "Welcome to Meaning Bridge.";
-    setFeedback(
-      "Start the adventure, then choose your challenge settings.",
-      "neutral",
-    );
+    async function loadRound() {
+      showLoading();
 
-    preloadLandingImage();
-    renderScene();
+      try {
+        const data = await fetchMeaningBridgeRound(
+          currentMode,
+          PAIR_COUNTS[roundIndex],
+        );
 
-    void loadLeaderboard().then(() => {
-      renderScene();
-    });
+        puzzle = data.puzzle;
+        matches = {};
+        selectedLeft = null;
+        selectedRight = null;
+        flashWrong = null;
+        lastMatchLeft = null;
+        freshRound = true;
+
+        renderGame();
+      } catch (error) {
+        console.error("Meaning Bridge round load failed:", error);
+
+        showError(
+          error instanceof Error
+            ? error.message
+            : "Could not load puzzle — make sure the server is running.",
+        );
+      }
+    }
+
+    // ── CLICK LOGIC ────────────────────────────────────────────────────
+    let promptTimeout = null;
+
+    function showPrompt(msg, cardY, cardH) {
+      const old = stage.getChildByName("prompt_toast");
+      if (old) stage.removeChild(old);
+      if (promptTimeout) clearTimeout(promptTimeout);
+
+      const toastW = 220,
+        toastH = 40;
+      // Position to the LEFT of the right panel, vertically centered on the clicked card
+      const tx = RIGHT_X - toastW - 16;
+      const ty = cardY + cardH / 2 - toastH / 2;
+
+      const toast = new zim.Container().addTo(stage);
+      toast.name = "prompt_toast";
+      toast.mouseChildren = false;
+
+      // Shadow
+      new zim.Rectangle({
+        width: toastW,
+        height: toastH,
+        color: rgba("#1d2b66", 0.15),
+        corner: 20,
+      })
+        .addTo(toast)
+        .loc(1, 3);
+      // Body
+      new zim.Rectangle({
+        width: toastW,
+        height: toastH,
+        color: "#1d2b66",
+        corner: 20,
+      }).addTo(toast);
+      // Small right-pointing arrow tip
+      const tip = new zim.Shape().addTo(toast);
+      tip
+        .f("#1d2b66")
+        .mt(toastW, toastH / 2 - 7)
+        .lt(toastW + 10, toastH / 2)
+        .lt(toastW, toastH / 2 + 7)
+        .cp();
+
+      new zim.Label({
+        text: msg,
+        size: 13,
+        font: FONT,
+        color: "#ffffff",
+        align: "center",
+        valign: "center",
+        lineWidth: toastW - 16,
+      })
+        .addTo(toast)
+        .loc(toastW / 2, toastH / 2);
+      toast.loc(tx, ty);
+      stage.update();
+
+      promptTimeout = setTimeout(() => {
+        if (stage.contains(toast)) stage.removeChild(toast);
+        stage.update();
+      }, 1800);
+    }
+
+    function onCardClick(item, side, cardY, cardH) {
+      // Enforce: must pick a word (left) before picking a meaning (right)
+      if (side === "right" && !selectedLeft) {
+        showPrompt("👈 Pick a word from the left panel first!", cardY, cardH);
+        return;
+      }
+
+      flashWrong = null;
+      lastMatchLeft = null;
+      if (side === "left") {
+        if (selectedLeft?.id === item.id) {
+          selectedLeft = null; // tap same word → deselect
+        } else {
+          selectedLeft = item; // switch to new word
+          selectedRight = null; // reset right whenever left changes
+        }
+      } else {
+        selectedRight = selectedRight?.id === item.id ? null : item;
+      }
+
+      if (selectedLeft && selectedRight) {
+        renderGame();
+        setTimeout(checkPair, 300);
+        return;
+      }
+      renderGame();
+    }
+
+    function checkPair() {
+      if (!selectedLeft || !selectedRight) return;
+      const correct = puzzle.answerKey[selectedLeft.id] === selectedRight.id;
+
+      if (correct) {
+        matches[selectedLeft.id] = selectedRight.id;
+        lastMatchLeft = selectedLeft.id;
+        totalScore += puzzle.scoreRules.correct;
+        selectedLeft = selectedRight = null;
+
+        if (Object.keys(matches).length === puzzle.leftItems.length) {
+          renderGame();
+          setTimeout(showRoundComplete, 700);
+          return;
+        }
+      } else {
+        totalScore = Math.max(
+          0,
+          totalScore - puzzle.scoreRules.wrongAttemptPenalty,
+        );
+        flashWrong = { leftId: selectedLeft.id, rightId: selectedRight.id };
+        selectedRight = null; // keep left selected — user can keep guessing from the right
+        renderGame();
+        setTimeout(() => {
+          flashWrong = null;
+          renderGame();
+        }, 650);
+        return;
+      }
+      renderGame();
+    }
+
+    // ── ROUND COMPLETE ────────────────────────────────────────────────
+    function showRoundComplete() {
+      stage.removeAllChildren();
+      drawBackground();
+      drawHeader({ showExit: true });
+
+      // Modal card
+      const mW = 520,
+        mH = 280;
+      const mX = (W - mW) / 2,
+        mY = HEADER_H + (H - HEADER_H - mH) / 2;
+
+      new zim.Rectangle({
+        width: mW,
+        height: mH,
+        color: rgba(C.ink, 0.05),
+        corner: 28,
+      })
+        .addTo(stage)
+        .loc(mX + 2, mY + 4);
+      new zim.Rectangle({
+        width: mW,
+        height: mH,
+        color: C.white,
+        borderColor: rgba(C.leaf, 0.4),
+        borderWidth: 2,
+        corner: 28,
+      })
+        .addTo(stage)
+        .loc(mX, mY);
+      // Top accent
+      new zim.Rectangle({
+        width: mW,
+        height: 6,
+        color: C.leaf,
+        corner: [28, 28, 0, 0],
+      })
+        .addTo(stage)
+        .loc(mX, mY);
+
+      const cx = mX + mW / 2;
+      new zim.Label({
+        text: "🎉  Well done!",
+        size: 40,
+        font: FONT,
+        color: C.ink,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(cx, mY + 70);
+      new zim.Label({
+        text: `Round ${roundIndex + 1} complete`,
+        size: 22,
+        font: FONT,
+        color: C.sub,
+        align: "center",
+        valign: "center",
+      })
+        .addTo(stage)
+        .loc(cx, mY + 138);
+
+      // Score pill
+      const sp = new zim.Container().addTo(stage).loc(cx - 70, mY + 165);
+      sp.mouseChildren = false;
+      new zim.Rectangle({
+        width: 140,
+        height: 32,
+        color: rgba(C.sunshine, 0.18),
+        borderColor: rgba(C.sunshine, 0.6),
+        borderWidth: 1.5,
+        corner: 16,
+      }).addTo(sp);
+      new zim.Label({
+        text: `⭐ ${totalScore} pts`,
+        size: 17,
+        font: FONT,
+        color: "#a07800",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(sp)
+        .loc(70, 16);
+
+      const isLast = roundIndex === PAIR_COUNTS.length - 1;
+      const btn = new zim.Button({
+        width: 220,
+        height: 48,
+        label: isLast ? "See Final Score →" : "Next Round →",
+        backgroundColor: C.tangerine,
+        rollBackgroundColor: "#e88030",
+        color: C.white,
+        corner: 24,
+      })
+        .addTo(stage)
+        .loc(cx - 110, mY + mH - 60);
+      btn.label.size = 20;
+      btn.label.font = FONT;
+      btn.on("click", () =>
+        isLast ? showFinalScore() : (roundIndex++, loadRound()),
+      );
+
+      stage.update();
+    }
+
+    // ── FINAL SCORE ───────────────────────────────────────────────────
+    function showFinalScore() {
+      stage.removeAllChildren();
+      drawBackground();
+      drawHeader({ showExit: true });
+
+      // Update session best
+      const isNewBest = totalScore >= sessionBest;
+      if (isNewBest) sessionBest = totalScore;
+      const LOW_SCORE = 30;
+      const isLowScore = totalScore < LOW_SCORE;
+
+      // ── Sad faces (low score) or Falling flowers (good score) ────
+      if (isLowScore) {
+        const sadFaces = ["😢", "😔", "😞", "😿", "😭"];
+        for (let i = 0; i < 14; i++) {
+          const face = new zim.Label({
+            text: sadFaces[i % sadFaces.length],
+            size: 26 + Math.random() * 22,
+            align: "center",
+            valign: "center",
+          }).addTo(stage);
+          const sx = 40 + Math.random() * (W - 80);
+          face.loc(sx, H + 30);
+          face.alpha = 0.8;
+          face.animate({
+            props: {
+              y: HEADER_H - 30,
+              x: sx + (Math.random() - 0.5) * 100,
+            },
+            time: 2.8 + Math.random() * 2.2,
+            wait: Math.random() * 3.5,
+            ease: "linear",
+            loop: true,
+          });
+        }
+      } else {
+        const flowerPalette = [
+          { petal: C.bubblegum, center: C.sunshine },
+          { petal: C.tangerine, center: C.bubblegum },
+          { petal: C.grape, center: C.sunshine },
+          { petal: C.ocean, center: C.white },
+          { petal: C.leaf, center: C.sunshine },
+          { petal: C.sunshine, center: C.tangerine },
+        ];
+        for (let i = 0; i < 20; i++) {
+          const col = flowerPalette[i % flowerPalette.length];
+          const size = 12 + Math.random() * 16;
+          const px = Math.random() * W;
+          const f = new zim.Container().addTo(stage);
+          const dist = size * 0.48;
+          for (let p = 0; p < 5; p++) {
+            const rad = (((p / 5) * 360 - 90) * Math.PI) / 180;
+            new zim.Circle(size * 0.36, col.petal)
+              .addTo(f)
+              .loc(Math.cos(rad) * dist, Math.sin(rad) * dist);
+          }
+          new zim.Circle(size * 0.26, col.center).addTo(f).loc(0, 0);
+          f.alpha = 0.9;
+          f.loc(px, HEADER_H - size - Math.random() * 100);
+          f.animate({
+            props: {
+              y: H + size + 20,
+              x: px + (Math.random() - 0.5) * 80,
+              rotation:
+                (Math.random() > 0.5 ? 1 : -1) * (180 + Math.random() * 180),
+            },
+            time: 2.2 + Math.random() * 2,
+            wait: Math.random() * 3,
+            ease: "linear",
+            loop: true,
+          });
+        }
+      }
+
+      // Modal card
+      const mW = 560,
+        mH = 320;
+      const mX = (W - mW) / 2,
+        mY = HEADER_H + (H - HEADER_H - mH) / 2;
+      const modalBorder = isLowScore
+        ? rgba(C.ocean, 0.45)
+        : rgba(C.sunshine, 0.5);
+      const modalAccent = isLowScore ? C.ocean : C.sunshine;
+      new zim.Rectangle({
+        width: mW,
+        height: mH,
+        color: rgba(C.ink, 0.05),
+        corner: 28,
+      })
+        .addTo(stage)
+        .loc(mX + 2, mY + 4);
+      new zim.Rectangle({
+        width: mW,
+        height: mH,
+        color: C.white,
+        borderColor: modalBorder,
+        borderWidth: 2,
+        corner: 28,
+      })
+        .addTo(stage)
+        .loc(mX, mY);
+      new zim.Rectangle({
+        width: mW,
+        height: 6,
+        color: modalAccent,
+        corner: [28, 28, 0, 0],
+      })
+        .addTo(stage)
+        .loc(mX, mY);
+
+      const cx = mX + mW / 2;
+
+      // Title — varies by outcome
+      const titleText = isLowScore
+        ? "Don't give up! 😔"
+        : isNewBest
+          ? "🥇 New Best!"
+          : "You finished! ⭐";
+      new zim.Label({
+        text: titleText,
+        size: 42,
+        font: FONT,
+        color: C.ink,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(cx, mY + 68);
+
+      new zim.Label({
+        text: `Final Score: ${totalScore}`,
+        size: 34,
+        font: FONT,
+        color: C.tangerine,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(cx, mY + 142);
+
+      // Trophy row — show when not at the top (second+ play with a lower score)
+      if (!isNewBest && sessionBest > totalScore) {
+        const tw = 310,
+          th = 36;
+        const tr = new zim.Container().addTo(stage);
+        tr.mouseChildren = false;
+        new zim.Rectangle({
+          width: tw,
+          height: th,
+          color: rgba(C.sunshine, 0.14),
+          borderColor: rgba(C.sunshine, 0.55),
+          borderWidth: 1.5,
+          corner: th / 2,
+        }).addTo(tr);
+        new zim.Label({
+          text: `🏆 Top: ${sessionBest} pts — Can you beat it?`,
+          size: 15,
+          font: FONT,
+          color: "#7a5800",
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(tr)
+          .loc(tw / 2, th / 2);
+        tr.loc(cx - tw / 2, mY + 190);
+      } else {
+        new zim.Label({
+          text: "Pick a mode above to play again!",
+          size: 18,
+          font: FONT,
+          color: C.sub,
+          align: "center",
+          valign: "center",
+        })
+          .addTo(stage)
+          .loc(cx, mY + 196);
+      }
+
+      // Play Again button
+      const btn = new zim.Button({
+        width: 210,
+        height: 48,
+        label: "Play Again",
+        backgroundColor: C.grape,
+        rollBackgroundColor: "#7a50e0",
+        color: C.white,
+        corner: 24,
+      })
+        .addTo(stage)
+        .loc(cx - 105, mY + mH - 58);
+      btn.label.size = 20;
+      btn.label.font = FONT;
+      btn.on("click", () => {
+        roundIndex = 0;
+        totalScore = 0;
+        loadRound();
+      });
+
+      stage.update();
+    }
+
+    // ── Kick off ──────────────────────────────────────────────────────
+    loadRound();
   },
 });
-
-function MeaningBridge() {
-  const [hintImage, setHintImage] = useState(null);
-
-  useEffect(() => {
-    function onHint(e) {
-      setHintImage(e.detail.imageUrl);
-    }
-    window.addEventListener("mb-hint", onHint);
-    return () => window.removeEventListener("mb-hint", onHint);
-  }, []);
-
-  return (
-    <div style={{ position: "relative" }}>
-      <ZimGame />
-      {hintImage && (
-        <div
-          onClick={() => setHintImage(null)}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.55)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 100,
-            cursor: "pointer",
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: "16px",
-              padding: "20px",
-              maxWidth: "340px",
-              textAlign: "center",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-            }}
-          >
-            <img
-              src={hintImage}
-              alt="hint"
-              style={{ width: "100%", borderRadius: "10px", display: "block" }}
-              onError={(e) => {
-                e.target.src = "https://loremflickr.com/300/200/word";
-              }}
-            />
-            <p
-              style={{ marginTop: "10px", color: "#475569", fontSize: "13px" }}
-            >
-              Tap anywhere to close
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default MeaningBridge;
