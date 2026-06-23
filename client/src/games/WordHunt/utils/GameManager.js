@@ -152,10 +152,10 @@ class GameManager {
 
   normalize(word) {
     return String(word)
-      .toLowerCase()
-      .replace(/[\u200B-\u200D\uFEFF]/g, "")
-      .replace(/[^\p{L}\p{N}']/gu, "")
-      .trim();
+      .normalize("NFC") // Standardize Unicode
+      .replace(/[\s\u200B-\u200D]/g, "") // Remove all spaces and hidden joiners
+      .replace(/[।,;.:!?]/g, "") // Remove punctuation like Danda (|)
+      .toLowerCase(); // Lowercase (if using Roman transliteration
   }
 
   setScore(gameType, foundCount, hintsUsed) {
@@ -171,6 +171,7 @@ class GameManager {
     }
     return null;
   }
+  setGameTotal(gameType,timeElapsed,score){}
 }
 
 export default GameManager;

@@ -106,66 +106,85 @@ class GameServiceManager {
     console.log("Word Types:", this.wordTypes);
   }
 
-  // splitPOSByTypeSanskrit() {
-  //   const nouns = [];
-  //   const verbs = [];
-  //   const adjectives = [];
-
-  //   // console.log("tokenizedArray =", this.tokenizedArray);
-
-  //   this.game.tokenizedArray.forEach((sentence, i) => {
-  //     // console.log("sentence", i, sentence);
-
-  //     sentence.forEach((token) => {
-  //       // console.log("text:", token.text, "upos:", token.upos);
-
-  //       if (token.upos === "NOUN")
-  //         nouns.push(this.manager.normalize(token.text));
-  //       if (token.upos === "VERB")
-  //         verbs.push(this.manager.normalize(token.text));
-  //       if (token.upos === "ADJ")
-  //         adjectives.push(this.manager.normalize(token.text));
-  //     });
-  //   });
-
-  //   console.log("NOUNS", nouns);
-  //   // console.log("VERBS", verbs);
-  //   // console.log("ADJECTIVES", adjectives);
-
-  //   return { nouns, verbs, adjectives };
-  // }
   splitPOSByTypeSanskrit() {
     const nouns = [];
     const verbs = [];
     const adjectives = [];
 
-    this.game.tokenizedArray.forEach((sentence, i) => {
-      sentence.forEach((token) => {
-        // 1. Normalize the word first
-        const cleanedText = this.manager.normalize(token.text);
+    // console.log("tokenizedArray =", this.tokenizedArray);
 
-        // 2. ONLY push if the word is not empty or whitespace
-        if (cleanedText && cleanedText.trim() !== "") {
-          if (token.upos === "NOUN") nouns.push(cleanedText);
-          if (token.upos === "VERB") verbs.push(cleanedText);
-          if (token.upos === "ADJ") adjectives.push(cleanedText);
-        }
+    this.game.tokenizedArray.forEach((sentence, i) => {
+      // console.log("sentence", i, sentence);
+
+      sentence.forEach((token) => {
+        // console.log("text:", token.text, "upos:", token.upos);
+
+        if (token.upos === "NOUN")
+          nouns.push(this.manager.normalize(token.text));
+        if (token.upos === "VERB")
+          verbs.push(this.manager.normalize(token.text));
+        if (token.upos === "ADJ")
+          adjectives.push(this.manager.normalize(token.text));
       });
     });
 
-    // 3. Remove all duplicates using a Set right before returning
-    const uniqueNouns = [...new Set(nouns)];
-    const uniqueVerbs = [...new Set(verbs)];
-    const uniqueAdjectives = [...new Set(adjectives)];
+    console.log("NOUNS", nouns);
+    // console.log("VERBS", verbs);
+    // console.log("ADJECTIVES", adjectives);
 
-    console.log("CLEAN UNIQUE NOUNS:", uniqueNouns);
-
-    return {
-      nouns: uniqueNouns,
-      verbs: uniqueVerbs,
-      adjectives: uniqueAdjectives,
-    };
+    return { nouns, verbs, adjectives };
   }
+  // splitPOSByTypeSanskrit() {
+  //   const rawNouns = [];
+  //   const rawVerbs = [];
+  //   const rawAdjectives = [];
+
+  //   this.game.tokenizedArray.forEach((sentence) => {
+  //     sentence.forEach((token) => {
+  //       const cleanedText = this.manager.normalize(token.text);
+  //       const cleanedLemma = token.lemma
+  //         ? this.manager.normalize(token.lemma)
+  //         : cleanedText;
+
+  //       // 1. Only process if we have valid strings
+  //       if (cleanedText && cleanedText.trim() !== "") {
+  //         const wordObject = {
+  //           text: cleanedText,
+  //           lemma: cleanedLemma,
+  //         };
+
+  //         if (token.upos === "NOUN") rawNouns.push(wordObject);
+  //         if (token.upos === "VERB") rawVerbs.push(wordObject);
+  //         if (token.upos === "ADJ") rawAdjectives.push(wordObject);
+  //       }
+  //     });
+  //   });
+
+  //   // 2. Custom Helper Function to filter out duplicate lemmas
+  //   const removeDuplicateLemmas = (arr) => {
+  //     const seenLemmas = new Set();
+  //     return arr.filter((item) => {
+  //       if (seenLemmas.has(item.lemma)) {
+  //         return false; // Skip if we've already added this lemma root
+  //       }
+  //       seenLemmas.add(item.lemma);
+  //       return true;
+  //     });
+  //   };
+
+  //   // 3. Deduplicate all lists
+  //   const uniqueNouns = removeDuplicateLemmas(rawNouns);
+  //   const uniqueVerbs = removeDuplicateLemmas(rawVerbs);
+  //   const uniqueAdjectives = removeDuplicateLemmas(rawAdjectives);
+
+  //   console.log("STRUCTURED UNIQUE NOUNS:", uniqueNouns);
+
+  //   return {
+  //     nouns: uniqueNouns,
+  //     verbs: uniqueVerbs,
+  //     adjectives: uniqueAdjectives,
+  //   };
+  // }
 }
 
 export default GameServiceManager;

@@ -66,6 +66,38 @@ class Helper {
 
     return thisWordValue;
   }
+
+  calculateGameTotal(foundCount, wordsToFind, timeElapsed, score, hintsUsed) {
+    // 1. If no words were found, score is automatically zero
+    if (foundCount === 0) {
+      return 0;
+    }
+
+    // 2. Partial completion: Player found some words but not all before time ran out
+    if (foundCount > 0 && foundCount < wordsToFind) {
+      return Math.round(score);
+    }
+
+    // 3. Perfect completion: Player found ALL words!
+    if (foundCount > 0 && foundCount === wordsToFind) {
+      const allowedTime = this.game.gameTime; // e.g., 5.00 minutes
+
+      // Calculate remaining time left over
+      const timeRemaining = allowedTime - timeElapsed;
+
+      // Award a small time bonus if they finished early (e.g., 0.1 points per minute saved)
+      const timeBonus = timeRemaining * 100;
+      const finalResult = score + timeBonus;
+
+      console.log(
+        `[Game Total] Perfect Run! Base Score: ${score.toFixed(2)} | Time Bonus: +${timeBonus.toFixed(2)} | Final Saved: ${finalResult.toFixed(2)}`,
+      );
+
+      return finalResult;
+    }
+
+    return score;
+  }
 }
 
 export default Helper;
