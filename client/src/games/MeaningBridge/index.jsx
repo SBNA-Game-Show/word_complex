@@ -1,2113 +1,1351 @@
 import { createZimGame } from "../createZimGame";
-import { emit } from "../../scenes/sceneBus";
-import {
-  generateMeaningBridgeRound,
-  getMeaningBridgeLeaderboard,
-  submitMeaningBridgeRound,
-} from "../../services/api";
+import { fetchMeaningBridgeRound } from "../../services/meaningBridgeApi";
+
+const PAIR_COUNTS = [4, 5, 6];
 
 export const meta = {
   id: "meaning-bridge",
   cardNumber: "02",
   cardArt: "art-sea",
   title: "Meaning Bridge",
-  description: "Connect words to Sanskrit, meanings, synonyms, and antonyms.",
+  description: "Connect words to their synonyms, antonyms, and definitions.",
 };
-
-const MODES = [
-  {
-    value: "english-to-sanskrit",
-    label: "English → Sanskrit",
-  },
-  {
-    value: "sanskrit-to-english",
-    label: "Sanskrit → English",
-  },
-  {
-    value: "word-to-definition",
-    label: "Word → Definition",
-  },
-  {
-    value: "word-to-synonym",
-    label: "Word → Synonym",
-  },
-  {
-    value: "word-to-antonym",
-    label: "Word → Antonym",
-  },
-];
-
-const DIFFICULTIES = ["easy", "medium", "hard"];
-const PAIR_COUNTS = [4, 5, 6];
-
-const FONT = "Arial";
-
-const GAMEPLAY_LAYOUT = {
-  passage: {
-    x: 90,
-    y: 154,
-    width: 920,
-    height: 104,
-  },
-  leftPanel: {
-    x: 70,
-    y: 282,
-    width: 300,
-    height: 338,
-  },
-  rightPanel: {
-    x: 730,
-    y: 282,
-    width: 300,
-    height: 338,
-  },
-  centerPanel: {
-    x: 400,
-    y: 282,
-    width: 300,
-  },
-  feedback: {
-    y: 384,
-    height: 94,
-  },
-  controls: {
-    y: 496,
-    secondaryY: 552,
-  },
-  card: {
-    width: 250,
-    height: 36,
-    step: 45,
-    xOffset: 25,
-    yOffset: 58,
-  },
-  leaderboard: {
-    x: 70,
-    y: 638,
-    width: 960,
-    height: 52,
-  },
-};
-
-/*
-  Menu layout constants
-  ---------------------
-  Controls the ZIMJS menu/start screen only.
-
-  Design rule:
-  - Title/subtitle get their own clean space.
-  - Player panel stays top-right.
-  - Challenge cards sit in the middle.
-  - Difficulty, pairs, selected setup, and Start are grouped near the bottom.
-*/
-const MENU_LAYOUT = {
-  panel: {
-    x: 120,
-    y: 86,
-    width: 860,
-    height: 560,
-  },
-  playerPanel: {
-    x: 745,
-    y: 130,
-    width: 190,
-    height: 60,
-  },
-  challengeTitle: {
-    y: 238,
-  },
-  modeGrid: {
-    x: 170,
-    y: 282,
-    cardWidth: 220,
-    cardHeight: 52,
-    columnGap: 34,
-    rowGap: 16,
-  },
-  difficulty: {
-    labelX: 255,
-    labelY: 430,
-    x: 174,
-    y: 458,
-    buttonWidth: 92,
-    buttonHeight: 36,
-    gap: 12,
-  },
-  pairs: {
-    labelX: 758,
-    labelY: 430,
-    x: 676,
-    y: 458,
-    buttonWidth: 76,
-    buttonHeight: 36,
-    gap: 12,
-  },
-  selectedSetup: {
-    x: 292,
-    y: 522,
-    width: 516,
-    height: 30,
-  },
-  startButton: {
-    x: 445,
-    y: 568,
-    width: 210,
-    height: 48,
-  },
-};
-
-/*
-  Short helper for menu subtitles.
-  This gives each challenge mode a clearer purpose without adding extra data
-  to the backend.
-*/
-function getModeDescription(modeValue) {
-  switch (modeValue) {
-    case "english-to-sanskrit":
-      return "Match English words to Sanskrit.";
-    case "sanskrit-to-english":
-      return "Read Sanskrit and find English.";
-    case "word-to-definition":
-      return "Connect words to meanings.";
-    case "word-to-synonym":
-      return "Find similar meanings.";
-    case "word-to-antonym":
-      return "Find opposite meanings.";
-    default:
-      return "Build word connections.";
-  }
-}
-
-function shortText(value, maxLength) {
-  const text = String(value || "").trim();
-
-  if (text.length <= maxLength) {
-    return text;
-  }
-
-  return `${text.slice(0, Math.max(0, maxLength - 1))}…`;
-}
-
-function wrapText(value, maxCharsPerLine, maxLines) {
-  const words = String(value || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  const lines = [];
-  let currentLine = "";
-
-  for (const word of words) {
-    const candidate = currentLine ? `${currentLine} ${word}` : word;
-
-    if (candidate.length > maxCharsPerLine && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-
-      if (lines.length === maxLines) {
-        break;
-      }
-    } else {
-      currentLine = candidate;
-    }
-  }
-
-  if (currentLine && lines.length < maxLines) {
-    lines.push(currentLine);
-  }
-
-  const original = words.join(" ");
-  const displayed = lines.join(" ");
-
-  if (original.length > displayed.length && lines.length > 0) {
-    lines[lines.length - 1] = `${lines[lines.length - 1]}…`;
-  }
-
-  return lines;
-}
 
 export default createZimGame({
-  id: "zim-meaning-bridge-game",
+  id: "zim-meaning-bridge",
   width: 1100,
   height: 720,
-  color: "#dff6ff",
-  outerColor: "#151019",
+  color: "#fde8f2",
+  outerColor: "#1d2b66",
 
   setup({ stage, W, H, zim }) {
-    let screen = "menu";
+    const FONT = "Fredoka";
 
-    let playerName = "Guest Player";
-    let isEditingPlayerName = false;
-    let replacePlayerNameOnNextInput = false;
+    // ── Palette ──────────────────────────────────────────────────────
+    const C = {
+      ink: "#1d2b66",
+      bg: "#fef5e4", // warm ivory — light and clean
+      sunshine: "#ffd84d",
+      tangerine: "#ff9a3c",
+      bubblegum: "#ff6fb5",
+      grape: "#9b6bff",
+      leaf: "#46c97a",
+      ocean: "#2fb6d6",
+      white: "#ffffff",
+      sub: "#8892b0",
+    };
 
-    let mode = "english-to-sanskrit";
-    let difficulty = "easy";
-    let pairCount = 4;
+    // 6 pair colors — each pair gets its own identity
+    const PC = [
+      "#ff6fb5",
+      "#2fb6d6",
+      "#9b6bff",
+      "#ff9a3c",
+      "#46c97a",
+      "#ffc42e",
+    ];
+    const PD = [
+      "#c94f8a",
+      "#1f8fb5",
+      "#6b48cc",
+      "#c97428",
+      "#2ea85e",
+      "#c9a010",
+    ];
 
-    let roundData = null;
-    let leaderboard = [];
-    let selectedLeftId = null;
-    let matches = [];
-    let hintsUsed = 0;
-    let wrongAttempts = 0;
-    let result = null;
-    let status = "Loading Meaning Bridge...";
-    let feedback = "Generating your first bridge round...";
-    let feedbackType = "neutral";
-    let roundStartedAt = Date.now();
+    function rgba(hex, a) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
 
-    function publishDebugState() {
-      if (typeof window === "undefined") {
-        return;
+    // ── Session state ────────────────────────────────────────────────
+    let roundIndex = 0;
+    let totalScore = 0;
+    let sessionBest = 0; // tracks best score across plays in this session
+    let currentMode = "word-to-synonym";
+    let puzzle = null;
+
+    // Per-round state
+    let selectedLeft = null;
+    let selectedRight = null;
+    let matches = {};
+    let flashWrong = null;
+    let lastMatchLeft = null;
+    let freshRound = true; // true only on first render after loading; suppresses re-entrance animation on clicks
+
+    // ── Layout ───────────────────────────────────────────────────────
+    // Header bar (dark navy) contains title + mode tabs + score
+    const HEADER_H = 82; // height including 4px accent strip at bottom
+    const CARD_W = 308;
+    const LEFT_X = 55;
+    const RIGHT_X = W - 55 - CARD_W; // 675, bridge zone = 250px
+
+    let CARD_H = 80;
+    let RIGHT_CARD_H = 100;
+    let START_Y = 148;
+    let GAP = 140;
+    let BOTTOM_BAR_H = 62; // taller for 4-pair round only
+
+    function calcLayout() {
+      const n = puzzle.leftItems.length;
+      const isDef = currentMode === "word-to-definition";
+      // Left and right cards are the same height; definitions mode gets extra height on right only
+      if (n >= 6) {
+        CARD_H = 54;
+        RIGHT_CARD_H = isDef ? 72 : 54;
+      } else if (n >= 5) {
+        CARD_H = 60;
+        RIGHT_CARD_H = isDef ? 82 : 60;
+      } else {
+        CARD_H = 68;
+        RIGHT_CARD_H = isDef ? 93 : 68;
+      }
+      // instruction(12+18) + col-header(+28) + gap(+16) = 74
+      const baseStartY = HEADER_H + 74;
+      // 4-pair round gets a taller bottom bar and slightly more breathing room
+      BOTTOM_BAR_H = n === 4 ? 78 : 62;
+      const avail = H - baseStartY - RIGHT_CARD_H - BOTTOM_BAR_H;
+      if (n <= 1) {
+        GAP = 0;
+        START_Y = baseStartY;
+      } else {
+        // For 4 pairs: slightly wider gap + push cards down to split dead space top/bottom
+        const MAX_GAP = n === 4 ? 105 : 95;
+        GAP = Math.min(Math.floor(avail / (n - 1)), MAX_GAP);
+        START_Y = n === 4 ? baseStartY + 40 : baseStartY;
+      }
+    }
+
+    // ── HEADER (dark bar with embedded mode tabs) ─────────────────────
+    function drawHeader({ showExit = true } = {}) {
+      // Dark bar
+      new zim.Rectangle(W, HEADER_H - 4, "#7ec87e").addTo(stage).loc(0, 0);
+      // Darker green accent line
+      new zim.Rectangle(W, 4, "#5aaa5a").addTo(stage).loc(0, HEADER_H - 4);
+
+      // ── Exit button left ─────────────────────────────────────────
+      if (showExit) {
+        const eb = new zim.Container()
+          .addTo(stage)
+          .loc(18, (HEADER_H - 36) / 2);
+        eb.mouseChildren = false;
+        new zim.Rectangle({
+          width: 90,
+          height: 36,
+          color: C.white,
+          borderColor: "transparent",
+          borderWidth: 0,
+          corner: 18,
+        }).addTo(eb);
+        new zim.Label({
+          text: "← Exit",
+          size: 15,
+          font: FONT,
+          color: "#2e6b2e",
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(eb)
+          .loc(45, 18);
+        eb.cursor = "pointer";
+        eb.on("click", () => {
+          roundIndex = 0;
+          totalScore = 0;
+          loadRound();
+        });
       }
 
-      window.__meaningBridgeZimDebug = {
-        screen,
-        playerName,
-        isEditingPlayerName,
-        mode,
-        difficulty,
-        pairCount,
-        roundId: roundData?.puzzle?.roundId || null,
-        passageTitle: roundData?.passage?.title || "",
-        matches,
-        selectedLeftId,
-        hintsUsed,
-        wrongAttempts,
-        resultVisible: Boolean(result),
-        leaderboard,
-      };
-    }
+      // ── Mode tabs (centered in header) ──────────────────────────
+      const TABS = [
+        { mode: "word-to-synonym", label: "Synonyms", accent: "#3a8a3a" },
+        { mode: "word-to-antonym", label: "Antonyms", accent: "#1a7a99" },
+        { mode: "word-to-definition", label: "Definitions", accent: "#6b48cc" },
+      ];
+      const TW = 186,
+        TH = 44,
+        TGAP = 10;
+      const totalTW = TABS.length * TW + (TABS.length - 1) * TGAP;
+      const TX = (W - totalTW) / 2;
+      const TY = (HEADER_H - 4 - TH) / 2;
 
-    function addLabel({
-      text,
-      x,
-      y,
-      size = 16,
-      color = "#0f172a",
-      bold = false,
-      align = "left",
-      valign = "top",
-      container = stage,
-    }) {
-      const label = new zim.Label({
-        text: String(text || ""),
-        size,
-        font: FONT,
-        color,
-        align,
-        valign,
-        bold,
+      TABS.forEach(({ mode, label, accent }, i) => {
+        const active = mode === currentMode;
+        const x = TX + i * (TW + TGAP);
+        const t = new zim.Container().addTo(stage).loc(x, TY);
+        t.mouseChildren = false;
+
+        new zim.Rectangle({
+          width: TW,
+          height: TH,
+          color: active ? accent : C.white,
+          borderColor: "transparent",
+          borderWidth: 0,
+          corner: TH / 2,
+        }).addTo(t);
+
+        new zim.Label({
+          text: label,
+          size: 20,
+          font: FONT,
+          color: active ? C.white : "#2e6b2e",
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(t)
+          .loc(TW / 2, TH / 2);
+
+        if (!active) {
+          t.cursor = "pointer";
+          t.on("click", () => {
+            currentMode = mode;
+            roundIndex = 0;
+            totalScore = 0;
+            loadRound();
+          });
+        }
       });
 
-      label.addTo(container).loc(x, y);
-      return label;
-    }
-
-    function addWrappedLabel({
-      text,
-      x,
-      y,
-      maxCharsPerLine,
-      maxLines,
-      size = 14,
-      lineHeight = 18,
-      color = "#334155",
-      bold = false,
-    }) {
-      wrapText(text, maxCharsPerLine, maxLines).forEach((line, index) => {
-        addLabel({
-          text: line,
-          x,
-          y: y + index * lineHeight,
-          size,
-          color,
-          bold,
-        });
-      });
-    }
-
-    function addPanel({ x, y, width, height, fill, stroke, corner = 22 }) {
-      return new zim.Rectangle(width, height, fill, stroke, 2, corner)
+      // ── Score badge right ────────────────────────────────────────
+      const sb = new zim.Container()
         .addTo(stage)
-        .loc(x, y);
-    }
-
-    function addButton({
-      x,
-      y,
-      width,
-      height,
-      label,
-      background = "#4f46e5",
-      rollBackground = "#6366f1",
-      color = "#ffffff",
-      borderColor = null,
-      onClick,
-    }) {
-      const buttonLabel = new zim.Label({
-        text: label,
-        size: 15,
+        .loc(W - 180, (HEADER_H - 4 - 36) / 2);
+      sb.mouseChildren = false;
+      new zim.Rectangle({
+        width: 162,
+        height: 36,
+        color: C.white,
+        borderColor: "#c9a010",
+        borderWidth: 1.5,
+        corner: 18,
+      }).addTo(sb);
+      new zim.Label({
+        text: `Round ${roundIndex + 1}/3`,
+        size: 13,
         font: FONT,
-        color,
-        bold: true,
+        color: "#3a7a3a",
         align: "center",
         valign: "center",
+        bold: true,
+      })
+        .addTo(sb)
+        .loc(81, 11);
+      new zim.Label({
+        text: `⭐ ${totalScore} pts`,
+        size: 15,
+        font: FONT,
+        color: "#7a5800",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(sb)
+        .loc(81, 26);
+    }
+
+    // ── BRIDGES (bezier arcs with glow) ──────────────────────────────
+    function drawBridgeLine(li, ri, color, lw, dashed) {
+      const offsetY = (RIGHT_CARD_H - CARD_H) / 2;
+      const x1 = LEFT_X + CARD_W + 6;
+      const x2 = RIGHT_X - 6;
+      const y1 = START_Y + li * GAP + offsetY + CARD_H / 2;
+      const y2 = START_Y + ri * GAP + RIGHT_CARD_H / 2;
+
+      // bezier control point — arc bows upward by 25% of vertical distance
+      const cx = (x1 + x2) / 2;
+      const bow = Math.abs(y2 - y1) * 0.28 + 16;
+      const cy = Math.min(y1, y2) - bow;
+
+      if (!dashed) {
+        // outer glow
+        const g = new zim.Shape().addTo(stage);
+        g.s(rgba(color, 0.2)).ss(lw * 4, "round", "round");
+        g.mt(x1, y1).bt(cx, cy, cx, cy, x2, y2);
+
+        // mid glow
+        const g2 = new zim.Shape().addTo(stage);
+        g2.s(rgba(color, 0.15)).ss(lw * 2.2, "round", "round");
+        g2.mt(x1, y1).bt(cx, cy, cx, cy, x2, y2);
+      }
+
+      // core line
+      const ln = new zim.Shape().addTo(stage);
+      if (dashed) ln.s(rgba(color, 0.55)).ss(lw, "round", "round").sd([10, 9]);
+      else ln.s(color).ss(lw, "round", "round");
+      ln.mt(x1, y1).bt(cx, cy, cx, cy, x2, y2);
+
+      // endpoint dots
+      const d = new zim.Shape().addTo(stage);
+      d.f(color).dc(x1, y1, 5.5).dc(x2, y2, 5.5);
+    }
+
+    function drawBridges() {
+      Object.entries(matches).forEach(([leftId, rightId]) => {
+        const li = puzzle.leftItems.findIndex((l) => l.id === leftId);
+        const ri = puzzle.rightItems.findIndex((r) => r.id === rightId);
+        drawBridgeLine(li, ri, PC[li % PC.length], 3, false);
       });
-
-      const button = new zim.Button({
-        width,
-        height,
-        label: buttonLabel,
-        backgroundColor: background,
-        rollBackgroundColor: rollBackground,
-        color,
-        rollColor: color,
-        borderColor,
-        borderWidth: borderColor ? 2 : 0,
-        corner: 18,
-      });
-
-      button.addTo(stage).loc(x, y);
-      button.cursor = "pointer";
-      button.on("click", onClick);
-
-      return button;
-    }
-
-    function setFeedback(message, type = "neutral") {
-      feedback = message;
-      feedbackType = type;
-    }
-
-    function getNormalizedPlayerName() {
-      return String(playerName || "").trim() || "Guest Player";
-    }
-
-    function beginPlayerNameEdit() {
-      isEditingPlayerName = true;
-      replacePlayerNameOnNextInput =
-        getNormalizedPlayerName() === "Guest Player";
-      setFeedback(
-        "Type your player name, then press Enter to save.",
-        "neutral",
-      );
-      renderScene();
-    }
-
-    function finishPlayerNameEdit() {
-      playerName = getNormalizedPlayerName();
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-      renderScene();
-    }
-
-    function handlePlayerNameKeyDown(event) {
-      if (screen !== "menu" || !isEditingPlayerName) {
-        return;
+      if (flashWrong) {
+        const li = puzzle.leftItems.findIndex(
+          (l) => l.id === flashWrong.leftId,
+        );
+        const ri = puzzle.rightItems.findIndex(
+          (r) => r.id === flashWrong.rightId,
+        );
+        drawBridgeLine(li, ri, "#ff3333", 3, false);
       }
-
-      if (event.key === "Enter" || event.key === "Escape") {
-        event.preventDefault();
-        finishPlayerNameEdit();
-        return;
-      }
-
-      if (event.key === "Backspace") {
-        event.preventDefault();
-
-        if (replacePlayerNameOnNextInput) {
-          playerName = "";
-          replacePlayerNameOnNextInput = false;
-        } else {
-          playerName = playerName.slice(0, -1);
-        }
-
-        renderScene();
-        return;
-      }
-
-      if (
-        event.key.length === 1 &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !event.altKey
-      ) {
-        event.preventDefault();
-
-        if (replacePlayerNameOnNextInput) {
-          playerName = "";
-          replacePlayerNameOnNextInput = false;
-        }
-
-        if (playerName.length < 24) {
-          playerName += event.key;
-        }
-
-        renderScene();
+      if (selectedLeft && selectedRight) {
+        const li = puzzle.leftItems.findIndex((l) => l.id === selectedLeft.id);
+        const ri = puzzle.rightItems.findIndex(
+          (r) => r.id === selectedRight.id,
+        );
+        drawBridgeLine(li, ri, "#aaaacc", 2, true);
       }
     }
 
-    function selectMenuMode(nextMode) {
-      mode = nextMode;
-      renderScene();
-    }
-
-    function selectMenuDifficulty(nextDifficulty) {
-      difficulty = nextDifficulty;
-      renderScene();
-    }
-
-    function selectMenuPairCount(nextPairCount) {
-      pairCount = nextPairCount;
-      renderScene();
-    }
-
-    function startBridgeRound() {
-      playerName = getNormalizedPlayerName();
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-
-      screen = "gameplay";
-
-      void loadRound({
-        mode,
-        difficulty,
-        pairCount,
-      });
-    }
-
-    function backToMenu() {
-      screen = "menu";
-      selectedLeftId = null;
-      matches = [];
-      hintsUsed = 0;
-      wrongAttempts = 0;
-      result = null;
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-      status = "Choose your bridge challenge.";
-      setFeedback(
-        "Choose a mode, difficulty, and pair count to begin.",
-        "neutral",
-      );
-      renderScene();
-    }
-
-    async function loadLeaderboard() {
-      try {
-        const response = await getMeaningBridgeLeaderboard(5);
-        leaderboard = response.scores || [];
-      } catch {
-        leaderboard = [];
-      }
-    }
-
-    async function loadRound(options = {}) {
-      screen = "gameplay";
-      status = "Generating round...";
-      setFeedback("Building a new Meaning Bridge round...", "neutral");
-      result = null;
-      selectedLeftId = null;
-      matches = [];
-      hintsUsed = 0;
-      wrongAttempts = 0;
-      roundStartedAt = Date.now();
-      renderScene();
-
-      try {
-        mode = options.mode || mode;
-        difficulty = options.difficulty || difficulty;
-        pairCount = options.pairCount || pairCount;
-
-        const response = await generateMeaningBridgeRound({
-          mode,
-          difficulty,
-          pairCount,
-          previousPassageId: roundData?.passage?.passageId || null,
+    // ── CARDS ─────────────────────────────────────────────────────────
+    function drawCards() {
+      puzzle.leftItems.forEach((item, i) => {
+        const offsetY = (RIGHT_CARD_H - CARD_H) / 2;
+        drawCard({
+          item,
+          x: LEFT_X,
+          y: START_Y + i * GAP + offsetY,
+          cardH: CARD_H,
+          side: "left",
+          pairIdx: i,
+          matchPairIdx: i,
+          isMatched: !!matches[item.id],
+          isSelected: selectedLeft?.id === item.id,
+          isWrong: flashWrong?.leftId === item.id,
+          isJustMatched: lastMatchLeft === item.id,
         });
+      });
 
-        roundData = response;
-        status = "ZIMJS gameplay connected to Express backend.";
-        setFeedback(
-          "Select a word card, then select its matching meaning card.",
-          "neutral",
-        );
-
-        await loadLeaderboard();
-      } catch (error) {
-        status = "Unable to generate round.";
-        setFeedback(
-          error instanceof Error
-            ? error.message
-            : "Failed to generate Meaning Bridge round.",
-          "error",
-        );
-      }
-
-      renderScene();
-    }
-
-    function isLeftMatched(leftId) {
-      return matches.some((match) => match.leftId === leftId);
-    }
-
-    function isRightMatched(rightId) {
-      return matches.some((match) => match.rightId === rightId);
-    }
-
-    function getCompletionPercent() {
-      const totalPairs = roundData?.puzzle?.leftItems?.length || 0;
-
-      if (totalPairs === 0) {
-        return 0;
-      }
-
-      return Math.round((matches.length / totalPairs) * 100);
-    }
-
-    function getResultTitle() {
-      if (!result) {
-        return "Round Complete";
-      }
-
-      if (result.perfectRound && result.roundPoints > 0) {
-        return "Perfect Bridge!";
-      }
-
-      if (result.accuracy >= 75) {
-        return "Strong Attempt!";
-      }
-
-      return "Keep Practicing!";
-    }
-
-    function getResultBadge() {
-      if (!result) {
-        return "⭐";
-      }
-
-      if (result.perfectRound && result.roundPoints > 0) {
-        return "🏆";
-      }
-
-      if (result.accuracy >= 75) {
-        return "⭐";
-      }
-
-      return "🌱";
-    }
-
-    function handleLeftCard(item) {
-      if (result) {
-        return;
-      }
-
-      if (isLeftMatched(item.id)) {
-        setFeedback("That word is already matched.", "neutral");
-        renderScene();
-        return;
-      }
-
-      selectedLeftId = item.id;
-      setFeedback(
-        `Selected "${item.label}". Now choose the matching card.`,
-        "neutral",
-      );
-      renderScene();
-    }
-
-    function handleRightCard(item) {
-      if (result) {
-        return;
-      }
-
-      const puzzle = roundData?.puzzle;
-
-      if (!puzzle) {
-        return;
-      }
-
-      if (!selectedLeftId) {
-        setFeedback("Choose a word card first.", "neutral");
-        renderScene();
-        return;
-      }
-
-      if (isRightMatched(item.id)) {
-        setFeedback("That meaning card is already matched.", "neutral");
-        renderScene();
-        return;
-      }
-
-      const expectedRightId = puzzle.answerKey[selectedLeftId];
-
-      if (expectedRightId === item.id) {
-        matches = [
-          ...matches,
-          {
-            leftId: selectedLeftId,
-            rightId: item.id,
-          },
-        ];
-
-        selectedLeftId = null;
-
-        const completed = matches.length === puzzle.leftItems.length;
-
-        emit(completed ? "complete" : "correct");
-
-        setFeedback(
-          completed
-            ? "All pairs matched. Submit your bridge!"
-            : "Correct match! Keep building the bridge.",
-          "success",
-        );
-      } else {
-        wrongAttempts += 1;
-        emit("wrong");
-        setFeedback("Not quite. Try another meaning card.", "error");
-      }
-
-      renderScene();
-    }
-
-    function resetRound() {
-      selectedLeftId = null;
-      matches = [];
-      hintsUsed = 0;
-      wrongAttempts = 0;
-      result = null;
-      roundStartedAt = Date.now();
-      setFeedback("Round reset. Select a word card to begin again.", "neutral");
-      renderScene();
-    }
-
-    function useHint() {
-      const puzzle = roundData?.puzzle;
-
-      if (!puzzle) {
-        return;
-      }
-
-      if (!selectedLeftId) {
-        setFeedback(
-          "Select a word card first, then ask for a hint.",
-          "neutral",
-        );
-        renderScene();
-        return;
-      }
-
-      hintsUsed += 1;
-      setFeedback(
-        puzzle.hints[selectedLeftId] || "No hint available.",
-        "neutral",
-      );
-      renderScene();
-    }
-
-    async function submitRound() {
-      const puzzle = roundData?.puzzle;
-
-      if (!puzzle) {
-        return;
-      }
-
-      if (matches.length === 0) {
-        setFeedback("Match at least one pair before submitting.", "neutral");
-        renderScene();
-        return;
-      }
-
-      status = "Submitting round...";
-      renderScene();
-
-      try {
-        const timeSeconds = Math.max(
-          1,
-          Math.round((Date.now() - roundStartedAt) / 1000),
-        );
-
-        result = await submitMeaningBridgeRound({
-          roundId: puzzle.roundId,
-          playerName: getNormalizedPlayerName(),
-          matches,
-          timeSeconds,
-          hintsUsed,
-          wrongAttempts,
+      puzzle.rightItems.forEach((item, i) => {
+        const isMatched = Object.values(matches).includes(item.id);
+        const matchedLeftId = isMatched
+          ? Object.keys(matches).find((k) => matches[k] === item.id)
+          : null;
+        const matchPairIdx = matchedLeftId
+          ? puzzle.leftItems.findIndex((l) => l.id === matchedLeftId)
+          : 0;
+        drawCard({
+          item,
+          x: RIGHT_X,
+          y: START_Y + i * GAP,
+          cardH: RIGHT_CARD_H,
+          side: "right",
+          pairIdx: i,
+          matchPairIdx,
+          isMatched,
+          isSelected: selectedRight?.id === item.id,
+          isWrong: flashWrong?.rightId === item.id,
+          isJustMatched: matchedLeftId === lastMatchLeft,
         });
-
-        status = "Round submitted.";
-        setFeedback(result.message || "Round submitted.", "success");
-
-        await loadLeaderboard();
-      } catch (error) {
-        setFeedback(
-          error instanceof Error
-            ? error.message
-            : "Failed to submit Meaning Bridge round.",
-          "error",
-        );
-        status = "Submit failed.";
-      }
-
-      renderScene();
+      });
     }
+
+    const G = { base: "#5aaa5a", dark: "#3a7a3a" };
 
     function drawBackground() {
-      new zim.Rectangle(W, H, "#dff6ff").addTo(stage).loc(0, 0);
-
-      new zim.Circle(44, "#facc15").addTo(stage).loc(982, 78);
-      new zim.Circle(20, "#ffffff").addTo(stage).loc(110, 72);
-      new zim.Circle(28, "#ffffff").addTo(stage).loc(140, 62);
-      new zim.Circle(20, "#ffffff").addTo(stage).loc(172, 72);
-      new zim.Rectangle(86, 20, "#ffffff", null, 0, 14)
-        .addTo(stage)
-        .loc(100, 72);
-
-      const hills = new zim.Shape().addTo(stage);
-      hills
-        .f("#bbf7d0")
-        .mt(0, 192)
-        .bt(180, 92, 330, 210, 500, 138)
-        .bt(680, 62, 850, 185, W, 106)
-        .lt(W, H)
-        .lt(0, H)
-        .cp();
-
-      const river = new zim.Shape().addTo(stage);
-      river
-        .f("#7dd3fc")
-        .mt(0, 300)
-        .bt(220, 250, 330, 355, 540, 300)
-        .bt(720, 250, 840, 360, W, 312)
-        .lt(W, H)
-        .lt(0, H)
-        .cp();
-
-      new zim.Rectangle(280, 92, "#65a30d", null, 0, 42)
-        .addTo(stage)
-        .loc(-40, 345);
-
-      new zim.Rectangle(280, 92, "#65a30d", null, 0, 42)
-        .addTo(stage)
-        .loc(860, 345);
-    }
-
-    function drawBridge() {
-      const progress = getCompletionPercent();
-
-      const shadow = new zim.Shape().addTo(stage);
-      shadow
-        .s("rgba(120,53,15,0.18)")
-        .ss(18)
-        .mt(410, 358)
-        .bt(492, 304, 608, 304, 690, 358);
-
-      const arch = new zim.Shape().addTo(stage);
-      arch.s("#92400e").ss(11).mt(410, 350).bt(492, 292, 608, 292, 690, 350);
-
-      const deck = new zim.Shape().addTo(stage);
-      deck.s("#b45309").ss(13).mt(398, 370).lt(702, 370);
-
-      for (let index = 0; index < 5; index += 1) {
-        const postX = 432 + index * 58;
-        const postY = 328 - Math.sin((index / 4) * Math.PI) * 28;
-
-        new zim.Rectangle(7, 44, "#78350f", null, 0, 4)
-          .addTo(stage)
-          .loc(postX, postY);
-      }
-
-      const progressBridge = new zim.Shape().addTo(stage);
-      progressBridge
-        .s("#22c55e")
-        .ss(6)
-        .mt(410, 350)
-        .bt(
-          410 + progress * 0.78,
-          326 - progress * 0.22,
-          470 + progress * 1.08,
-          292 + progress * 0.1,
-          410 + progress * 2.8,
-          350,
-        );
-    }
-
-    function drawHeader() {
-      addButton({
-        x: 28,
-        y: 24,
-        width: 104,
-        height: 34,
-        label: "Game 02",
-        background: "#0f172a",
-        rollBackground: "#1e293b",
-        onClick: () => {},
-      });
-
-      addLabel({
-        text: "Meaning Bridge",
-        x: W / 2,
-        y: 26,
-        size: 34,
-        color: "#07164f",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: `${getCompletionPercent()}% complete`,
-        x: W / 2,
-        y: 68,
-        size: 18,
-        color: "#047857",
-        bold: true,
-        align: "center",
-      });
-
-      addPanel({
-        x: W - 290,
-        y: 26,
-        width: 250,
-        height: 40,
-        fill: "rgba(255,255,255,0.88)",
-        stroke: "#bfdbfe",
-        corner: 16,
-      });
-
-      addLabel({
-        text: shortText(status, 34),
-        x: W - 272,
-        y: 39,
-        size: 12,
-        color: "#1e3a8a",
-        bold: true,
-      });
-    }
-
-    function drawMenuPlayerNamePanel() {
-      /*
-    Player name panel
-    -----------------
-    This stays inside the ZIMJS menu canvas.
-
-    Click behavior:
-    - Click panel to edit.
-    - Type name.
-    - Enter/Escape saves.
-    - Empty name falls back to "Guest Player".
-  */
-
-      const { x, y, width, height } = MENU_LAYOUT.playerPanel;
-
-      addPanel({
-        x,
-        y,
-        width,
-        height,
-        fill: isEditingPlayerName ? "#eff6ff" : "#ffffff",
-        stroke: isEditingPlayerName ? "#2563eb" : "#bfdbfe",
-        corner: 18,
-      });
-
-      addLabel({
-        text: "Player",
-        x: x + 16,
-        y: y + 10,
-        size: 11,
-        color: "#64748b",
-        bold: true,
-      });
-
-      const displayName = isEditingPlayerName
-        ? playerName || "Type name..."
-        : getNormalizedPlayerName();
-
-      addLabel({
-        text: shortText(displayName, 17),
-        x: x + 16,
-        y: y + 30,
-        size: 15,
-        color: isEditingPlayerName ? "#1d4ed8" : "#07164f",
-        bold: true,
-      });
-
-      addLabel({
-        text: isEditingPlayerName ? "Enter to save" : "Click to edit",
-        x: x + 16,
-        y: y + 50,
-        size: 10,
-        color: "#94a3b8",
-        bold: true,
-      });
-
-      const clickLayer = new zim.Rectangle(
-        width,
-        height,
-        "rgba(255,255,255,0.01)",
-        null,
+      // Milky pink → milky green gradient top-to-bottom
+      const grad = new zim.GradientColor(
+        ["#fde8f2", "#e8f5ee"],
+        [0, 1],
         0,
-        18,
+        0,
+        0,
+        H,
       );
-
-      clickLayer.addTo(stage).loc(x, y);
-      clickLayer.cursor = "pointer";
-      clickLayer.on("click", beginPlayerNameEdit);
+      new zim.Rectangle(W, H, grad).addTo(stage);
     }
 
-    function drawMenuScene() {
-      /*
-    ZIMJS menu scene
-    ----------------
-    Main start screen for Meaning Bridge.
-
-    React provides the outer app shell.
-    ZIMJS owns the player-facing setup:
-    - player name
-    - challenge mode
-    - difficulty
-    - pair count
-    - selected setup summary
-    - start button
-  */
-
-      const panel = MENU_LAYOUT.panel;
-
-      addPanel({
-        x: panel.x,
-        y: panel.y,
-        width: panel.width,
-        height: panel.height,
-        fill: "rgba(255,255,255,0.95)",
-        stroke: "#bfdbfe",
-        corner: 34,
-      });
-
-      /*
-    Main title area.
-    Nothing else should overlap this area.
-  */
-      addLabel({
-        text: "Meaning Bridge",
-        x: W / 2,
-        y: panel.y + 28,
-        size: 40,
-        color: "#07164f",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "Build a bridge between words and meaning.",
-        x: W / 2,
-        y: panel.y + 82,
-        size: 17,
-        color: "#475569",
-        bold: true,
-        align: "center",
-      });
-
-      drawMenuPlayerNamePanel();
-
-      /*
-    Challenge mode section.
-  */
-      addLabel({
-        text: "Choose Your Challenge",
-        x: W / 2,
-        y: MENU_LAYOUT.challengeTitle.y,
-        size: 23,
-        color: "#1e3a8a",
-        bold: true,
-        align: "center",
-      });
-
-      MODES.forEach((entry, index) => {
-        const selected = entry.value === mode;
-        const col = index % 3;
-        const row = Math.floor(index / 3);
-
-        const x =
-          MENU_LAYOUT.modeGrid.x +
-          col *
-            (MENU_LAYOUT.modeGrid.cardWidth + MENU_LAYOUT.modeGrid.columnGap);
-
-        const y =
-          MENU_LAYOUT.modeGrid.y +
-          row * (MENU_LAYOUT.modeGrid.cardHeight + MENU_LAYOUT.modeGrid.rowGap);
-
-        addPanel({
-          x,
-          y,
-          width: MENU_LAYOUT.modeGrid.cardWidth,
-          height: MENU_LAYOUT.modeGrid.cardHeight,
-          fill: selected ? "#eff6ff" : "#ffffff",
-          stroke: selected ? "#2563eb" : "#dbeafe",
-          corner: 18,
-        });
-
-        addLabel({
-          text: shortText(entry.label, 22),
-          x: x + 16,
-          y: y + 8,
-          size: 14,
-          color: selected ? "#1d4ed8" : "#07164f",
-          bold: true,
-        });
-
-        addLabel({
-          text: getModeDescription(entry.value),
-          x: x + 16,
-          y: y + 30,
-          size: 9,
-          color: selected ? "#2563eb" : "#64748b",
-          bold: true,
-        });
-
-        const clickLayer = new zim.Rectangle(
-          MENU_LAYOUT.modeGrid.cardWidth,
-          MENU_LAYOUT.modeGrid.cardHeight,
-          "rgba(255,255,255,0.01)",
-          null,
-          0,
-          18,
-        );
-
-        clickLayer.addTo(stage).loc(x, y);
-        clickLayer.cursor = "pointer";
-        clickLayer.on("click", () => {
-          selectMenuMode(entry.value);
-        });
-      });
-
-      /*
-    Difficulty selector.
-  */
-      addLabel({
-        text: "Difficulty",
-        x: MENU_LAYOUT.difficulty.labelX,
-        y: MENU_LAYOUT.difficulty.labelY,
-        size: 16,
-        color: "#047857",
-        bold: true,
-        align: "center",
-      });
-
-      DIFFICULTIES.forEach((entry, index) => {
-        const selected = entry === difficulty;
-
-        addButton({
-          x:
-            MENU_LAYOUT.difficulty.x +
-            index *
-              (MENU_LAYOUT.difficulty.buttonWidth + MENU_LAYOUT.difficulty.gap),
-          y: MENU_LAYOUT.difficulty.y,
-          width: MENU_LAYOUT.difficulty.buttonWidth,
-          height: MENU_LAYOUT.difficulty.buttonHeight,
-          label: entry,
-          background: selected ? "#059669" : "#ffffff",
-          rollBackground: selected ? "#047857" : "#ecfdf5",
-          color: selected ? "#ffffff" : "#047857",
-          borderColor: selected ? null : "#a7f3d0",
-          onClick: () => {
-            selectMenuDifficulty(entry);
-          },
-        });
-      });
-
-      /*
-    Pair-count selector.
-  */
-      addLabel({
-        text: "Pairs",
-        x: MENU_LAYOUT.pairs.labelX,
-        y: MENU_LAYOUT.pairs.labelY,
-        size: 16,
-        color: "#5b21b6",
-        bold: true,
-        align: "center",
-      });
-
-      PAIR_COUNTS.forEach((entry, index) => {
-        const selected = entry === pairCount;
-
-        addButton({
-          x:
-            MENU_LAYOUT.pairs.x +
-            index * (MENU_LAYOUT.pairs.buttonWidth + MENU_LAYOUT.pairs.gap),
-          y: MENU_LAYOUT.pairs.y,
-          width: MENU_LAYOUT.pairs.buttonWidth,
-          height: MENU_LAYOUT.pairs.buttonHeight,
-          label: `${entry}`,
-          background: selected ? "#7c3aed" : "#ffffff",
-          rollBackground: selected ? "#6d28d9" : "#f5f3ff",
-          color: selected ? "#ffffff" : "#5b21b6",
-          borderColor: selected ? null : "#ddd6fe",
-          onClick: () => {
-            selectMenuPairCount(entry);
-          },
-        });
-      });
-
-      /*
-    Compact selected setup summary.
-    This replaces the large top panel so the title area stays clean.
-  */
-
-      addPanel({
-        x: MENU_LAYOUT.selectedSetup.x,
-        y: MENU_LAYOUT.selectedSetup.y,
-        width: MENU_LAYOUT.selectedSetup.width,
-        height: MENU_LAYOUT.selectedSetup.height,
-        fill: "#f8fafc",
-        stroke: "#e2e8f0",
-        corner: 15,
-      });
-
-      addLabel({
-        text: `${
-          MODES.find((entry) => entry.value === mode)?.label || "Mode"
-        } · ${difficulty} · ${pairCount} pairs`,
-        x: W / 2,
-        y: MENU_LAYOUT.selectedSetup.y + 8,
-        size: 12,
-        color: "#07164f",
-        bold: true,
-        align: "center",
-      });
-
-      /*
-    Main start action.
-  */
-      addButton({
-        x: MENU_LAYOUT.startButton.x,
-        y: MENU_LAYOUT.startButton.y,
-        width: MENU_LAYOUT.startButton.width,
-        height: MENU_LAYOUT.startButton.height,
-        label: "Start Bridge",
-        background: "#4f46e5",
-        rollBackground: "#4338ca",
-        onClick: startBridgeRound,
-      });
-
-      addLabel({
-        text: "Express backend + ZIMJS canvas migration active",
-        x: W / 2,
-        y: 628,
-        size: 12,
-        color: "#64748b",
-        bold: true,
-        align: "center",
-      });
-    }
-
-    function drawOptionControls() {
-      const modeStartX = 96;
-      const modeY = 112;
-
-      MODES.forEach((entry, index) => {
-        const selected = entry.value === mode;
-
-        addButton({
-          x: modeStartX + index * 178,
-          y: modeY,
-          width: 164,
-          height: 36,
-          label: shortText(entry.label, 19),
-          background: selected ? "#2563eb" : "#ffffff",
-          rollBackground: selected ? "#1d4ed8" : "#eff6ff",
-          color: selected ? "#ffffff" : "#1e3a8a",
-          borderColor: selected ? null : "#bfdbfe",
-          onClick: () => {
-            void loadRound({ mode: entry.value });
-          },
-        });
-      });
-
-      DIFFICULTIES.forEach((entry, index) => {
-        const selected = entry === difficulty;
-
-        addButton({
-          x: 316 + index * 112,
-          y: 158,
-          width: 96,
-          height: 32,
-          label: entry,
-          background: selected ? "#059669" : "#ffffff",
-          rollBackground: selected ? "#047857" : "#ecfdf5",
-          color: selected ? "#ffffff" : "#047857",
-          borderColor: selected ? null : "#a7f3d0",
-          onClick: () => {
-            void loadRound({ difficulty: entry });
-          },
-        });
-      });
-
-      PAIR_COUNTS.forEach((entry, index) => {
-        const selected = entry === pairCount;
-
-        addButton({
-          x: 662 + index * 92,
-          y: 158,
-          width: 76,
-          height: 32,
-          label: `${entry} pairs`,
-          background: selected ? "#7c3aed" : "#ffffff",
-          rollBackground: selected ? "#6d28d9" : "#f5f3ff",
-          color: selected ? "#ffffff" : "#5b21b6",
-          borderColor: selected ? null : "#ddd6fe",
-          onClick: () => {
-            void loadRound({ pairCount: entry });
-          },
-        });
-      });
-    }
-
-    function drawPassagePanel() {
-      const passage = roundData?.passage;
-      const { x, y, width, height } = GAMEPLAY_LAYOUT.passage;
-
-      addPanel({
-        x,
-        y,
-        width,
-        height,
-        fill: "rgba(255,255,255,0.95)",
-        stroke: "#bfdbfe",
-        corner: 24,
-      });
-
-      if (!passage) {
-        addLabel({
-          text: "Loading passage...",
-          x: x + 24,
-          y: y + 32,
-          size: 18,
-          color: "#475569",
-          bold: true,
-        });
-        return;
-      }
-
-      addLabel({
-        text: `${passage.difficulty} · ${passage.theme}`,
-        x: x + 24,
-        y: y + 14,
-        size: 12,
-        color: "#047857",
-        bold: true,
-      });
-
-      addLabel({
-        text: passage.title,
-        x: x + 24,
-        y: y + 36,
-        size: 22,
-        color: "#07164f",
-        bold: true,
-      });
-
-      addWrappedLabel({
-        text: passage.text,
-        x: x + 24,
-        y: y + 66,
-        maxCharsPerLine: 112,
-        maxLines: 2,
-        size: 12,
-        lineHeight: 14,
-        color: "#475569",
-      });
-    }
-
-    function drawCard({ item, side, x, y }) {
-      const matched =
-        side === "left" ? isLeftMatched(item.id) : isRightMatched(item.id);
-
-      const selected = side === "left" && selectedLeftId === item.id;
-
-      const fill = matched ? "#dcfce7" : selected ? "#dbeafe" : "#ffffff";
-      const stroke = matched ? "#16a34a" : selected ? "#2563eb" : "#d1d5db";
-      const textColor = matched ? "#064e3b" : selected ? "#1e3a8a" : "#111827";
-      const subTextColor = matched
-        ? "#15803d"
-        : selected
-          ? "#2563eb"
-          : "#64748b";
-
-      const card = new zim.Rectangle(
-        GAMEPLAY_LAYOUT.card.width,
-        GAMEPLAY_LAYOUT.card.height,
-        fill,
-        stroke,
-        selected ? 4 : matched ? 3 : 2,
-        12,
-      )
-        .addTo(stage)
-        .loc(x, y);
-
-      card.cursor = "pointer";
-      card.on("click", () => {
-        if (side === "left") {
-          handleLeftCard(item);
-        } else {
-          handleRightCard(item);
-        }
-      });
-
-      addLabel({
-        text: shortText(item.label, 26),
-        x: x + 14,
-        y: y + 5,
-        size: 14,
-        color: textColor,
-        bold: true,
-      });
-
-      addLabel({
-        text: shortText(item.sublabel, 30),
-        x: x + 14,
-        y: y + 21,
-        size: 9,
-        color: subTextColor,
-        bold: true,
-      });
-
-      if (matched) {
-        new zim.Circle(10, "#16a34a").addTo(stage).loc(x + 226, y + 17);
-
-        addLabel({
-          text: "✓",
-          x: x + 226,
-          y: y + 8,
-          size: 13,
-          color: "#ffffff",
-          bold: true,
-          align: "center",
-        });
-      }
-
-      if (selected && !matched) {
-        new zim.Circle(10, "#2563eb").addTo(stage).loc(x + 226, y + 17);
-
-        addLabel({
-          text: "●",
-          x: x + 226,
-          y: y + 8,
-          size: 12,
-          color: "#ffffff",
-          bold: true,
-          align: "center",
-        });
-      }
-    }
-
-    function drawCards() {
-      const puzzle = roundData?.puzzle;
-      const left = GAMEPLAY_LAYOUT.leftPanel;
-      const right = GAMEPLAY_LAYOUT.rightPanel;
-      const card = GAMEPLAY_LAYOUT.card;
-
-      addPanel({
-        x: left.x,
-        y: left.y,
-        width: left.width,
-        height: left.height,
-        fill: "#ecfdf5",
-        stroke: "#86efac",
-        corner: 24,
-      });
-
-      addPanel({
-        x: right.x,
-        y: right.y,
-        width: right.width,
-        height: right.height,
-        fill: "#f5f3ff",
-        stroke: "#c4b5fd",
-        corner: 24,
-      });
-
-      addLabel({
-        text: "Word Cards",
-        x: left.x + 24,
-        y: left.y + 18,
-        size: 20,
-        color: "#065f46",
-        bold: true,
-      });
-
-      addLabel({
-        text: "Meaning Cards",
-        x: right.x + 24,
-        y: right.y + 18,
-        size: 20,
-        color: "#5b21b6",
-        bold: true,
-      });
-
-      if (!puzzle) {
-        addLabel({
-          text: "Loading cards...",
-          x: W / 2,
-          y: 456,
-          size: 20,
-          color: "#475569",
-          bold: true,
-          align: "center",
-        });
-        return;
-      }
-
-      puzzle.leftItems.forEach((item, index) => {
-        drawCard({
-          item,
-          side: "left",
-          x: left.x + card.xOffset,
-          y: left.y + card.yOffset + index * card.step,
-        });
-      });
-
-      puzzle.rightItems.forEach((item, index) => {
-        drawCard({
-          item,
-          side: "right",
-          x: right.x + card.xOffset,
-          y: right.y + card.yOffset + index * card.step,
-        });
-      });
-    }
-
-    function drawConnections() {
-      const puzzle = roundData?.puzzle;
-
-      if (!puzzle) {
-        return;
-      }
-
-      const left = GAMEPLAY_LAYOUT.leftPanel;
-      const right = GAMEPLAY_LAYOUT.rightPanel;
-      const card = GAMEPLAY_LAYOUT.card;
-
-      matches.forEach((match) => {
-        const leftIndex = puzzle.leftItems.findIndex(
-          (item) => item.id === match.leftId,
-        );
-
-        const rightIndex = puzzle.rightItems.findIndex(
-          (item) => item.id === match.rightId,
-        );
-
-        if (leftIndex < 0 || rightIndex < 0) {
-          return;
-        }
-
-        const leftX = left.x + card.xOffset + card.width;
-        const rightX = right.x + card.xOffset;
-
-        const y1 =
-          left.y + card.yOffset + leftIndex * card.step + card.height / 2;
-        const y2 =
-          right.y + card.yOffset + rightIndex * card.step + card.height / 2;
-
-        const connector = new zim.Shape().addTo(stage);
-        connector
-          .s("#22c55e")
-          .ss(4)
-          .mt(leftX, y1)
-          .bt(460, y1, 640, y2, rightX, y2);
-
-        new zim.Circle(5, "#22c55e").addTo(stage).loc(leftX, y1);
-        new zim.Circle(5, "#22c55e").addTo(stage).loc(rightX, y2);
-      });
-    }
-
-    function drawFeedbackPanel() {
-      const fill =
-        feedbackType === "success"
-          ? "#ecfdf5"
-          : feedbackType === "error"
-            ? "#fef2f2"
-            : "#eff6ff";
-
-      const stroke =
-        feedbackType === "success"
-          ? "#86efac"
-          : feedbackType === "error"
-            ? "#fca5a5"
-            : "#93c5fd";
-
-      const color =
-        feedbackType === "success"
-          ? "#047857"
-          : feedbackType === "error"
-            ? "#b91c1c"
-            : "#1d4ed8";
-
-      const x = GAMEPLAY_LAYOUT.centerPanel.x;
-      const y = GAMEPLAY_LAYOUT.feedback.y;
-      const width = GAMEPLAY_LAYOUT.centerPanel.width;
-
-      addPanel({
-        x,
-        y,
-        width,
-        height: GAMEPLAY_LAYOUT.feedback.height,
-        fill,
-        stroke,
-        corner: 20,
-      });
-
-      addLabel({
-        text: "Bridge Feedback",
-        x: x + 20,
-        y: y + 14,
-        size: 13,
-        color: "#64748b",
-        bold: true,
-      });
-
-      addWrappedLabel({
-        text: feedback,
-        x: x + 20,
-        y: y + 40,
-        maxCharsPerLine: 35,
-        maxLines: 2,
-        size: 14,
-        lineHeight: 18,
-        color,
-        bold: true,
-      });
-
-      addLabel({
-        text: `Hints ${hintsUsed} · Wrong ${wrongAttempts}`,
-        x: x + 20,
-        y: y + 74,
-        size: 11,
-        color: "#475569",
-        bold: true,
-      });
-    }
-
-    function drawControls() {
-      const x = GAMEPLAY_LAYOUT.centerPanel.x;
-      const y = GAMEPLAY_LAYOUT.controls.y;
-
-      addButton({
-        x,
-        y,
-        width: 86,
-        height: 36,
-        label: "Hint",
-        background: "#d97706",
-        rollBackground: "#b45309",
-        onClick: useHint,
-      });
-
-      addButton({
-        x: x + 100,
-        y,
-        width: 86,
-        height: 36,
-        label: "Reset",
-        background: "#475569",
-        rollBackground: "#334155",
-        onClick: resetRound,
-      });
-
-      addButton({
-        x: x + 200,
-        y,
-        width: 100,
-        height: 36,
-        label: "Submit",
-        background:
-          matches.length === roundData?.puzzle?.leftItems?.length
-            ? "#059669"
-            : "#64748b",
-        rollBackground: "#047857",
-        onClick: () => {
-          void submitRound();
-        },
-      });
-
-      addButton({
-        x: x + 30,
-        y: GAMEPLAY_LAYOUT.controls.secondaryY,
-        width: 104,
-        height: 36,
-        label: "Menu",
-        background: "#0f172a",
-        rollBackground: "#1e293b",
-        onClick: backToMenu,
-      });
-
-      addButton({
-        x: x + 154,
-        y: GAMEPLAY_LAYOUT.controls.secondaryY,
-        width: 122,
-        height: 36,
-        label: "New Round",
-        background: "#4f46e5",
-        rollBackground: "#4338ca",
-        onClick: () => {
-          void loadRound();
-        },
-      });
-    }
-
-    function drawRoundSummary() {
-      const x = GAMEPLAY_LAYOUT.centerPanel.x;
-      const y = GAMEPLAY_LAYOUT.centerPanel.y;
-      const width = GAMEPLAY_LAYOUT.centerPanel.width;
-
-      addPanel({
-        x,
-        y,
-        width,
-        height: 84,
-        fill: "rgba(255,255,255,0.94)",
-        stroke: "#dbeafe",
-        corner: 20,
-      });
-
-      addLabel({
-        text: "Round Summary",
-        x: x + 20,
-        y: y + 14,
-        size: 13,
-        color: "#64748b",
-        bold: true,
-      });
-
-      addLabel({
-        text: shortText(getNormalizedPlayerName(), 22),
-        x: x + 20,
-        y: y + 34,
-        size: 13,
-        color: "#07164f",
-        bold: true,
-      });
-
-      addLabel({
-        text: `${matches.length}/${roundData?.puzzle?.leftItems?.length || pairCount} pairs · ${getCompletionPercent()}%`,
-        x: x + 20,
-        y: y + 56,
-        size: 16,
-        color: "#047857",
-        bold: true,
-      });
-    }
-
-    function drawResultPanel() {
-      if (!result) {
-        return;
-      }
-
-      /*
-    Result overlay
-    --------------
-    This overlay appears after submitting a round.
-
-    It intentionally sits on top of the gameplay screen instead of replacing it.
-    This keeps the player connected to the round they just completed while still
-    making the score, round point, and leaderboard clear.
-  */
-
-      const perfectScore = result.perfectRound && result.roundPoints > 0;
-      const title = getResultTitle();
-      const badgeIcon = getResultBadge();
-
-      // Soft dim layer over the gameplay screen.
-      new zim.Rectangle(W, H, "rgba(15,23,42,0.28)").addTo(stage).loc(0, 0);
-
-      const panelX = 210;
-      const panelY = 112;
-      const panelWidth = 680;
-      const panelHeight = 500;
-
-      addPanel({
-        x: panelX,
-        y: panelY,
-        width: panelWidth,
-        height: panelHeight,
-        fill: "rgba(255,255,255,0.98)",
-        stroke: perfectScore ? "#22c55e" : "#6366f1",
-        corner: 32,
-      });
-
-      // Left badge circle.
-      new zim.Circle(46, perfectScore ? "#22c55e" : "#6366f1")
-        .addTo(stage)
-        .loc(panelX + 72, panelY + 78);
-
-      addLabel({
-        text: badgeIcon,
-        x: panelX + 72,
-        y: panelY + 53,
-        size: 38,
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-      });
-
-      addLabel({
-        text: "Round Complete",
-        x: panelX + 142,
-        y: panelY + 38,
-        size: 15,
-        color: perfectScore ? "#047857" : "#4f46e5",
-        bold: true,
-      });
-
-      addLabel({
-        text: title,
-        x: panelX + 142,
-        y: panelY + 64,
-        size: 32,
-        color: "#07164f",
-        bold: true,
-      });
-
-      addWrappedLabel({
-        text: result.message || "Your bridge round has been submitted.",
-        x: panelX + 142,
-        y: panelY + 108,
-        maxCharsPerLine: 54,
-        maxLines: 2,
-        size: 13,
-        lineHeight: 17,
-        color: "#475569",
-        bold: true,
-      });
-
-      /*
-    Score card
-    ----------
-    Shows the main score in a large visual treatment so the end state feels
-    rewarding and easy to read during a demo.
-  */
-      addPanel({
-        x: panelX + 34,
-        y: panelY + 164,
-        width: 190,
-        height: 130,
-        fill: "#f8fafc",
-        stroke: "#e2e8f0",
-        corner: 22,
-      });
-
-      addLabel({
-        text: `${result.score}`,
-        x: panelX + 70,
-        y: panelY + 186,
-        size: 54,
-        color: "#111827",
-        bold: true,
-      });
-
-      addLabel({
-        text: "points",
-        x: panelX + 80,
-        y: panelY + 252,
-        size: 16,
-        color: "#64748b",
-        bold: true,
-      });
-
-      /*
-    Round point badge
-    -----------------
-    This is important to the Meaning Bridge scoring design:
-    a round point is earned only for a clean perfect round.
-  */
-      addPanel({
-        x: panelX + 34,
-        y: panelY + 312,
-        width: 190,
-        height: 76,
-        fill: perfectScore ? "#ecfdf5" : "#f8fafc",
-        stroke: perfectScore ? "#86efac" : "#e2e8f0",
-        corner: 20,
-      });
-
-      addLabel({
-        text: "Round Point",
-        x: panelX + 54,
-        y: panelY + 328,
-        size: 12,
-        color: "#64748b",
-        bold: true,
-      });
-
-      addLabel({
-        text: result.roundPoints > 0 ? "+1 earned" : "Not earned",
-        x: panelX + 54,
-        y: panelY + 352,
-        size: 20,
-        color: result.roundPoints > 0 ? "#047857" : "#475569",
-        bold: true,
-      });
-
-      /*
-    Stat grid
-    ---------
-    Compact stats from the submitted round.
-  */
-      const stats = [
-        ["Accuracy", `${result.accuracy}%`],
-        ["Correct", `${result.correctMatches}/${result.totalMatches}`],
-        ["Time", `${result.timeSeconds}s`],
-        ["Hints", `${result.hintsUsed}`],
-        ["Wrong", `${result.wrongAttempts}`],
-        ["Perfect", result.perfectRound ? "Yes" : "No"],
-      ];
-
-      stats.forEach(([label, value], index) => {
-        const col = index % 2;
-        const row = Math.floor(index / 2);
-
-        const statX = panelX + 254 + col * 142;
-        const statY = panelY + 164 + row * 70;
-
-        addPanel({
-          x: statX,
-          y: statY,
-          width: 124,
-          height: 54,
-          fill: "#f8fafc",
-          stroke: "#e2e8f0",
-          corner: 16,
-        });
-
-        addLabel({
-          text: label,
-          x: statX + 14,
-          y: statY + 10,
-          size: 11,
-          color: "#64748b",
-          bold: true,
-        });
-
-        addLabel({
-          text: value,
-          x: statX + 14,
-          y: statY + 30,
-          size: 17,
-          color:
-            label === "Perfect" && value === "Yes"
-              ? "#047857"
-              : label === "Wrong" && Number(result.wrongAttempts) > 0
-                ? "#b91c1c"
-                : "#111827",
-          bold: true,
-        });
-      });
-
-      /*
-    Mini leaderboard
-    ----------------
-    Shows top scores inside the result overlay. The normal bottom leaderboard
-    still exists during gameplay, but this version makes the final result screen
-    feel complete.
-  */
-      addPanel({
-        x: panelX + 540,
-        y: panelY + 164,
-        width: 112,
-        height: 224,
-        fill: "#f0fdf4",
-        stroke: "#a7f3d0",
-        corner: 18,
-      });
-
-      addLabel({
-        text: "Top",
-        x: panelX + 562,
-        y: panelY + 182,
-        size: 15,
-        color: "#065f46",
-        bold: true,
-      });
-
-      const topEntries = leaderboard.slice(0, 4);
-
-      if (topEntries.length === 0) {
-        addWrappedLabel({
-          text: "No scores yet.",
-          x: panelX + 558,
-          y: panelY + 222,
-          maxCharsPerLine: 13,
-          maxLines: 2,
-          size: 12,
-          lineHeight: 16,
-          color: "#64748b",
-          bold: true,
-        });
+    function drawCard({
+      item,
+      x,
+      y,
+      cardH,
+      side,
+      pairIdx,
+      matchPairIdx,
+      isMatched,
+      isSelected,
+      isWrong,
+      isJustMatched,
+    }) {
+      const mColor = PC[matchPairIdx % PC.length];
+      const mDark = PD[matchPairIdx % PD.length];
+
+      let accent, border, textCol, subCol;
+
+      const modeAccent =
+        currentMode === "word-to-synonym"
+          ? "#3a8a3a"
+          : currentMode === "word-to-antonym"
+            ? "#1a7a99"
+            : "#6b48cc";
+
+      if (isWrong) {
+        accent = "#ff3333";
+        border = rgba("#ff3333", 0.6);
+        textCol = "#c00000";
+        subCol = "#ff6666";
+      } else if (isMatched) {
+        accent = mColor;
+        border = rgba(mColor, 0.55);
+        textCol = mDark;
+        subCol = mDark;
+      } else if (isSelected) {
+        accent = modeAccent;
+        border = modeAccent;
+        textCol = G.dark;
+        subCol = G.dark;
       } else {
-        topEntries.forEach((entry, index) => {
-          const rowY = panelY + 216 + index * 38;
+        accent = modeAccent;
+        border = rgba(modeAccent, 0.35);
+        textCol = G.dark;
+        subCol = G.base;
+      }
 
-          addLabel({
-            text: `#${index + 1}`,
-            x: panelX + 558,
-            y: rowY,
-            size: 11,
-            color: "#047857",
-            bold: true,
-          });
+      const cardBg =
+        isWrong || isMatched || isSelected ? C.white : rgba(modeAccent, 0.07);
 
-          addLabel({
-            text: shortText(entry.playerName, 9),
-            x: panelX + 584,
-            y: rowY,
-            size: 10,
-            color: "#111827",
-            bold: true,
-          });
+      const card = new zim.Container()
+        .addTo(stage)
+        .loc(x, isSelected ? y - 3 : y);
+      card.mouseChildren = false;
 
-          addLabel({
-            text: `${entry.totalScore}`,
-            x: panelX + 584,
-            y: rowY + 16,
-            size: 10,
-            color: "#64748b",
-            bold: true,
-          });
+      // Shadow
+      new zim.Rectangle({
+        width: CARD_W,
+        height: cardH,
+        color: rgba(C.ink, 0.07),
+        corner: 15,
+      })
+        .addTo(card)
+        .loc(1, 4);
+
+      // Card body
+      new zim.Rectangle({
+        width: CARD_W,
+        height: cardH,
+        color: cardBg,
+        borderColor: border,
+        borderWidth: isSelected ? 2.5 : 1.8,
+        corner: 15,
+      }).addTo(card);
+
+      // Left accent bar
+      new zim.Rectangle({
+        width: 7,
+        height: cardH - 10,
+        color: accent,
+        corner: [4, 0, 0, 4],
+      })
+        .addTo(card)
+        .loc(2, 5);
+
+      const n = puzzle.leftItems.length;
+      const fs = n >= 6 ? 18 : n >= 5 ? 20 : 22;
+
+      if (side === "left") {
+        new zim.Label({
+          text: item.label,
+          size: fs,
+          font: FONT,
+          color: textCol,
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(card)
+          .loc(CARD_W / 2 + 4, cardH / 2 - 6);
+
+        // POS badge — pill in top-right corner
+        const badgeW = Math.max(item.sublabel.length * 9 + 14, 46);
+        new zim.Rectangle({
+          width: badgeW,
+          height: 20,
+          color: rgba(accent, 0.14),
+          corner: 10,
+        })
+          .addTo(card)
+          .loc(CARD_W - badgeW - 6, 6);
+        new zim.Label({
+          text: item.sublabel,
+          size: 11,
+          font: FONT,
+          color: isWrong ? "#c00000" : accent,
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(card)
+          .loc(CARD_W - badgeW / 2 - 6, 16);
+      } else {
+        new zim.Label({
+          text: item.label,
+          size: fs,
+          font: FONT,
+          color: textCol,
+          align: "center",
+          valign: "center",
+          bold: true,
+          lineWidth: CARD_W - 26,
+        })
+          .addTo(card)
+          .loc(CARD_W / 2 + 4, cardH / 2 - 8);
+
+        new zim.Label({
+          text: item.sublabel,
+          size: 11,
+          font: FONT,
+          color: subCol,
+          align: "center",
+          valign: "center",
+        })
+          .addTo(card)
+          .loc(CARD_W / 2 + 4, cardH - 13);
+      }
+
+      if (isJustMatched) {
+        card.animate({
+          props: { scaleX: 1.08, scaleY: 1.08 },
+          time: 0.13,
+          rewind: true,
         });
       }
 
-      /*
-    Result actions
-    --------------
-    Menu returns to the ZIMJS menu screen.
-    Next Round keeps the same selected options and generates another round.
-  */
-      addButton({
-        x: panelX + 240,
-        y: panelY + 428,
-        width: 118,
-        height: 40,
-        label: "Menu",
-        background: "#0f172a",
-        rollBackground: "#1e293b",
-        onClick: backToMenu,
-      });
+      // Entrance animation — stagger by card index
+      if (freshRound && !isMatched && !isSelected && !isWrong) {
+        card.alpha = 0;
+        const delay =
+          (side === "left"
+            ? pairIdx
+            : puzzle.rightItems.findIndex((r) => r.id === item.id)) * 0.07;
+        card.animate({
+          props: { alpha: 1 },
+          time: 0.22,
+          wait: delay,
+          ease: "backOut",
+        });
+      }
 
-      addButton({
-        x: panelX + 376,
-        y: panelY + 428,
-        width: 150,
-        height: 40,
-        label: "Next Round",
-        background: "#4f46e5",
-        rollBackground: "#4338ca",
-        onClick: () => {
-          void loadRound();
-        },
-      });
+      if (!isMatched && !isWrong) {
+        card.cursor = "pointer";
+        card.on("click", () => onCardClick(item, side, y, cardH));
+      }
     }
 
-    function drawLeaderboard() {
-      const { x, y, width, height } = GAMEPLAY_LAYOUT.leaderboard;
-
-      addPanel({
-        x,
-        y,
-        width,
-        height,
-        fill: "rgba(255,255,255,0.92)",
-        stroke: "#a7f3d0",
-        corner: 18,
-      });
-
-      addLabel({
-        text: "Leaderboard",
-        x: x + 24,
-        y: y + 16,
-        size: 15,
-        color: "#065f46",
+    // ── COLUMN PILL BADGE ────────────────────────────────────────────
+    function drawColumnPill(text, cx, cy, color) {
+      const pw = text.length * 13 + 28,
+        ph = 30;
+      const pill = new zim.Container()
+        .addTo(stage)
+        .loc(cx - pw / 2, cy - ph / 2);
+      pill.mouseChildren = false;
+      new zim.Rectangle({
+        width: pw,
+        height: ph,
+        color: rgba(color, 0.12),
+        borderColor: color,
+        borderWidth: 1.5,
+        corner: ph / 2,
+      }).addTo(pill);
+      new zim.Label({
+        text,
+        size: 16,
+        font: FONT,
+        color,
+        align: "center",
+        valign: "center",
         bold: true,
-      });
-
-      if (leaderboard.length === 0) {
-        addLabel({
-          text: "No scores yet.",
-          x: x + 150,
-          y: y + 17,
-          size: 14,
-          color: "#64748b",
-          bold: true,
-        });
-        return;
-      }
-
-      leaderboard.slice(0, 4).forEach((entry, index) => {
-        addLabel({
-          text: `#${index + 1} ${shortText(entry.playerName, 12)} · ${entry.totalScore} pts`,
-          x: x + 160 + index * 190,
-          y: y + 17,
-          size: 13,
-          color: "#111827",
-          bold: true,
-        });
-      });
+      })
+        .addTo(pill)
+        .loc(pw / 2, ph / 2);
     }
 
-    function renderScene() {
+    // ── PANEL CONTAINER (wraps all cards on one side) ─────────────────
+    function drawPanelContainer(x, y, w, h) {
+      const PAD = 10;
+      // Shadow
+      new zim.Rectangle({
+        width: w + PAD * 2,
+        height: h + PAD * 2,
+        color: rgba(C.ink, 0.06),
+        corner: 20,
+      })
+        .addTo(stage)
+        .loc(x - PAD + 2, y - PAD + 4);
+      // Panel body
+      new zim.Rectangle({
+        width: w + PAD * 2,
+        height: h + PAD * 2,
+        color: "rgba(254,248,240,0.9)",
+        borderColor: rgba("#5aaa5a", 0.22),
+        borderWidth: 1.5,
+        corner: 20,
+      })
+        .addTo(stage)
+        .loc(x - PAD, y - PAD);
+    }
+
+    // ── RENDER GAME ───────────────────────────────────────────────────
+    function renderGame() {
+      calcLayout();
       stage.removeAllChildren();
 
+      // Background
       drawBackground();
 
-      if (screen === "menu") {
-        drawMenuScene();
-        publishDebugState();
-        stage.update();
-        return;
-      }
+      drawHeader({ showExit: true });
 
-      drawBridge();
-      drawHeader();
-      drawPassagePanel();
+      // Bridge zone — clean white strip with a very subtle green tint from the header
+      const bx = LEFT_X + CARD_W;
+      const bw = RIGHT_X - bx;
+      new zim.Rectangle(bw, H - HEADER_H, rgba("#7ec87e", 0.05))
+        .addTo(stage)
+        .loc(bx, HEADER_H);
+
+      // Thin vertical dashed dividers at each edge of the bridge zone
+      [bx, bx + bw].forEach((dx) => {
+        const dv = new zim.Shape().addTo(stage);
+        dv.s(rgba("#5aaa5a", 0.18)).ss(1.5, "round", "round").sd([6, 7]);
+        dv.mt(dx, HEADER_H + 12).lt(dx, H - 12);
+      });
+
+      // Instruction text
+      const instrColor =
+        currentMode === "word-to-synonym"
+          ? "#3a8a3a"
+          : currentMode === "word-to-antonym"
+            ? "#1a7a99"
+            : "#6b48cc";
+      const instr = new zim.Label({
+        text: puzzle.instruction,
+        size: 21,
+        font: FONT,
+        color: instrColor,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .center(stage);
+      instr.y = HEADER_H + 18;
+      instr.alpha = 0;
+      instr.animate({
+        props: { y: HEADER_H + 32, alpha: 1 },
+        time: 0.4,
+        ease: "backOut",
+      });
+
+      // Column header pills — sit clearly above the first card row
+      const rightLabel =
+        currentMode === "word-to-synonym"
+          ? "Synonym"
+          : currentMode === "word-to-antonym"
+            ? "Antonym"
+            : "Definition";
+      const CHY = HEADER_H + 36;
+      drawColumnPill("Word", LEFT_X + CARD_W / 2, CHY, instrColor);
+      drawColumnPill(rightLabel, RIGHT_X + CARD_W / 2, CHY, instrColor);
+
+      // Single container wrapping both panels + bridge zone
+      const n = puzzle.leftItems.length;
+      const offsetY = (RIGHT_CARD_H - CARD_H) / 2;
+      // For 4 pairs: extend panel above first card and below last card symmetrically
+      const TOP_PAD = n === 4 ? 28 : 0;
+      const panelTop = START_Y + offsetY - TOP_PAD;
+      const panelH =
+        n === 4
+          ? H - BOTTOM_BAR_H - 8 - panelTop
+          : (n - 1) * GAP + RIGHT_CARD_H;
+      drawPanelContainer(LEFT_X, panelTop, RIGHT_X + CARD_W - LEFT_X, panelH);
+
+      // Bridges first (behind cards)
+      drawBridges();
       drawCards();
-      drawConnections();
-      drawRoundSummary();
-      drawFeedbackPanel();
-      drawControls();
+      drawBottomBar();
+      stage.update();
+      freshRound = false; // entrance animation only plays on first render per round
+    }
 
-      if (!result) {
-        drawLeaderboard();
-      }
+    function drawBottomBar() {
+      const barH = BOTTOM_BAR_H;
+      const barY = H - barH;
 
-      if (result) {
-        drawResultPanel();
+      // Bottom bar background
+      new zim.Rectangle(W, barH, rgba("#5aaa5a", 0.08))
+        .addTo(stage)
+        .loc(0, barY);
+      new zim.Rectangle(W, 2, "#5aaa5a").addTo(stage).loc(0, barY); // solid top border
+
+      const matched = Object.keys(matches).length;
+      const total = puzzle.leftItems.length;
+
+      // Progress bar (centered, wider, more prominent)
+      const progW = 320,
+        progH = 10,
+        progX = W / 2 - progW / 2,
+        progY = barY + 26;
+      new zim.Rectangle({
+        width: progW,
+        height: progH,
+        color: rgba("#5aaa5a", 0.18),
+        corner: progH / 2,
+      })
+        .addTo(stage)
+        .loc(progX, progY);
+      if (matched > 0) {
+        const fillW = Math.round((progW * matched) / total);
+        new zim.Rectangle({
+          width: fillW,
+          height: progH,
+          color: "#5aaa5a",
+          corner: progH / 2,
+        })
+          .addTo(stage)
+          .loc(progX, progY);
       }
-      publishDebugState();
+      // Progress label — above the bar
+      new zim.Label({
+        text: `${matched} of ${total} matched`,
+        size: 14,
+        font: FONT,
+        color: "#3a7a3a",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(W / 2, barY + 14);
+
+      // Hint button (right side)
+      const hintBtn = new zim.Container().addTo(stage).loc(W - 140, barY + 11);
+      hintBtn.mouseChildren = false;
+      new zim.Rectangle({
+        width: 110,
+        height: 38,
+        color: "#e8eaf6",
+        borderColor: "#7986cb",
+        borderWidth: 2,
+        corner: 19,
+      }).addTo(hintBtn);
+      new zim.Label({
+        text: "💡 Hint",
+        size: 16,
+        font: FONT,
+        color: "#3949ab",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(hintBtn)
+        .loc(55, 19);
+      hintBtn.cursor = "pointer";
+      hintBtn.on("click", () => {
+        if (!selectedLeft) {
+          showPrompt("👈 Pick a word from the left panel first!", H - 90, 38);
+          return;
+        }
+        const hint = puzzle.hints?.[selectedLeft.id];
+        if (hint) showHint(hint);
+      });
+
+      // Skip button (left side)
+      const skipBtn = new zim.Container().addTo(stage).loc(30, barY + 11);
+      skipBtn.mouseChildren = false;
+      new zim.Rectangle({
+        width: 110,
+        height: 38,
+        color: "#e8eaf6",
+        borderColor: "#7986cb",
+        borderWidth: 2,
+        corner: 19,
+      }).addTo(skipBtn);
+      new zim.Label({
+        text: "⏭ Skip",
+        size: 16,
+        font: FONT,
+        color: "#3949ab",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(skipBtn)
+        .loc(55, 19);
+      skipBtn.cursor = "pointer";
+      skipBtn.on("click", () => {
+        roundIndex = Math.min(roundIndex + 1, PAIR_COUNTS.length - 1);
+        loadRound();
+      });
+    }
+
+    function showHint(text) {
+      const old = stage.getChildByName("hint_bubble");
+      if (old) stage.removeChild(old);
+
+      const bW = 420,
+        bH = 52;
+      const bx = (W - bW) / 2;
+      const by = H - 62 - bH - 10;
+
+      const bubble = new zim.Container().addTo(stage);
+      bubble.name = "hint_bubble";
+      bubble.mouseChildren = false;
+
+      new zim.Rectangle({
+        width: bW,
+        height: bH,
+        color: "#fffbe6",
+        borderColor: "#c9a830",
+        borderWidth: 1.5,
+        corner: 14,
+      }).addTo(bubble);
+      new zim.Label({
+        text: text,
+        size: 15,
+        font: FONT,
+        color: "#7a5800",
+        align: "center",
+        valign: "center",
+        lineWidth: bW - 24,
+      })
+        .addTo(bubble)
+        .loc(bW / 2, bH / 2);
+      bubble.loc(bx, by);
+      stage.update();
+
+      setTimeout(() => {
+        if (stage.contains(bubble)) {
+          stage.removeChild(bubble);
+          stage.update();
+        }
+      }, 3000);
+    }
+
+    // ── LOADING / ERROR ───────────────────────────────────────────────
+    function showLoading() {
+      stage.removeAllChildren();
+      drawBackground();
+      drawHeader({ showExit: false });
+
+      // Pulsing dots
+      const dots = new zim.Container().addTo(stage).center(stage);
+      [0, 1, 2].forEach((i) => {
+        const dot = new zim.Circle(9, PC[i]).addTo(dots).loc(i * 34 - 34, 0);
+        dot.animate({
+          props: { y: -14 },
+          time: 0.45,
+          ease: "backOut",
+          loop: true,
+          rewind: true,
+          wait: i * 0.15,
+        });
+      });
+      new zim.Label({
+        text: "Loading…",
+        size: 22,
+        font: FONT,
+        color: C.sub,
+        align: "center",
+        valign: "center",
+      })
+        .addTo(stage)
+        .loc(W / 2, H / 2 + 36);
+
       stage.update();
     }
 
-    if (typeof window !== "undefined") {
-      if (window.__meaningBridgePlayerNameKeyCleanup) {
-        window.__meaningBridgePlayerNameKeyCleanup();
-      }
-
-      window.addEventListener("keydown", handlePlayerNameKeyDown);
-
-      window.__meaningBridgePlayerNameKeyCleanup = () => {
-        window.removeEventListener("keydown", handlePlayerNameKeyDown);
-      };
+    function showError(msg) {
+      stage.removeAllChildren();
+      drawBackground();
+      drawHeader({ showExit: true });
+      new zim.Label({
+        text: msg,
+        size: 20,
+        font: FONT,
+        color: "#cc0000",
+        lineWidth: 700,
+        align: "center",
+        valign: "center",
+      })
+        .addTo(stage)
+        .center(stage);
+      stage.update();
     }
 
-    status = "Choose your bridge challenge.";
-    setFeedback(
-      "Choose a mode, difficulty, and pair count to begin.",
-      "neutral",
-    );
+    async function loadRound() {
+      showLoading();
 
-    renderScene();
+      try {
+        const data = await fetchMeaningBridgeRound(
+          currentMode,
+          PAIR_COUNTS[roundIndex],
+        );
 
-    void loadLeaderboard().then(() => {
-      renderScene();
-    });
+        puzzle = data.puzzle;
+        matches = {};
+        selectedLeft = null;
+        selectedRight = null;
+        flashWrong = null;
+        lastMatchLeft = null;
+        freshRound = true;
+
+        renderGame();
+      } catch (error) {
+        console.error("Meaning Bridge round load failed:", error);
+
+        showError(
+          error instanceof Error
+            ? error.message
+            : "Could not load puzzle — make sure the server is running.",
+        );
+      }
+    }
+
+    // ── CLICK LOGIC ────────────────────────────────────────────────────
+    let promptTimeout = null;
+
+    function showPrompt(msg, cardY, cardH) {
+      const old = stage.getChildByName("prompt_toast");
+      if (old) stage.removeChild(old);
+      if (promptTimeout) clearTimeout(promptTimeout);
+
+      const toastW = 220,
+        toastH = 40;
+      // Position to the LEFT of the right panel, vertically centered on the clicked card
+      const tx = RIGHT_X - toastW - 16;
+      const ty = cardY + cardH / 2 - toastH / 2;
+
+      const toast = new zim.Container().addTo(stage);
+      toast.name = "prompt_toast";
+      toast.mouseChildren = false;
+
+      // Shadow
+      new zim.Rectangle({
+        width: toastW,
+        height: toastH,
+        color: rgba("#1d2b66", 0.15),
+        corner: 20,
+      })
+        .addTo(toast)
+        .loc(1, 3);
+      // Body
+      new zim.Rectangle({
+        width: toastW,
+        height: toastH,
+        color: "#1d2b66",
+        corner: 20,
+      }).addTo(toast);
+      // Small right-pointing arrow tip
+      const tip = new zim.Shape().addTo(toast);
+      tip
+        .f("#1d2b66")
+        .mt(toastW, toastH / 2 - 7)
+        .lt(toastW + 10, toastH / 2)
+        .lt(toastW, toastH / 2 + 7)
+        .cp();
+
+      new zim.Label({
+        text: msg,
+        size: 13,
+        font: FONT,
+        color: "#ffffff",
+        align: "center",
+        valign: "center",
+        lineWidth: toastW - 16,
+      })
+        .addTo(toast)
+        .loc(toastW / 2, toastH / 2);
+      toast.loc(tx, ty);
+      stage.update();
+
+      promptTimeout = setTimeout(() => {
+        if (stage.contains(toast)) stage.removeChild(toast);
+        stage.update();
+      }, 1800);
+    }
+
+    function onCardClick(item, side, cardY, cardH) {
+      // Enforce: must pick a word (left) before picking a meaning (right)
+      if (side === "right" && !selectedLeft) {
+        showPrompt("👈 Pick a word from the left panel first!", cardY, cardH);
+        return;
+      }
+
+      flashWrong = null;
+      lastMatchLeft = null;
+      if (side === "left") {
+        if (selectedLeft?.id === item.id) {
+          selectedLeft = null; // tap same word → deselect
+        } else {
+          selectedLeft = item; // switch to new word
+          selectedRight = null; // reset right whenever left changes
+        }
+      } else {
+        selectedRight = selectedRight?.id === item.id ? null : item;
+      }
+
+      if (selectedLeft && selectedRight) {
+        renderGame();
+        setTimeout(checkPair, 300);
+        return;
+      }
+      renderGame();
+    }
+
+    function checkPair() {
+      if (!selectedLeft || !selectedRight) return;
+      const correct = puzzle.answerKey[selectedLeft.id] === selectedRight.id;
+
+      if (correct) {
+        matches[selectedLeft.id] = selectedRight.id;
+        lastMatchLeft = selectedLeft.id;
+        totalScore += puzzle.scoreRules.correct;
+        selectedLeft = selectedRight = null;
+
+        if (Object.keys(matches).length === puzzle.leftItems.length) {
+          renderGame();
+          setTimeout(showRoundComplete, 700);
+          return;
+        }
+      } else {
+        totalScore = Math.max(
+          0,
+          totalScore - puzzle.scoreRules.wrongAttemptPenalty,
+        );
+        flashWrong = { leftId: selectedLeft.id, rightId: selectedRight.id };
+        selectedRight = null; // keep left selected — user can keep guessing from the right
+        renderGame();
+        setTimeout(() => {
+          flashWrong = null;
+          renderGame();
+        }, 650);
+        return;
+      }
+      renderGame();
+    }
+
+    // ── ROUND COMPLETE ────────────────────────────────────────────────
+    function showRoundComplete() {
+      stage.removeAllChildren();
+      drawBackground();
+      drawHeader({ showExit: true });
+
+      // Modal card
+      const mW = 520,
+        mH = 280;
+      const mX = (W - mW) / 2,
+        mY = HEADER_H + (H - HEADER_H - mH) / 2;
+
+      new zim.Rectangle({
+        width: mW,
+        height: mH,
+        color: rgba(C.ink, 0.05),
+        corner: 28,
+      })
+        .addTo(stage)
+        .loc(mX + 2, mY + 4);
+      new zim.Rectangle({
+        width: mW,
+        height: mH,
+        color: C.white,
+        borderColor: rgba(C.leaf, 0.4),
+        borderWidth: 2,
+        corner: 28,
+      })
+        .addTo(stage)
+        .loc(mX, mY);
+      // Top accent
+      new zim.Rectangle({
+        width: mW,
+        height: 6,
+        color: C.leaf,
+        corner: [28, 28, 0, 0],
+      })
+        .addTo(stage)
+        .loc(mX, mY);
+
+      const cx = mX + mW / 2;
+      new zim.Label({
+        text: "🎉  Well done!",
+        size: 40,
+        font: FONT,
+        color: C.ink,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(cx, mY + 70);
+      new zim.Label({
+        text: `Round ${roundIndex + 1} complete`,
+        size: 22,
+        font: FONT,
+        color: C.sub,
+        align: "center",
+        valign: "center",
+      })
+        .addTo(stage)
+        .loc(cx, mY + 138);
+
+      // Score pill
+      const sp = new zim.Container().addTo(stage).loc(cx - 70, mY + 165);
+      sp.mouseChildren = false;
+      new zim.Rectangle({
+        width: 140,
+        height: 32,
+        color: rgba(C.sunshine, 0.18),
+        borderColor: rgba(C.sunshine, 0.6),
+        borderWidth: 1.5,
+        corner: 16,
+      }).addTo(sp);
+      new zim.Label({
+        text: `⭐ ${totalScore} pts`,
+        size: 17,
+        font: FONT,
+        color: "#a07800",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(sp)
+        .loc(70, 16);
+
+      const isLast = roundIndex === PAIR_COUNTS.length - 1;
+      const btn = new zim.Button({
+        width: 220,
+        height: 48,
+        label: isLast ? "See Final Score →" : "Next Round →",
+        backgroundColor: C.tangerine,
+        rollBackgroundColor: "#e88030",
+        color: C.white,
+        corner: 24,
+      })
+        .addTo(stage)
+        .loc(cx - 110, mY + mH - 60);
+      btn.label.size = 20;
+      btn.label.font = FONT;
+      btn.on("click", () =>
+        isLast ? showFinalScore() : (roundIndex++, loadRound()),
+      );
+
+      stage.update();
+    }
+
+    // ── FINAL SCORE ───────────────────────────────────────────────────
+    function showFinalScore() {
+      stage.removeAllChildren();
+      drawBackground();
+      drawHeader({ showExit: true });
+
+      // Update session best
+      const isNewBest = totalScore >= sessionBest;
+      if (isNewBest) sessionBest = totalScore;
+      const LOW_SCORE = 30;
+      const isLowScore = totalScore < LOW_SCORE;
+
+      // ── Sad faces (low score) or Falling flowers (good score) ────
+      if (isLowScore) {
+        const sadFaces = ["😢", "😔", "😞", "😿", "😭"];
+        for (let i = 0; i < 14; i++) {
+          const face = new zim.Label({
+            text: sadFaces[i % sadFaces.length],
+            size: 26 + Math.random() * 22,
+            align: "center",
+            valign: "center",
+          }).addTo(stage);
+          const sx = 40 + Math.random() * (W - 80);
+          face.loc(sx, H + 30);
+          face.alpha = 0.8;
+          face.animate({
+            props: {
+              y: HEADER_H - 30,
+              x: sx + (Math.random() - 0.5) * 100,
+            },
+            time: 2.8 + Math.random() * 2.2,
+            wait: Math.random() * 3.5,
+            ease: "linear",
+            loop: true,
+          });
+        }
+      } else {
+        const flowerPalette = [
+          { petal: C.bubblegum, center: C.sunshine },
+          { petal: C.tangerine, center: C.bubblegum },
+          { petal: C.grape, center: C.sunshine },
+          { petal: C.ocean, center: C.white },
+          { petal: C.leaf, center: C.sunshine },
+          { petal: C.sunshine, center: C.tangerine },
+        ];
+        for (let i = 0; i < 20; i++) {
+          const col = flowerPalette[i % flowerPalette.length];
+          const size = 12 + Math.random() * 16;
+          const px = Math.random() * W;
+          const f = new zim.Container().addTo(stage);
+          const dist = size * 0.48;
+          for (let p = 0; p < 5; p++) {
+            const rad = (((p / 5) * 360 - 90) * Math.PI) / 180;
+            new zim.Circle(size * 0.36, col.petal)
+              .addTo(f)
+              .loc(Math.cos(rad) * dist, Math.sin(rad) * dist);
+          }
+          new zim.Circle(size * 0.26, col.center).addTo(f).loc(0, 0);
+          f.alpha = 0.9;
+          f.loc(px, HEADER_H - size - Math.random() * 100);
+          f.animate({
+            props: {
+              y: H + size + 20,
+              x: px + (Math.random() - 0.5) * 80,
+              rotation:
+                (Math.random() > 0.5 ? 1 : -1) * (180 + Math.random() * 180),
+            },
+            time: 2.2 + Math.random() * 2,
+            wait: Math.random() * 3,
+            ease: "linear",
+            loop: true,
+          });
+        }
+      }
+
+      // Modal card
+      const mW = 560,
+        mH = 320;
+      const mX = (W - mW) / 2,
+        mY = HEADER_H + (H - HEADER_H - mH) / 2;
+      const modalBorder = isLowScore
+        ? rgba(C.ocean, 0.45)
+        : rgba(C.sunshine, 0.5);
+      const modalAccent = isLowScore ? C.ocean : C.sunshine;
+      new zim.Rectangle({
+        width: mW,
+        height: mH,
+        color: rgba(C.ink, 0.05),
+        corner: 28,
+      })
+        .addTo(stage)
+        .loc(mX + 2, mY + 4);
+      new zim.Rectangle({
+        width: mW,
+        height: mH,
+        color: C.white,
+        borderColor: modalBorder,
+        borderWidth: 2,
+        corner: 28,
+      })
+        .addTo(stage)
+        .loc(mX, mY);
+      new zim.Rectangle({
+        width: mW,
+        height: 6,
+        color: modalAccent,
+        corner: [28, 28, 0, 0],
+      })
+        .addTo(stage)
+        .loc(mX, mY);
+
+      const cx = mX + mW / 2;
+
+      // Title — varies by outcome
+      const titleText = isLowScore
+        ? "Don't give up! 😔"
+        : isNewBest
+          ? "🥇 New Best!"
+          : "You finished! ⭐";
+      new zim.Label({
+        text: titleText,
+        size: 42,
+        font: FONT,
+        color: C.ink,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(cx, mY + 68);
+
+      new zim.Label({
+        text: `Final Score: ${totalScore}`,
+        size: 34,
+        font: FONT,
+        color: C.tangerine,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(cx, mY + 142);
+
+      // Trophy row — show when not at the top (second+ play with a lower score)
+      if (!isNewBest && sessionBest > totalScore) {
+        const tw = 310,
+          th = 36;
+        const tr = new zim.Container().addTo(stage);
+        tr.mouseChildren = false;
+        new zim.Rectangle({
+          width: tw,
+          height: th,
+          color: rgba(C.sunshine, 0.14),
+          borderColor: rgba(C.sunshine, 0.55),
+          borderWidth: 1.5,
+          corner: th / 2,
+        }).addTo(tr);
+        new zim.Label({
+          text: `🏆 Top: ${sessionBest} pts — Can you beat it?`,
+          size: 15,
+          font: FONT,
+          color: "#7a5800",
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(tr)
+          .loc(tw / 2, th / 2);
+        tr.loc(cx - tw / 2, mY + 190);
+      } else {
+        new zim.Label({
+          text: "Pick a mode above to play again!",
+          size: 18,
+          font: FONT,
+          color: C.sub,
+          align: "center",
+          valign: "center",
+        })
+          .addTo(stage)
+          .loc(cx, mY + 196);
+      }
+
+      // Play Again button
+      const btn = new zim.Button({
+        width: 210,
+        height: 48,
+        label: "Play Again",
+        backgroundColor: C.grape,
+        rollBackgroundColor: "#7a50e0",
+        color: C.white,
+        corner: 24,
+      })
+        .addTo(stage)
+        .loc(cx - 105, mY + mH - 58);
+      btn.label.size = 20;
+      btn.label.font = FONT;
+      btn.on("click", () => {
+        roundIndex = 0;
+        totalScore = 0;
+        loadRound();
+      });
+
+      stage.update();
+    }
+
+    // ── Kick off ──────────────────────────────────────────────────────
+    loadRound();
   },
 });

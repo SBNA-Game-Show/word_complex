@@ -190,13 +190,7 @@ class FindNounsGame {
     foundWordsLabel.pos(60, this.blackboard.height - 130);
 
     foundWordsLabel.addTo(this.blackboard);
-    //-----------------------------------
-    // Chalk
-    //-----------------------------------
 
-    const chalk = new Chalk(this.game);
-    chalk.show();
-    // this.manager.setMaxScore();
 
     //-----------------------------------
     // Timer to start the game

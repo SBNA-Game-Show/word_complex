@@ -6,13 +6,14 @@ class BackButton {
 
   create() {
     const backBtn = new this.game.zim.Button({
-        width: 90,
-        height: 35,
-        label: new this.game.zim.Label({
-            text: "← Back",
-            size: 16,
-            color: "white"
-        })
+      width: 90,
+      height: 35,
+      backgroundColor: "rgb(236,232,200)",
+      label: new this.game.zim.Label({
+        text: "← Back",
+        size: 16,
+        color: "black",
+      }),
     });
 
     backBtn.pos(20, 20);
