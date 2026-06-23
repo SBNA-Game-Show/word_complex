@@ -21,4 +21,10 @@ const connectTokenizedStories = async () => {
   return db;
 };
 
+connectTokenizedStories.close = async () => {
+  if (!db) return;
+  await client.close();
+  db = undefined;
+};
+
 module.exports = connectTokenizedStories;
