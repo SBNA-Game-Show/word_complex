@@ -6,16 +6,15 @@ class PlayerInformation {
     this.game = game;
     this.player = this.game.player;
     this.statLabels = [];
+    this.containerWidth = 460;
+    this.containerHeight = 80;
   }
 
   create() {
-    const containerWidth = 460;
-    const containerHeight = 80;
-
     const container = new ZimContainer(
       this.game,
-      containerWidth,
-      containerHeight,
+      this.containerWidth,
+      this.containerHeight,
     ).createContainer();
 
     container.addTo(this.game.stage);
@@ -24,8 +23,8 @@ class PlayerInformation {
     // BACKGROUND
     // -----------------------------
     const bg = new this.game.zim.Rectangle({
-      width: containerWidth,
-      height: containerHeight,
+      width: this.containerWidth,
+      height: this.containerHeight,
       color: "#1E3A1E",
       corner: 14,
       alpha: 0.85,
@@ -38,12 +37,12 @@ class PlayerInformation {
     // -----------------------------
     const stats = [
       { key: "Player", value: this.player || "Guest" },
-      { key: "Score", value: this.game.totalScore || 0 },
+      { key: "Score", value: 0 },
       { key: "Coins", value: this.game.playerCoins || 0 },
-      { key: "Total", value: this.game.totalScore || 0 },
+      { key: "Total", value: this.game.TOTAL_SCORE || 0 },
     ];
 
-    const colWidth = containerWidth / stats.length;
+    const colWidth = this.containerWidth / stats.length;
 
     stats.forEach((item, index) => {
       const label = new ZimLabel(
@@ -57,47 +56,64 @@ class PlayerInformation {
 
       // Center label inside its column
       const x = index * colWidth + (colWidth - label.label.width) / 2;
-
-      const y = (containerHeight - label.label.height) / 2;
+      const y = (this.containerHeight - label.label.height) / 2;
 
       label.pos(x, y);
 
       this.statLabels.push({
         ref: label,
         key: item.key,
+        index: index,
       });
     });
 
     this.container = container;
-
     this.game.stage.update();
 
     return container;
   }
 
   update(currentScore) {
-    this.statLabels.forEach((s) => {
-      let value;
+    const colWidth = this.containerWidth / this.statLabels.length;
 
+    this.statLabels.forEach((s) => {
+      let value = 0;
+
+      // 🛠️ FIX: Fixed the case statement syntax errors
       switch (s.key) {
         case "Player":
-          value = this.game.player;
+          value = this.game.player || "Guest";
           break;
 
         case "Score":
-          value = currentScore;
+          // Handle safe fallback tracking values if currentScore is null or omitted
+          const scoreNum =
+            currentScore !== undefined && currentScore !== null
+              ? currentScore
+              : 0;
+          value = typeof scoreNum === "number" ? scoreNum : scoreNum;
           break;
 
         case "Coins":
-          value = this.game.playerCoins;
+          value = this.game.playerCoins || 0;
           break;
 
         case "Total":
-          value = this.game.totalScore;
+          const totalVal = this.game.TOTAL_SCORE || 0;
+          value = typeof totalVal === "number" ? totalVal : totalVal;
           break;
+
+        default:
+          value = 0;
       }
 
+      // Update the structural text value safely
       s.ref.setText(`${s.key}\n${value}`);
+
+      // Re-calculate the layout boundaries for alignment
+      const nextX = s.index * colWidth + (colWidth - s.ref.label.width) / 2;
+      const nextY = (this.containerHeight - s.ref.label.height) / 2;
+      s.ref.pos(nextX, nextY);
     });
 
     this.game.stage.update();

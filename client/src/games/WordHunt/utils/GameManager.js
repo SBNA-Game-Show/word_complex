@@ -94,9 +94,9 @@ class GameManager {
       this.game.hintPenalty = basePenalty;
     }
 
-    console.log(
-      `[${gameType} Mode] Targets: ${targetCount} | Max Score: ${this.maxScore} | Time Allowed: ${this.game.gameTime.toFixed(2)}m | Allowed Hints: ${this.game.allowedHints} | Penalty: ${this.game.hintPenalty}`,
-    );
+    // console.log(
+    //   `[${gameType} Mode] Targets: ${targetCount} | Max Score: ${this.maxScore} | Time Allowed: ${this.game.gameTime.toFixed(2)}m | Allowed Hints: ${this.game.allowedHints} | Penalty: ${this.game.hintPenalty}`,
+    // );
 
     return this.maxScore;
   }
@@ -189,6 +189,10 @@ class GameManager {
     );
 
     return result;
+  }
+
+  assignCoins(score) {
+    
   }
 }
 

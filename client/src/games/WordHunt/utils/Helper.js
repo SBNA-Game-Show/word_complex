@@ -96,16 +96,16 @@ class Helper {
       if (elapsedSeconds <= quarterTime) {
         if (hintsUsed <= 0) {
           const result = score * 10;
-          console.log(
-            `[Game Total] Elite Run (0 Hints)! Multiplier x10. Final: ${result}`,
-          );
+          // console.log(
+          //   `[Game Total] Elite Run (0 Hints)! Multiplier x10. Final: ${result}`,
+          // );
           return result;
         }
         if (hintsUsed > 0) {
           const result = score * 8;
-          console.log(
-            `[Game Total] Elite Run (With Hints)! Multiplier x8. Final: ${result}`,
-          );
+          // console.log(
+          //   `[Game Total] Elite Run (With Hints)! Multiplier x8. Final: ${result}`,
+          // );
           return result;
         }
       }
@@ -114,16 +114,16 @@ class Helper {
       if (elapsedSeconds <= halfTime) {
         if (hintsUsed <= 0) {
           const result = score * 5;
-          console.log(
-            `[Game Total] Speed Run (0 Hints)! Multiplier x5. Final: ${result}`,
-          );
+          // console.log(
+          //   `[Game Total] Speed Run (0 Hints)! Multiplier x5. Final: ${result}`,
+          // );
           return result;
         }
         if (hintsUsed > 0) {
           const result = score * 4;
-          console.log(
-            `[Game Total] Speed Run (With Hints)! Multiplier x4. Final: ${result}`,
-          );
+          // console.log(
+          //   `[Game Total] Speed Run (With Hints)! Multiplier x4. Final: ${result}`,
+          // );
           return result;
         }
       }
@@ -132,16 +132,16 @@ class Helper {
       if (elapsedSeconds <= threeQuarterTime) {
         if (hintsUsed <= 1) {
           const result = score * 3;
-          console.log(
-            `[Game Total] Great Run (<=1 Hint)! Multiplier x3. Final: ${result}`,
-          );
+          // console.log(
+          //   `[Game Total] Great Run (<=1 Hint)! Multiplier x3. Final: ${result}`,
+          // );
           return result;
         }
         if (hintsUsed > 1) {
           const result = score * 2;
-          console.log(
-            `[Game Total] Great Run (>1 Hint)! Multiplier x2. Final: ${result}`,
-          );
+          // console.log(
+          //   `[Game Total] Great Run (>1 Hint)! Multiplier x2. Final: ${result}`,
+          // );
           return result;
         }
       }

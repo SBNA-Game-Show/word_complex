@@ -299,23 +299,21 @@ class FindNounsGame {
     if (this.foundWords.length === this.nouns.length) {
       this.gameOver = true;
       this.timer.stop();
-      this.game.totalScore += this.score;
-
-      console.log("Game Total Score", this.game.totalScore);
 
       const elapsedMs = this.timer.getElapsedTime();
 
       const minutes = Math.floor(elapsedMs / 60000);
       const seconds = Math.floor((elapsedMs % 60000) / 1000);
 
-      console.log(`TIME USED: ${minutes}:${seconds}`);
-      this.newTotal = this.manager.setGameTotal(
+      // console.log(`TIME USED: ${minutes}:${seconds}`);
+      this.game.TOTAL_SCORE += this.manager.setGameTotal(
         this.game.findNounsGame,
         this.foundWords.length,
         elapsedMs,
         this.score,
       );
-      console.log("New Game Total: ", this.newTotal);
+      console.log("New Game Total: ", this.game.TOTAL_SCORE);
+      this.playerInformation.update(this.score);
 
       this.game.inputLocked = true;
 

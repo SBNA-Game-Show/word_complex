@@ -46,6 +46,10 @@ class Game {
     this.BASE_PENALTY = 0.25;
     this.BASE_HINTS = 1;
 
+    //score
+    this.TOTAL_SCORE = 0
+    this.EARNED_COINS = 0
+
     // Player
     this.player = "Jack";
     this.playerCoins = 0;
