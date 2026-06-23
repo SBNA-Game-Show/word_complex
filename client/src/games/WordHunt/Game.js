@@ -47,8 +47,8 @@ class Game {
     this.BASE_HINTS = 1;
 
     //score
-    this.TOTAL_SCORE = 0
-    this.EARNED_COINS = 0
+    this.TOTAL_SCORE = 0;
+    this.EARNED_COINS = 0;
 
     // Player
     this.player = "Jack";
@@ -88,8 +88,8 @@ class Game {
   async start() {
     this.landingPage = new LandingPage(this).createLandingPage();
 
-    await this.serviceManager.getPassageByIdEnglish();
-    // await this.serviceManager.getPassageByIdSanskrit();
+    // await this.serviceManager.getPassageByIdEnglish();
+    await this.serviceManager.getPassageByIdSanskrit();
 
     this.messageBar = new MessageBar(this);
 

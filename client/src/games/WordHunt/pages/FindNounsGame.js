@@ -87,11 +87,13 @@ class FindNounsGame {
     this.messageBar = new MessageBar(this.game);
     // Continue Button Functionality
     this.messageBar.onContinue = () => {
+      this.timer.stop();
       this.game.stage.removeAllChildren();
       this.game.startVerbGame();
     };
     // Exiting to Home page
     this.messageBar.onExit = () => {
+      this.timer.stop();
       this.game.stage.removeAllChildren();
       this.game.start();
     };
@@ -107,7 +109,7 @@ class FindNounsGame {
       this.game.inputLocked = false;
 
       this.game.stage.removeAllChildren();
-      this.displayPassage();
+      // this.displayPassage();
     };
 
     //-----------------------------------
@@ -119,6 +121,7 @@ class FindNounsGame {
     controlPanelCont.addTo(this.blackboard);
 
     this.controlPanel.onNextClicked = () => {
+      this.timer.stop();
       this.game.stage.removeAllChildren();
       this.game.startVerbGame();
     };
@@ -255,7 +258,7 @@ class FindNounsGame {
           label.setColor("#00ff88");
           foundWordsLabel.text = this.foundWords.join(", ");
 
-          emit("correct");
+          emit("hint", "correct");
           this.checkWin();
         }
         // INCORRECT VERB MATCH
@@ -322,6 +325,7 @@ class FindNounsGame {
       this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
     }
   }
+
   //-----------------------------------
   // Button Functionality
   //-----------------------------------

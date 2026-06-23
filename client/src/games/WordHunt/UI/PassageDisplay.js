@@ -8,7 +8,7 @@ class PassageDisplay {
     this.zim = game.zim;
     this.width = this.game.width;
     this.height = this.game.height;
-    this.manager = new GameManger(this.game);
+    this.manager = new GameManger(game);
 
     this.rawData = game.storyData?.story || null;
     this.passage = this.parseData();
@@ -56,46 +56,6 @@ class PassageDisplay {
 
     // Reset tracking array on every layout render pass to prevent stale cache entries
     this.wordLabels = [];
-
-    // this.passage.forEach((sentence) => {
-    //   const words = sentence.split(/\s+/);
-    //   x = margin;
-
-    //   words.forEach((word) => {
-    //     if (!word) return;
-
-    //     const cleanWord = this.manager.normalize(word);
-    //     const label = new ZimLabel(this.game, word, 20, "white").createLabel();
-
-    //     label.addTo(textContainer);
-
-    //     // SAVE REFERENCE: Pair the label instance with its clean lowercase/normalized text
-    //     this.wordLabels.push({
-    //       text: cleanWord,
-    //       instance: label,
-    //     });
-
-    //     const w =
-    //       label.width || label.label?.width || label.getBounds?.()?.width || 60;
-
-    //     if (x + w > maxWidth) {
-    //       x = margin;
-    //       y += lineHeight;
-    //     }
-
-    //     label.pos(x, y);
-
-    //     label.tap(() => {
-    //       if (onWordClick) {
-    //         onWordClick(cleanWord, label);
-    //       }
-    //     });
-
-    //     x += w + spacing;
-    //   });
-
-    //   y += lineHeight;
-    // });
     // Create a unified Set of valid clickable words for O(1) lookups
     const validWordsSet = new Set([
       ...(this.game.wordTypes?.nouns || []),
@@ -162,18 +122,14 @@ class PassageDisplay {
       width: windowWidth,
       height: windowHeight,
       content: textContainer,
-      interactive: true,
-      bgColor: "transparent",
+
+      backgroundColor: "transparent",
       borderColor: "transparent",
       padding: 0,
 
-      // STRICT VERTICAL SCROLL SETTINGS
-      scrollX: false,
-      scrollY: true,
       scrollBarDrag: true,
       scrollBarColor: "#00ff88",
-      scrollBarActiveColor: "white",
-      indicatorFade: false,
+      scrollBarFade: false,
     });
 
     return scrollWindow;

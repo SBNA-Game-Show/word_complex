@@ -29,6 +29,7 @@ class MessageBar {
   }
 
   show(text, color = "black", duration = 1200) {
+    this.clearActiveMessages();
     this.game.isInputLocked = true;
 
     if (this.messageContainer) {
@@ -145,7 +146,19 @@ class MessageBar {
     return this.messageContainer;
   }
 
+  clearActiveMessages() {
+    if (this.messageContainer) {
+      this.messageContainer.removeFrom();
+      this.messageContainer = null;
+    }
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+      this.timeout = null;
+    }
+  }
+
   showWinningMessage(text, time, color = "black") {
+    this.clearActiveMessages();
     this.game.isInputLocked = true;
 
     if (this.winningContainer) {
@@ -225,6 +238,7 @@ class MessageBar {
     return this.winningContainer;
   }
   showTimeOverMessage(text, color = "black") {
+    this.clearActiveMessages();
     this.game.isInputLocked = true;
 
     if (this.timeOverContainer) {
@@ -331,6 +345,7 @@ class MessageBar {
   }
 
   countdownTimer(onComplete) {
+    this.clearActiveMessages();
     this.game.isInputLocked = true;
 
     const steps = ["READY", "3", "2", "1", "GO"];

@@ -27,7 +27,6 @@ class PlayerInformation {
       height: this.containerHeight,
       color: "#1E3A1E",
       corner: 14,
-      alpha: 0.85,
     });
 
     bg.addTo(container);
