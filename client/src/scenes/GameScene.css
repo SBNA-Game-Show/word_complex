@@ -176,6 +176,11 @@
 .scene-canvas-frame .zim-holder {
   width: 100%;
   border-radius: 18px;
+  overflow: hidden;
+}
+
+.scene-canvas-frame .zim-holder canvas {
+  border-radius: 18px;
 }
 
 .scene-canvas .missing-game {

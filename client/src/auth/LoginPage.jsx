@@ -63,11 +63,14 @@ export default function LoginPage() {
 
       <section className="login-shell" aria-labelledby="login-title">
         <div className="login-copy">
-          <span className="login-logo" aria-hidden="true">W</span>
+          <span className="login-logo" aria-hidden="true">
+            W
+          </span>
           <p className="eyebrow">Sign in to play</p>
           <div className="login-copy-swap" key={`copy-${mode}`}>
             <h1 id="login-title">
-              {isSignUp ? "Create your" : "Welcome back,"} <span>word hero!</span>
+              {isSignUp ? "Create your" : "Welcome back,"}{" "}
+              <span>word hero!</span>
             </h1>
             <p>
               Log in with Google, use your email, or jump straight in as a guest
@@ -90,6 +93,7 @@ export default function LoginPage() {
           <div className="auth-social">
             <button
               className="btn-ghost auth-google"
+              data-testid="google-login-button"
               type="button"
               onClick={handleGoogle}
               disabled={isLoading}
@@ -99,6 +103,7 @@ export default function LoginPage() {
             </button>
             <button
               className="btn-ghost auth-guest"
+              data-testid="guest-login-button"
               type="button"
               onClick={handleGuest}
               disabled={isLoading}
@@ -150,6 +155,7 @@ export default function LoginPage() {
               <span>Email</span>
               <input
                 autoComplete="email"
+                data-testid="email-input"
                 name="email"
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@example.com"
@@ -162,6 +168,7 @@ export default function LoginPage() {
               <span>Password</span>
               <input
                 autoComplete={isSignUp ? "new-password" : "current-password"}
+                data-testid="password-input"
                 name="password"
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder={isSignUp ? "6+ characters" : "Your password"}
@@ -173,7 +180,12 @@ export default function LoginPage() {
 
           {error ? <p className="login-error">{error}</p> : null}
 
-          <button className="btn-primary login-submit" disabled={isLoading} type="submit">
+          <button
+            className="btn-primary login-submit"
+            data-testid="login-button"
+            disabled={isLoading}
+            type="submit"
+          >
             {isLoading
               ? isSignUp
                 ? "Creating..."
@@ -181,7 +193,9 @@ export default function LoginPage() {
               : isSignUp
                 ? "Create account"
                 : "Start learning"}
-            <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+            <span className="btn-arrow" aria-hidden="true">
+              &rarr;
+            </span>
           </button>
         </form>
       </section>
@@ -191,7 +205,13 @@ export default function LoginPage() {
 
 function GoogleIcon() {
   return (
-    <svg className="auth-google-icon" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+    <svg
+      className="auth-google-icon"
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      aria-hidden="true"
+    >
       <path
         fill="#4285F4"
         d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.71-1.57 2.68-3.88 2.68-6.62z"

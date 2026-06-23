@@ -4,7 +4,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "optimize:images": "node scripts/optimize-images.mjs"
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
@@ -15,6 +18,7 @@
     "zimjs": "^17.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "sharp": "^0.33.5"
   }
 }

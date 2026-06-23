@@ -24,14 +24,13 @@ import { useCanvasZoom } from "./useCanvasZoom";
 export default function GameScreen({ gameId, onBack }) {
   const { logout, user } = useAuth();
 
-  // Get selected game metadata and component from client/src/games/index.js
   const game = getGame(gameId);
   const Game = game?.Component;
 
   // Used to generate scoped CSS classes such as:
   // game-screen-meaning-bridge
   // canvas-shell-meaning-bridge
-  const gameClassName = gameId || "unknown-game";
+  const gameClassName = gameId || "unknown";
 
   // Manual canvas zoom (1 = 100%). Applied to every game via --canvas-zoom.
   const { zoom: canvasZoom, controls: zoomControls } = useCanvasZoom();
@@ -40,11 +39,17 @@ export default function GameScreen({ gameId, onBack }) {
     <main
       className={`game-screen game-screen-${gameClassName}`}
       style={{ "--canvas-zoom": canvasZoom }}
+      data-testid={`game-screen-${gameId}`}
     >
       <BackgroundDecor />
 
       <header className="game-header">
-        <button className="back-button" type="button" onClick={onBack}>
+        <button
+          className="back-button"
+          data-testid="game-back-button"
+          type="button"
+          onClick={onBack}
+        >
           <span className="back-arrow" aria-hidden="true">
             &larr;
           </span>
@@ -57,15 +62,9 @@ export default function GameScreen({ gameId, onBack }) {
         </div>
 
         <div className="game-header-meta" aria-hidden="true">
-          <span>
-            <span className="step-num">1</span> Drag
-          </span>
-          <span>
-            <span className="step-num">2</span> Order
-          </span>
-          <span>
-            <span className="step-num">3</span> Check
-          </span>
+          <span><span className="step-num">1</span> Drag</span>
+          <span><span className="step-num">2</span> Order</span>
+          <span><span className="step-num">3</span> Check</span>
         </div>
 
         {zoomControls}
@@ -73,7 +72,10 @@ export default function GameScreen({ gameId, onBack }) {
         <UserBadge user={user} onLogout={logout} />
       </header>
 
-      <section className={`canvas-shell canvas-shell-${gameClassName}`}>
+      <section
+        className={`canvas-shell canvas-shell-${gameId || "unknown"}`}
+        data-testid={`canvas-shell-${gameId}`}
+      >
         {Game ? <Game /> : <p className="missing-game">Game not found.</p>}
       </section>
     </main>
