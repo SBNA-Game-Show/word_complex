@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { AuthProvider, LoginPage, useAuth } from "./auth";
 import VideoBackground from "./components/VideoBackground";
-import LoginPage from "./components/LoginPage";
 import Launcher from "./components/Launcher";
 import GameScreen from "./components/GameScreen";
 import HowToPlay from "./components/HowToPlay";
@@ -22,7 +21,7 @@ export default function App() {
 }
 
 function AuthenticatedApp() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
   const [screen, setScreen] = useState("launcher");
   const [activeGameId, setActiveGameId] = useState("sentence-builder");
   const [selectedCharacterId, setSelectedCharacterId] = useState(() => {
@@ -92,7 +91,14 @@ function AuthenticatedApp() {
       }`}
     >
       <VideoBackground />
-      {!isAuthenticated ? (
+      {isInitializing ? (
+        <div className="auth-splash" role="status" aria-live="polite">
+          <span className="auth-splash-logo" aria-hidden="true">
+            W
+          </span>
+          <p>Loading...</p>
+        </div>
+      ) : !isAuthenticated ? (
         <LoginPage />
       ) : screen === "scene" ? (
         <GameScene
@@ -101,14 +107,13 @@ function AuthenticatedApp() {
           onBack={() => setScreen("launcher")}
         />
       ) : screen === "launcher" ? (
-          <Launcher
-            onStart={launchGame}
-            onAbout={() => setScreen("about")}
-            onHowToPlay={openHowToPlay}
-            onChooseCharacter={openCharacters}
-            isZooming={transitionPhase === "zoom-in"}
-            isLaunching={launchPhase !== "idle"}
-          />
+        <Launcher
+          onStart={launchGame}
+          onAbout={() => setScreen("about")}
+          onHowToPlay={openHowToPlay}
+          onChooseCharacter={openCharacters}
+          isZooming={transitionPhase === "zoom-in"}
+        />
       ) : screen === "characters" ? (
         <CharacterSelect
           selectedId={selectedCharacterId}
@@ -127,7 +132,10 @@ function AuthenticatedApp() {
           onPlay={() => launchGame(activeGameId)}
         />
       ) : (
-        <GameScreen gameId={activeGameId} onBack={() => setScreen("launcher")} />
+        <GameScreen
+          gameId={activeGameId}
+          onBack={() => setScreen("launcher")}
+        />
       )}
     </div>
   );

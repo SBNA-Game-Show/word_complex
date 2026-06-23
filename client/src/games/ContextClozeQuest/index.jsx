@@ -178,17 +178,17 @@ export default createZimGame({
       .addTo(stage)
       .loc(W / 2, 60);
     
-   new zim.Rectangle({
-    width: 130,
-    height: 45,
-    color: "#7c7bea",
-    corner: 22,
-  })
-  .addTo(stage)
-  .loc(W / 2 - 65, 85);
+    const scoreBackground = new zim.Rectangle({
+      width: 300,
+      height: 45,
+      color: "#7c7bea",
+      corner: 22,
+    })
+      .addTo(stage)
+      .loc(W / 2 - 150, 85);
 
     const scoreLabel = new zim.Label({
-      text: "Score: 0",
+      text: "Answer Score: 0/0 = 0",
       size: 22,
       font: zimFont,
       color: "#ffffff",
@@ -202,6 +202,78 @@ export default createZimGame({
     const paragraphY = 230;
     const blanks = [];
     const wordButtons = [];
+
+    const timeLimits = {
+      easy: 60,
+      medium: 90,
+      hard: 120,
+    };
+
+    const difficultyMultipliers = {
+      easy: 1,
+      medium: 1.5,
+      hard: 2,
+    };
+
+    let remainingTime = timeLimits[selectedDifficulty];
+    let timerInterval;
+
+    function startTimer() {
+      clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        remainingTime--;
+
+        timerLabel.text = `⏱ ${remainingTime}s`;
+        timerScoreLabel.text = `Timer Score: ${remainingTime * 5}`;
+
+        if (remainingTime <= 0) {
+          clearInterval(timerInterval);
+
+          feedbackBar.color = "#ffe1e1";
+          feedbackLabel.text = "⏰ Time is up!";
+          feedbackLabel.color = "#a61b1b";
+
+          emit("wrong");
+        }
+
+        stage.update();
+      }, 1000);
+    }
+
+    new zim.Rectangle({
+      width: 150,
+      height: 50,
+      color: "#7c7bea",
+      corner: 22,
+    })
+    .addTo(stage)
+    .loc(880, 45);
+
+    const timerLabel = new zim.Label({
+      text: `⏱ ${remainingTime}s`,
+      size: 22,
+      font: zimFont,
+      color: "#ffffff",
+      align: "center",
+      valign: "center",
+      bold: true,
+    })
+    .addTo(stage)
+    .loc(955, 57);
+
+    const timerScoreLabel = new zim.Label({
+      text: `Timer Score: ${remainingTime * 5}`,
+      size: 16,
+      font: zimFont,
+      color: "#ffffff",
+      align: "center",
+      valign: "center",
+      bold: true,
+    })
+    .addTo(stage)
+    .loc(955, 81);
+
 
     function makeText(text, x, y) {
       return new zim.Label({
@@ -286,7 +358,7 @@ export default createZimGame({
           wordsInPart.forEach((word) => {
             if (!word) return;
 
-            const wordWidth = word.length * 12.5;
+            const wordWidth = word.length * 14;
 
             if (x + wordWidth > maxX) {
               x = 90;
@@ -430,6 +502,10 @@ export default createZimGame({
     })
       .addTo(stage)
       .loc(W / 2, 758);
+      
+      startTimer();
+
+      
         const menuButton = new zim.Button({
           width: 180,
           height: 52,
@@ -443,6 +519,7 @@ export default createZimGame({
         menuButton.label.size = 22;
         menuButton.addTo(stage).loc(40, 40);
         menuButton.on("click", () => {
+          clearInterval(timerInterval);
           showMenu();
         });
         const resetButton = new zim.Button({
@@ -457,28 +534,9 @@ export default createZimGame({
 
         resetButton.addTo(stage).loc(300, 640);
         resetButton.on("click", () => {
-          wordButtons.forEach((button) => {
-            button.blankIndex = undefined;
-            button.animate({
-              props: {
-                x: button.homeX,
-                y: button.homeY,
-                scaleX: 1,
-                scaleY: 1,
-              },
-              time: 0.25,
-            });
-          });
-          blanks.forEach((blank) => {
-            blank.filledWord = undefined;
-          });
-
-
-        scoreLabel.text = "Score: 0";
-        feedbackBar.color = "#ffffff";
-        feedbackLabel.text = "";
-        stage.update();
-      });
+            clearInterval(timerInterval);
+          startGame();
+        });
 
         const checkButton = new zim.Button({
           width: 260,
@@ -492,23 +550,42 @@ export default createZimGame({
 
         checkButton.addTo(stage).loc(550, 640);
         checkButton.on("click", () => {
-          let score = 0;
 
-        blanks.forEach((blank) => {
-          if (blank.filledWord === correctAnswers[blank.index]) {
-            score++;
-          }
-        });
+          let correctCount = 0;
+          let filledCount = 0;
+          const totalQuestions = correctAnswers.length;
 
-          scoreLabel.text = `Score: ${score}`;
-          if (score === correctAnswers.length) {
+          blanks.forEach((blank) => {
+            if (blank.filledWord) {
+              filledCount++;
+            }
+
+            if (blank.filledWord === correctAnswers[blank.index]) {
+              correctCount++;
+            }
+          });
+
+          const answerScore = correctCount * 100;
+          const difficultyScore = answerScore * difficultyMultipliers[selectedDifficulty];
+          const timeBonus = remainingTime * 5;
+          const finalScore = Math.round(difficultyScore + timeBonus);
+
+          scoreLabel.text = `Answer Score: ${correctCount}/${totalQuestions} = ${answerScore}`;
+
+          if (filledCount < totalQuestions) {
+            feedbackBar.color = "#fff3cd";
+            feedbackLabel.text = "⚠️ Fill in all blanks before submitting!";
+            feedbackLabel.color = "#856404";
+          } else if (correctCount === totalQuestions) {
             feedbackBar.color = "#d7f3dc";
-            feedbackLabel.text = "🎉 Excellent! You got it right!";
+            feedbackLabel.text = `🎉 Excellent! Final Score: ${finalScore}`;
+            clearInterval(timerInterval);
             feedbackLabel.color = "#0b5c24";
             emit("complete");
           } else {
+            clearInterval(timerInterval);
             feedbackBar.color = "#ffe1e1";
-            feedbackLabel.text = "❌ Not quite. Try again!";
+            feedbackLabel.text = `❌ You got ${correctCount}/${totalQuestions}. Final Score: ${finalScore}`;
             feedbackLabel.color = "#a61b1b";
             emit("wrong");
           }

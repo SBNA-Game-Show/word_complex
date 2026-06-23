@@ -1,0 +1,17 @@
+name: Block PRs to Testing and Main
+
+on:
+  pull_request:
+    branches:
+      - testing
+      - main
+
+jobs:
+  block:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Block PR
+        run: |
+          echo "Pull requests must target development, not testing or main."
+          exit 1
