@@ -22,7 +22,7 @@ class ZimButton {
     this.bg = new this.zim.Rectangle({
       width: this.width,
       height: this.height,
-      color: "#7B2CBF",
+      color: "rgb(236,232,200)",
       corner: 10,
     });
 
@@ -33,7 +33,7 @@ class ZimButton {
       this.game,
       this.text,
       this.fontSize,
-      "white",
+      "black",
     ).createLabel();
 
     this.label.addTo(this.container);

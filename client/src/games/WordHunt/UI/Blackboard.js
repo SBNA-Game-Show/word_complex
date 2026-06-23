@@ -10,12 +10,11 @@ class Blackboard {
 
   create() {
     this.board = new this.zim.Container(this.width, this.height);
-
     const background = new this.zim.Rectangle({
       width: this.width,
       height: this.height,
       color: "#1E3A1E",
-      borderColor: "#5C4033",
+      borderColor: "rgba(236,232,200)",
       borderWidth: 20,
       corner: 10,
     });

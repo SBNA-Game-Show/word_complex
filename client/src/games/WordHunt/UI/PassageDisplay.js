@@ -134,7 +134,6 @@ class PassageDisplay {
         // --- EXCLUSIVE CLICK PERMISSION FILTER ---
         if (validWordsSet.has(cleanWord)) {
           // Explicitly show users this word can be clicked
-          label.cursor = "pointer";
 
           label.tap(() => {
             if (onWordClick) {
@@ -144,7 +143,6 @@ class PassageDisplay {
         } else {
           // Unimportant words (determiners, prepositions, etc.) are unclickable
           label.mouseEnabled = false;
-          label.cursor = "default";
         }
 
         x += w + spacing;
