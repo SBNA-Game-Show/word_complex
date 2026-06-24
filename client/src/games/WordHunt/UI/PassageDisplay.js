@@ -15,6 +15,14 @@ class PassageDisplay {
 
     // TRACKING ARRAY: Stores references to word labels for color styling updates
     this.wordLabels = [];
+    this.scrollWindow = null;
+  }
+  destroy() {
+    if (this.scrollWindow) {
+      this.scrollWindow.removeFrom();
+      this.scrollWindow = null;
+    }
+    this.wordLabels = [];
   }
 
   parseData() {
@@ -32,6 +40,7 @@ class PassageDisplay {
   }
 
   displayPassage(onWordClick) {
+    console.trace("🔥 displayPassage CALLED");
     console.log("Display Passage");
     const margin = 60;
     const lineHeight = 45;
@@ -118,7 +127,7 @@ class PassageDisplay {
     textContainer.height = calculatedHeight;
 
     // Create the ZIM Window
-    const scrollWindow = new this.zim.Window({
+    this.scrollWindow = new this.zim.Window({
       width: windowWidth,
       height: windowHeight,
       content: textContainer,
@@ -132,7 +141,7 @@ class PassageDisplay {
       scrollBarFade: false,
     });
 
-    return scrollWindow;
+    return this.scrollWindow;
   }
 }
 

@@ -26,6 +26,8 @@ class MessageBar {
     this.onRestart = null;
     this.onExit = null;
     this.onContinue = null;
+
+    this.countdownRunning= false
   }
 
   show(text, color = "black", duration = 1200) {

@@ -11,6 +11,7 @@ import ControlPanel from "../UI/Panel";
 import { emit } from "../../../scenes/sceneBus";
 import PlayerInformation from "../UI/PlayerInfo";
 import GameManger from "../utils/GameManager";
+import FoundContainer from "../UI/FoundWords";
 
 class FindNounsGame {
   constructor(game) {
@@ -32,6 +33,7 @@ class FindNounsGame {
     this.playerInformation = null;
     this.passageDisplay = null;
     this.controlPanel = null;
+    this.foundWords = null;
 
     this.continueButton = null;
     this.exitButton = null;
@@ -161,38 +163,42 @@ class FindNounsGame {
     // FOUND VERBS BOX
     //-----------------------------------
 
-    const foundBox = new this.game.zim.Rectangle({
-      width: this.blackboard.width - 80,
-      height: 160,
-      color: "#274527",
-      corner: 8,
-    });
+    // const foundBox = new this.game.zim.Rectangle({
+    //   width: this.blackboard.width - 80,
+    //   height: 160,
+    //   color: "#274527",
+    //   corner: 8,
+    // });
 
-    foundBox.pos(40, this.blackboard.height - 190);
+    // foundBox.pos(40, this.blackboard.height - 190);
 
-    foundBox.addTo(this.blackboard);
+    // foundBox.addTo(this.blackboard);
 
-    const foundTitle = new this.game.zim.Label({
-      text: "Found Nouns",
-      size: 30,
-      color: "#00ff88",
-    });
+    // const foundTitle = new this.game.zim.Label({
+    //   text: "Found Nouns",
+    //   size: 30,
+    //   color: "#00ff88",
+    // });
 
-    foundTitle.pos(60, this.blackboard.height - 180);
+    // foundTitle.pos(60, this.blackboard.height - 180);
 
-    foundTitle.addTo(this.blackboard);
+    // foundTitle.addTo(this.blackboard);
 
-    const foundWordsLabel = new this.game.zim.Label({
-      text: "",
-      size: 24,
-      color: "white",
-      align: "left",
-      lineWidth: this.blackboard.width - 140,
-    });
+    // const foundWordsLabel = new this.game.zim.Label({
+    //   text: "",
+    //   size: 24,
+    //   color: "white",
+    //   align: "left",
+    //   lineWidth: this.blackboard.width - 140,
+    // });
 
-    foundWordsLabel.pos(60, this.blackboard.height - 130);
+    // foundWordsLabel.pos(60, this.blackboard.height - 130);
 
-    foundWordsLabel.addTo(this.blackboard);
+    // foundWordsLabel.addTo(this.blackboard);
+    this.foundWords = new FoundContainer(this.game);
+    this.foundWords.update();
+    this.foundWords.pos(40, 500);
+    this.foundWords.addTo(this.blackboard);
 
     //-----------------------------------
     // Timer to start the game
@@ -225,6 +231,9 @@ class FindNounsGame {
     );
 
     // 2. Generate container and handle click callbacks
+    if (this.passageDisplay) {
+      this.passageDisplay.destroy();
+    }
     this.passageDisplay = new PassageDisplay(this.game, this.blackboard);
 
     const passageDisplayCont = this.passageDisplay.displayPassage(
