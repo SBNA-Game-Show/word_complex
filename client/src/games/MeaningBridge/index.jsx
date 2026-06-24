@@ -1,4 +1,5 @@
 import { createZimGame } from "../createZimGame";
+import { emit } from "../../scenes/sceneBus";
 import {
   fetchMeaningBridgeLeaderboard,
   fetchMeaningBridgeRound,
@@ -161,6 +162,8 @@ export default createZimGame({
     let puzzle = null;
     let errorMessage = "";
 
+    let lastHintText = "";
+
     let roundStartedAt = Date.now();
     let roundHintsUsed = 0;
     let roundWrongAttempts = 0;
@@ -171,6 +174,11 @@ export default createZimGame({
     let isSubmittingScore = false;
     let scoreSubmitMessage = "";
     let scoreSubmitError = "";
+
+    let submittedResultSummary = null;
+
+    let scoreSubmitRequestId = 0;
+    let exitConfirmPreviousScreen = "gameplay";
 
     let leaderboard = [];
     let leaderboardReturnScreen = "landing";
@@ -261,70 +269,40 @@ export default createZimGame({
           .addTo(eb)
           .loc(45, 18);
         eb.cursor = "pointer";
-        eb.on("click", () => {
-          resetSessionForNewAdventure();
-          drawChallengeScene();
-        });
+        eb.on("click", requestExitToMainMenu);
       }
 
-      // ── Mode tabs (centered in header) ──────────────────────────
-      const TABS = [
-        { mode: "word-to-synonym", label: "Synonyms", accent: "#3a8a3a" },
-        { mode: "word-to-antonym", label: "Antonyms", accent: "#1a7a99" },
-        { mode: "word-to-definition", label: "Definitions", accent: "#6b48cc" },
-      ];
-      const TW = 186,
-        TH = 44,
-        TGAP = 10;
-      const totalTW = TABS.length * TW + (TABS.length - 1) * TGAP;
-      const TX = (W - totalTW) / 2;
-      const TY = (HEADER_H - 4 - TH) / 2;
+      // ── Current mode badge (locked during active play) ─────────────
+      const activeChallenge = getActiveChallenge();
+      const activePlayMode = getActivePlayMode();
 
-      TABS.forEach(({ mode, label, accent }, i) => {
-        const active = mode === currentMode;
-        const x = TX + i * (TW + TGAP);
-        const t = new zim.Container().addTo(stage).loc(x, TY);
-        t.mouseChildren = false;
+      const modeBadgeW = 380;
+      const modeBadgeH = 44;
+      const modeBadge = new zim.Container()
+        .addTo(stage)
+        .loc((W - modeBadgeW) / 2, (HEADER_H - 4 - modeBadgeH) / 2);
+      modeBadge.mouseChildren = false;
 
-        new zim.Rectangle({
-          width: TW,
-          height: TH,
-          color: active ? accent : C.white,
-          borderColor: "transparent",
-          borderWidth: 0,
-          corner: TH / 2,
-        }).addTo(t);
+      new zim.Rectangle({
+        width: modeBadgeW,
+        height: modeBadgeH,
+        color: C.white,
+        borderColor: rgba(activeChallenge.accent, 0.35),
+        borderWidth: 2,
+        corner: modeBadgeH / 2,
+      }).addTo(modeBadge);
 
-        new zim.Label({
-          text: label,
-          size: 20,
-          font: FONT,
-          color: active ? C.white : "#2e6b2e",
-          align: "center",
-          valign: "center",
-          bold: true,
-        })
-          .addTo(t)
-          .loc(TW / 2, TH / 2);
-
-        if (!active) {
-          t.cursor = "pointer";
-          t.on("click", () => {
-            const selectedPlayMode = playMode;
-
-            resetSessionForNewAdventure();
-
-            currentMode = mode;
-            playMode = selectedPlayMode;
-
-            if (isTimedMode()) {
-              startTimedSession();
-            }
-
-            loadRound();
-          });
-        }
-      });
+      new zim.Label({
+        text: `${activeChallenge.icon} ${activeChallenge.shortTitle} • ${activePlayMode.title}`,
+        size: 18,
+        font: FONT,
+        color: activeChallenge.accent,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(modeBadge)
+        .loc(modeBadgeW / 2, modeBadgeH / 2);
 
       // ── Score badge right ────────────────────────────────────────
       const sb = new zim.Container()
@@ -997,6 +975,9 @@ export default createZimGame({
         isSubmittingScore,
         scoreSubmitMessage,
         scoreSubmitError,
+        submittedResultSummary,
+        lastHintText,
+        currentPuzzleResultSummary: getCurrentPuzzleResultSummary(),
         leaderboardCount: leaderboard.length,
         isLoadingLeaderboard,
         leaderboardError,
@@ -1014,8 +995,238 @@ export default createZimGame({
       };
     }
 
+    function shouldExposeMeaningBridgeTestHooks() {
+      if (typeof window === "undefined") {
+        return false;
+      }
+
+      return (
+        import.meta.env.DEV ||
+        import.meta.env.VITE_E2E === "true" ||
+        window.localStorage?.getItem("meaningBridgeE2E") === "1"
+      );
+    }
+
+    function publishMeaningBridgeTestHooks() {
+      if (!shouldExposeMeaningBridgeTestHooks()) {
+        return;
+      }
+
+      window.__meaningBridgeZimTestHooks = {
+        getState() {
+          publishDebugState();
+          return window.__meaningBridgeZimDebug;
+        },
+
+        goToLandingForTest() {
+          drawLandingScene();
+          return true;
+        },
+
+        goToChallengeForTest() {
+          drawChallengeScene();
+          return true;
+        },
+
+        chooseChallengeForTest(mode) {
+          const challenge =
+            CHALLENGE_MODES.find((item) => item.mode === mode) ||
+            CHALLENGE_MODES[0];
+
+          currentMode = challenge.mode;
+          drawChallengeScene();
+          return currentMode;
+        },
+
+        setPracticeForTest() {
+          playMode = "practice";
+          isEditingCustomTimer = false;
+          replaceCustomTimerOnNextInput = false;
+          drawChallengeScene();
+          return true;
+        },
+
+        setTimedForTest(seconds = 120) {
+          playMode = "timed";
+
+          const safeSeconds = Math.max(60, Number(seconds) || 120);
+
+          if ([120, 300, 600].includes(safeSeconds)) {
+            timerPreset = safeSeconds;
+          } else {
+            timerPreset = CUSTOM_TIMER_PRESET;
+            customTimerMinutes = String(
+              clampCustomTimerMinutes(Math.ceil(safeSeconds / 60)),
+            );
+          }
+
+          isEditingCustomTimer = false;
+          replaceCustomTimerOnNextInput = false;
+          drawChallengeScene();
+          return getSelectedTimerSeconds();
+        },
+
+        setCustomTimerMinutesForTest(minutes) {
+          playMode = "timed";
+          timerPreset = CUSTOM_TIMER_PRESET;
+          customTimerMinutes = String(clampCustomTimerMinutes(minutes));
+          isEditingCustomTimer = false;
+          replaceCustomTimerOnNextInput = false;
+          drawChallengeScene();
+
+          return clampCustomTimerMinutes(customTimerMinutes);
+        },
+
+        async startPracticeForTest(mode = currentMode) {
+          currentMode = mode;
+          playMode = "practice";
+          startSelectedPlaySession();
+          return true;
+        },
+
+        async startTimedForTest(mode = currentMode, seconds = 120) {
+          currentMode = mode;
+          playMode = "timed";
+
+          const safeSeconds = Math.max(60, Number(seconds) || 120);
+
+          if ([120, 300, 600].includes(safeSeconds)) {
+            timerPreset = safeSeconds;
+          } else {
+            timerPreset = CUSTOM_TIMER_PRESET;
+            customTimerMinutes = String(
+              clampCustomTimerMinutes(Math.ceil(safeSeconds / 60)),
+            );
+          }
+
+          startSelectedPlaySession();
+          return true;
+        },
+
+        selectFirstLeftCardForTest() {
+          if (!puzzle?.leftItems?.length) {
+            return null;
+          }
+
+          selectedLeft = puzzle.leftItems[0];
+          selectedRight = null;
+          renderGame();
+
+          return selectedLeft;
+        },
+
+        requestHintForTest() {
+          requestHintForSelectedCard();
+          return lastHintText;
+        },
+
+        getFirstHintForTest() {
+          const firstLeft = puzzle?.leftItems?.[0];
+
+          if (!firstLeft) {
+            return "";
+          }
+
+          return puzzle?.hints?.[firstLeft.id] || "";
+        },
+
+        completeCurrentPuzzleForTest(options = {}) {
+          if (!puzzle?.leftItems?.length) {
+            return false;
+          }
+
+          const wrongAttempts = Math.max(0, Number(options.wrongAttempts) || 0);
+          const hintsUsed = Math.max(0, Number(options.hintsUsed) || 0);
+          const timeSeconds = Math.max(0, Number(options.timeSeconds) || 0);
+
+          if (timeSeconds > 0) {
+            roundStartedAt = Date.now() - timeSeconds * 1000;
+          }
+
+          roundWrongAttempts = wrongAttempts;
+          roundHintsUsed = hintsUsed;
+
+          hintedLeftIds = new Set(
+            puzzle.leftItems.slice(0, hintsUsed).map((item) => item.id),
+          );
+
+          matches = {};
+          puzzle.leftItems.forEach((leftItem) => {
+            matches[leftItem.id] = puzzle.answerKey[leftItem.id];
+          });
+
+          const correctPoints =
+            puzzle.leftItems.length * (Number(puzzle.scoreRules?.correct) || 0);
+          const wrongPenalty =
+            wrongAttempts *
+            (Number(puzzle.scoreRules?.wrongAttemptPenalty) || 0);
+
+          totalScore = Math.max(
+            0,
+            roundStartScore + correctPoints - wrongPenalty,
+          );
+
+          completedPuzzles += 1;
+          snapshotCompletedRoundForSubmit();
+          showRoundComplete();
+
+          return true;
+        },
+
+        advanceAfterRoundCompleteForTest() {
+          advanceAfterRoundComplete();
+          return true;
+        },
+
+        finishPracticeForTest() {
+          finishPracticeSession();
+          return true;
+        },
+
+        async submitScoreForTest() {
+          await submitCompletedSessionScore();
+          publishDebugState();
+          return window.__meaningBridgeZimDebug;
+        },
+
+        openLeaderboardForTest(returnScreen = screen) {
+          openLeaderboard(returnScreen);
+          return true;
+        },
+
+        requestExitForTest() {
+          requestExitToMainMenu();
+          return true;
+        },
+
+        cancelExitForTest() {
+          restoreAfterExitCancel();
+          return true;
+        },
+
+        confirmExitForTest() {
+          returnToMainMenu();
+          return true;
+        },
+
+        expireTimerForTest() {
+          timedSecondsLeft = 0;
+          stopTimedTimer();
+          showFinalScore();
+          return true;
+        },
+
+        resetForTest() {
+          resetSessionForNewAdventure();
+          drawLandingScene();
+          return true;
+        },
+      };
+    }
+
     function safeUpdate() {
       publishDebugState();
+      publishMeaningBridgeTestHooks();
       stage.update();
     }
 
@@ -1063,6 +1274,193 @@ export default createZimGame({
       }));
     }
 
+    function getCurrentPuzzleResultSummary() {
+      const lastCompletedRound =
+        completedRoundSubmissions[completedRoundSubmissions.length - 1];
+
+      if (lastCompletedRound) {
+        const correctMatches = Array.isArray(lastCompletedRound.matches)
+          ? lastCompletedRound.matches.length
+          : 0;
+        const wrongAttempts = Number(lastCompletedRound.wrongAttempts) || 0;
+        const totalAttempts = correctMatches + wrongAttempts;
+
+        const accuracy =
+          totalAttempts > 0
+            ? Math.round((correctMatches / totalAttempts) * 100)
+            : 0;
+
+        return {
+          accuracy,
+          timeSeconds: Number(lastCompletedRound.timeSeconds) || 0,
+          hintsUsed: Number(lastCompletedRound.hintsUsed) || 0,
+          wrongAttempts,
+        };
+      }
+
+      const correctMatches = Object.keys(matches || {}).length;
+      const wrongAttempts = Number(roundWrongAttempts) || 0;
+      const totalAttempts = correctMatches + wrongAttempts;
+
+      const accuracy =
+        totalAttempts > 0
+          ? Math.round((correctMatches / totalAttempts) * 100)
+          : 0;
+
+      return {
+        accuracy,
+        timeSeconds: getElapsedRoundSeconds(),
+        hintsUsed: Number(roundHintsUsed) || 0,
+        wrongAttempts,
+      };
+    }
+
+    function drawPuzzleResultStrip(cx, y) {
+      const summary = getCurrentPuzzleResultSummary();
+
+      const stripW = 420;
+      const stripH = 46;
+      const stripX = cx - stripW / 2;
+
+      const strip = new zim.Container().addTo(stage).loc(stripX, y);
+      strip.mouseChildren = false;
+
+      new zim.Rectangle({
+        width: stripW,
+        height: stripH,
+        color: rgba(C.leaf, 0.08),
+        borderColor: rgba(C.leaf, 0.35),
+        borderWidth: 2,
+        corner: 20,
+      }).addTo(strip);
+
+      new zim.Label({
+        text: `Accuracy ${summary.accuracy}% • Time ${formatSeconds(summary.timeSeconds)}`,
+        size: 14,
+        font: FONT,
+        color: C.ink,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(strip)
+        .loc(stripW / 2, 15);
+
+      new zim.Label({
+        text: `Hints ${summary.hintsUsed} • Misses ${summary.wrongAttempts}`,
+        size: 13,
+        font: FONT,
+        color: C.sub,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(strip)
+        .loc(stripW / 2, 32);
+    }
+
+    function buildSubmittedResultSummary(serverResult = null) {
+      const rounds = completedRoundSubmissions || [];
+
+      const correctMatches = rounds.reduce(
+        (sum, round) =>
+          sum + (Array.isArray(round.matches) ? round.matches.length : 0),
+        0,
+      );
+
+      const totalPairs = rounds.reduce(
+        (sum, round) =>
+          sum +
+          (Number(round.pairCount) ||
+            (Array.isArray(round.matches) ? round.matches.length : 0)),
+        0,
+      );
+
+      const wrongAttempts = rounds.reduce(
+        (sum, round) => sum + (Number(round.wrongAttempts) || 0),
+        0,
+      );
+
+      const hintsUsed = rounds.reduce(
+        (sum, round) => sum + (Number(round.hintsUsed) || 0),
+        0,
+      );
+
+      const timeSeconds = rounds.reduce(
+        (sum, round) => sum + (Number(round.timeSeconds) || 0),
+        0,
+      );
+
+      const totalAttempts = correctMatches + wrongAttempts;
+      const accuracy =
+        totalAttempts > 0
+          ? Math.round((correctMatches / totalAttempts) * 100)
+          : 0;
+
+      return {
+        score: totalScore,
+        accuracy,
+        correctMatches,
+        totalPairs,
+        timeSeconds,
+        hintsUsed,
+        wrongAttempts,
+        puzzlesCompleted: rounds.length,
+        message: serverResult?.message || "Score saved! Great bridge building.",
+      };
+    }
+
+    function drawSubmittedResultSummary(cx, y) {
+      if (!submittedResultSummary) {
+        return false;
+      }
+
+      const summary = submittedResultSummary;
+      const panelW = 470;
+      const panelH = 52;
+      const panelX = cx - panelW / 2;
+
+      const panel = new zim.Container().addTo(stage).loc(panelX, y);
+      panel.mouseChildren = false;
+
+      new zim.Rectangle({
+        width: panelW,
+        height: panelH,
+        color: rgba(C.leaf, 0.1),
+        borderColor: rgba(C.leaf, 0.45),
+        borderWidth: 2,
+        corner: 22,
+      }).addTo(panel);
+
+      new zim.Label({
+        text: "Saved Result",
+        size: 13,
+        font: FONT,
+        color: "#3a7a3a",
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(panel)
+        .loc(panelW / 2, 14);
+
+      new zim.Label({
+        text: `Accuracy ${summary.accuracy}% • Time ${formatSeconds(
+          summary.timeSeconds,
+        )} • Hints ${summary.hintsUsed} • Misses ${summary.wrongAttempts}`,
+        size: 14,
+        font: FONT,
+        color: C.ink,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(panel)
+        .loc(panelW / 2, 34);
+
+      return true;
+    }
+
     function snapshotCompletedRoundForSubmit() {
       if (!puzzle?.roundId) {
         return;
@@ -1088,16 +1486,33 @@ export default createZimGame({
       });
     }
 
+    function emitHelperHint(text, holdMs = 4200) {
+      lastHintText = String(text || "");
+
+      emit("hint", {
+        text: lastHintText,
+        holdMs,
+      });
+
+      publishDebugState();
+    }
+
     function requestHintForSelectedCard() {
       if (!selectedLeft) {
-        showPrompt("👈 Pick a word from the left panel first!", H - 90, 38);
+        emitHelperHint(
+          "Pick a word from the left side first, then I can help!",
+          4200,
+        );
         return;
       }
 
       const hint = puzzle?.hints?.[selectedLeft.id];
 
       if (!hint) {
-        showPrompt("No hint is available for this word yet.", H - 90, 38);
+        emitHelperHint(
+          "I do not have a hint for this word yet. Try another match!",
+          4200,
+        );
         return;
       }
 
@@ -1106,13 +1521,16 @@ export default createZimGame({
         roundHintsUsed += 1;
       }
 
-      showHint(hint);
+      emitHelperHint(hint, 5500);
     }
 
     async function submitCompletedSessionScore() {
       if (isSubmittingScore) {
         return;
       }
+
+      const requestId = scoreSubmitRequestId + 1;
+      scoreSubmitRequestId = requestId;
 
       if (!completedRoundSubmissions.length) {
         scoreSubmitMessage = "";
@@ -1124,6 +1542,8 @@ export default createZimGame({
       isSubmittingScore = true;
       scoreSubmitMessage = "Saving your score...";
       scoreSubmitError = "";
+
+      submittedResultSummary = null;
       showFinalScore();
 
       try {
@@ -1146,8 +1566,11 @@ export default createZimGame({
           submittedRoundIds.add(round.roundId);
         }
 
+        submittedResultSummary = buildSubmittedResultSummary(latestResult);
+
         scoreSubmitMessage =
-          latestResult?.message || "Score saved! Great bridge building.";
+          submittedResultSummary.message ||
+          "Score saved! Great bridge building.";
         scoreSubmitError = "";
 
         await refreshLeaderboard({ silent: true });
@@ -1156,8 +1579,15 @@ export default createZimGame({
         scoreSubmitError =
           error instanceof Error ? error.message : "Could not submit score.";
       } finally {
+        if (scoreSubmitRequestId !== requestId) {
+          return;
+        }
+
         isSubmittingScore = false;
-        showFinalScore();
+
+        if (screen === "final-score") {
+          showFinalScore();
+        }
       }
     }
 
@@ -1201,6 +1631,123 @@ export default createZimGame({
       drawLandingScene();
     }
 
+    function returnToMainMenu() {
+      scoreSubmitRequestId += 1;
+      isSubmittingScore = false;
+      scoreSubmitMessage = "";
+      scoreSubmitError = "";
+
+      resetSessionForNewAdventure();
+      drawLandingScene();
+    }
+
+    function requestExitToMainMenu() {
+      if (["gameplay", "round-complete", "loading"].includes(screen)) {
+        showExitConfirm();
+        return;
+      }
+
+      returnToMainMenu();
+    }
+
+    function restoreAfterExitCancel() {
+      const previousScreen = exitConfirmPreviousScreen;
+
+      if (previousScreen === "round-complete") {
+        showRoundComplete();
+        return;
+      }
+
+      if (puzzle) {
+        screen = "gameplay";
+        renderGame();
+        return;
+      }
+
+      drawChallengeScene();
+    }
+
+    function showExitConfirm() {
+      exitConfirmPreviousScreen = screen;
+      screen = "confirm-exit";
+
+      stage.removeAllChildren();
+      drawBackground();
+
+      const modalW = 560;
+      const modalH = 250;
+      const modalX = (W - modalW) / 2;
+      const modalY = (H - modalH) / 2;
+
+      new zim.Rectangle({
+        width: modalW,
+        height: modalH,
+        color: rgba(C.ink, 0.08),
+        corner: 30,
+      })
+        .addTo(stage)
+        .loc(modalX + 3, modalY + 5);
+
+      new zim.Rectangle({
+        width: modalW,
+        height: modalH,
+        color: C.white,
+        borderColor: rgba(C.tangerine, 0.45),
+        borderWidth: 2,
+        corner: 30,
+      })
+        .addTo(stage)
+        .loc(modalX, modalY);
+
+      new zim.Label({
+        text: "Leave this game?",
+        size: 36,
+        font: FONT,
+        color: C.ink,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(W / 2, modalY + 62);
+
+      new zim.Label({
+        text: "Your current puzzle progress will be cleared.",
+        size: 18,
+        font: FONT,
+        color: C.sub,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(W / 2, modalY + 112);
+
+      drawKidButton({
+        x: W / 2 - 245,
+        y: modalY + 168,
+        width: 220,
+        height: 52,
+        label: "Keep Playing",
+        color: C.white,
+        textColor: "#3a7a3a",
+        borderColor: rgba(C.leaf, 0.55),
+        onClick: restoreAfterExitCancel,
+      });
+
+      drawKidButton({
+        x: W / 2 + 25,
+        y: modalY + 168,
+        width: 220,
+        height: 52,
+        label: "Exit to Menu",
+        color: C.tangerine,
+        onClick: returnToMainMenu,
+      });
+
+      safeUpdate();
+    }
+
     function getActiveChallenge() {
       return (
         CHALLENGE_MODES.find((challenge) => challenge.mode === currentMode) ||
@@ -1232,6 +1779,8 @@ export default createZimGame({
       freshRound = true;
       errorMessage = "";
 
+      lastHintText = "";
+
       roundStartedAt = Date.now();
       roundHintsUsed = 0;
       roundWrongAttempts = 0;
@@ -1242,6 +1791,8 @@ export default createZimGame({
       isSubmittingScore = false;
       scoreSubmitMessage = "";
       scoreSubmitError = "";
+
+      submittedResultSummary = null;
     }
 
     function beginPlayerNameEdit() {
@@ -2339,49 +2890,6 @@ export default createZimGame({
       skipBtn.on("click", skipCurrentRound);
     }
 
-    function showHint(text) {
-      const old = stage.getChildByName("hint_bubble");
-      if (old) stage.removeChild(old);
-
-      const bW = 420,
-        bH = 52;
-      const bx = (W - bW) / 2;
-      const by = H - 62 - bH - 10;
-
-      const bubble = new zim.Container().addTo(stage);
-      bubble.name = "hint_bubble";
-      bubble.mouseChildren = false;
-
-      new zim.Rectangle({
-        width: bW,
-        height: bH,
-        color: "#fffbe6",
-        borderColor: "#c9a830",
-        borderWidth: 1.5,
-        corner: 14,
-      }).addTo(bubble);
-      new zim.Label({
-        text: text,
-        size: 15,
-        font: FONT,
-        color: "#7a5800",
-        align: "center",
-        valign: "center",
-        lineWidth: bW - 24,
-      })
-        .addTo(bubble)
-        .loc(bW / 2, bH / 2);
-      bubble.loc(bx, by);
-      stage.update();
-
-      setTimeout(() => {
-        if (stage.contains(bubble)) {
-          stage.removeChild(bubble);
-          stage.update();
-        }
-      }, 3000);
-    }
-
     // ── LOADING / ERROR ───────────────────────────────────────────────
     function showLoading() {
       stage.removeAllChildren();
@@ -2669,8 +3177,8 @@ export default createZimGame({
       drawHeader({ showExit: true });
 
       // Modal card
-      const mW = 520,
-        mH = 280;
+      const mW = 540,
+        mH = 330;
       const mX = (W - mW) / 2,
         mY = HEADER_H + (H - HEADER_H - mH) / 2;
 
@@ -2748,6 +3256,8 @@ export default createZimGame({
         .addTo(sp)
         .loc(70, 16);
 
+      drawPuzzleResultStrip(cx, mY + 204);
+
       const btn = new zim.Button({
         width: isTimedMode() ? 220 : 190,
         height: 48,
@@ -2767,7 +3277,7 @@ export default createZimGame({
         const finishBtn = new zim.Button({
           width: 190,
           height: 48,
-          label: "Finish",
+          label: "See Results",
           backgroundColor: C.grape,
           rollBackgroundColor: "#7a50e0",
           color: C.white,
@@ -3105,47 +3615,57 @@ export default createZimGame({
         .addTo(stage)
         .loc(cx, mY + 172);
 
-      // Trophy row — show when not at the top (second+ play with a lower score)
-      if (!isNewBest && sessionBest > totalScore) {
-        const tw = 310,
-          th = 36;
-        const tr = new zim.Container().addTo(stage);
-        tr.mouseChildren = false;
-        new zim.Rectangle({
-          width: tw,
-          height: th,
-          color: rgba(C.sunshine, 0.14),
-          borderColor: rgba(C.sunshine, 0.55),
-          borderWidth: 1.5,
-          corner: th / 2,
-        }).addTo(tr);
-        new zim.Label({
-          text: `🏆 Top: ${sessionBest} pts — Can you beat it?`,
-          size: 15,
-          font: FONT,
-          color: "#7a5800",
-          align: "center",
-          valign: "center",
-          bold: true,
-        })
-          .addTo(tr)
-          .loc(tw / 2, th / 2);
-        tr.loc(cx - tw / 2, mY + 190);
-      } else {
-        new zim.Label({
-          text: "Pick a mode above to play again!",
-          size: 18,
-          font: FONT,
-          color: C.sub,
-          align: "center",
-          valign: "center",
-        })
-          .addTo(stage)
-          .loc(cx, mY + 196);
+      const hasSubmittedSummary = drawSubmittedResultSummary(cx, mY + 184);
+
+      if (!hasSubmittedSummary) {
+        // existing trophy row / placeholder message block stays inside here
+        // Trophy row — show when not at the top (second+ play with a lower score)
+        if (!isNewBest && sessionBest > totalScore) {
+          const tw = 310,
+            th = 36;
+          const tr = new zim.Container().addTo(stage);
+          tr.mouseChildren = false;
+          new zim.Rectangle({
+            width: tw,
+            height: th,
+            color: rgba(C.sunshine, 0.14),
+            borderColor: rgba(C.sunshine, 0.55),
+            borderWidth: 1.5,
+            corner: th / 2,
+          }).addTo(tr);
+          new zim.Label({
+            text: `🏆 Top: ${sessionBest} pts — Can you beat it?`,
+            size: 15,
+            font: FONT,
+            color: "#7a5800",
+            align: "center",
+            valign: "center",
+            bold: true,
+          })
+            .addTo(tr)
+            .loc(tw / 2, th / 2);
+          tr.loc(cx - tw / 2, mY + 190);
+        } else {
+          new zim.Label({
+            text: "Pick a mode above to play again!",
+            size: 18,
+            font: FONT,
+            color: C.sub,
+            align: "center",
+            valign: "center",
+          })
+            .addTo(stage)
+            .loc(cx, mY + 196);
+        }
       }
 
       // Play Again button
-      if (scoreSubmitMessage || scoreSubmitError || isSubmittingScore) {
+      const shouldShowSubmitStatus =
+        isSubmittingScore ||
+        scoreSubmitError ||
+        (scoreSubmitMessage && !submittedResultSummary);
+
+      if (shouldShowSubmitStatus) {
         new zim.Label({
           text: isSubmittingScore
             ? "Saving your score..."
@@ -3205,7 +3725,7 @@ export default createZimGame({
         .loc(cx + 90, mY + mH - 56);
       playBtn.label.size = 16;
       playBtn.label.font = FONT;
-      playBtn.on("click", returnToChallengeSelection);
+      playBtn.on("click", returnToMainMenu);
 
       safeUpdate();
     }
@@ -3345,7 +3865,7 @@ export default createZimGame({
       if (screen === "loading") {
         if (event.key === "Escape") {
           event.preventDefault();
-          returnToChallengeSelection();
+          requestExitToMainMenu();
         }
 
         return;
@@ -3393,7 +3913,7 @@ export default createZimGame({
 
         if (event.key === "Escape") {
           event.preventDefault();
-          returnToChallengeSelection();
+          requestExitToMainMenu();
         }
 
         return;
@@ -3408,7 +3928,7 @@ export default createZimGame({
 
         if (event.key === "Escape") {
           event.preventDefault();
-          returnToChallengeSelection();
+          requestExitToMainMenu();
         }
 
         return;
@@ -3429,7 +3949,7 @@ export default createZimGame({
 
         if (isEnter || isSpace || event.key === "Escape") {
           event.preventDefault();
-          returnToChallengeSelection();
+          returnToMainMenu();
         }
       }
     }
