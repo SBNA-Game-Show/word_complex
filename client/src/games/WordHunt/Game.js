@@ -60,26 +60,26 @@ class Game {
     this.allowedHints = 0;
     this.hintPenalty = 0;
     this.playerInfo = [
-      // {
-      //   storyId: "04e9ae48-5570-4cd0-8968-a2179353164b",
-      //   games: {
-      //     Noun: {
-      //       bestTime: "0.13",
-      //       coins: 0,
-      //       totalScore: 0,
-      //     },
-      //     Verb: {
-      //       bestTime: "0.00",
-      //       coins: 0,
-      //       totalScore: 0,
-      //     },
-      //     Adjective: {
-      //       bestTime: "0.00",
-      //       coins: 0,
-      //       totalScore: 0,
-      //     },
-      //   },
-      // },
+      {
+        storyId: "04e9ae48-5570-4cd0-8968-a2179353164b",
+        games: {
+          Noun: {
+            bestTime: "0.13",
+            coins: 0,
+            totalScore: 0,
+          },
+          Verb: {
+            bestTime: "0.00",
+            coins: 0,
+            totalScore: 0,
+          },
+          Adjective: {
+            bestTime: "0.00",
+            coins: 0,
+            totalScore: 0,
+          },
+        },
+      },
     ];
     this.hasGameStarted = false;
   }
