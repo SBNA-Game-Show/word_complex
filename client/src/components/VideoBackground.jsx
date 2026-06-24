@@ -16,7 +16,7 @@ export default function VideoBackground() {
 
       <img
         className="video-bg-media"
-        src="/scenes/house-hill.png"
+        src="/scenes/house-hill.webp"
         alt=""
       />
       <div className="video-bg-grain" />
