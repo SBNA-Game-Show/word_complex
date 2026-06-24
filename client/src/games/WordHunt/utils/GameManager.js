@@ -295,9 +295,9 @@ class GameManager {
       this.game.hintPenalty = basePenalty;
     }
 
-    console.log(
-      `[Hint Config Loaded] Allowed: ${this.game.allowedHints} | Penalty: ${this.game.hintPenalty}`,
-    );
+    // console.log(
+    //   `[Hint Config Loaded] Allowed: ${this.game.allowedHints} | Penalty: ${this.game.hintPenalty}`,
+    // );
   }
 
   setInitialGameTime(gameType) {
@@ -307,11 +307,11 @@ class GameManager {
     const wordTiming = this.game.WORD_TIMING ?? 2 / 60;
 
     this.maxScore = baseScore * targetCount;
-    console.log("MAX SCORE: ", this.maxScore);
+    // console.log("MAX SCORE: ", this.maxScore);
 
     this.game.gameTime = targetCount * wordTiming;
-    console.log("Game Time: ", this.game.gameTime.toFixed(2));
-    console.log("Target Count: ", targetCount);
+    // console.log("Game Time: ", this.game.gameTime.toFixed(2));
+    // console.log("Target Count: ", targetCount);
 
     // 🛠️ INTEGRATED: Run hints system logic for initial setup path
     this.calculateDynamicHintsAndPenalties(targetCount);
@@ -344,9 +344,9 @@ class GameManager {
     if (isNaN(totalMinutes)) return null;
 
     this.game.gameTime = totalMinutes;
-    console.log(
-      `BestTime ${bestTime} → ${minutes}m ${seconds}s → ${totalMinutes} min`,
-    );
+    // console.log(
+    //   `BestTime ${bestTime} → ${minutes}m ${seconds}s → ${totalMinutes} min`,
+    // );
 
     // 🛠️ INTEGRATED: Run structural hint math block scaling for history paths too!
     const targetCount = this.getTargetWordCount(gameType);
@@ -378,7 +378,7 @@ class GameManager {
   setScore(gameType, foundCount, hintsUsed) {
     this.wordTypes = this.game.wordTypes;
     this.nounCount = this.wordTypes.nouns.length;
-    console.log("NOUN COUNT: ", this.nounCount);
+    // console.log("NOUN COUNT: ", this.nounCount);
     this.verbCount = this.wordTypes.verbs.length;
     this.adjectiveCount = this.wordTypes.adjectives.length;
 
@@ -402,7 +402,7 @@ class GameManager {
   }
 
   assignCoins(score) {
-    console.log("Assign coins method called with score:", score);
+    // console.log("Assign coins method called with score:", score);
 
     const cutoff = this.game.BASE_COIN_SCORE;
     const tenPointBlocks = Math.floor(score / cutoff);
