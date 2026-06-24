@@ -81,6 +81,7 @@ class Game {
       //   },
       // },
     ];
+    this.hasGameStarted = false;
   }
 
   //----------------------------------
@@ -96,6 +97,7 @@ class Game {
     this.messageBar = new MessageBar(this);
 
     this.landingPage.button.tap(() => {
+      this.landingPage.button.mouseEnabled = false;
       // console.log("Button Tapped");
       this.landingPage.hide();
       this.messageBar.countdownTimer(() => {
@@ -112,6 +114,8 @@ class Game {
   //----------------------------------
 
   startNounGame() {
+    if (this.hasGameStarted) return;
+    this.hasGameStarted = true;
     this.findNounsGame = new FindNounsGame(this);
 
     this.findNounsGame.displayPassage();
