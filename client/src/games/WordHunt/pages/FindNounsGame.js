@@ -279,7 +279,7 @@ class FindNounsGame {
             "black",
             1000,
           );
-          emit("wrong");
+          emit("hint", `Oops! "${cleanWord}" is a VERB. ${definition}`);
         }
         // INCORRECT ADJECTIVE MATCH
         else if (this.adjectives.includes(cleanWord)) {

@@ -7,7 +7,7 @@ export default createZimGame({
   width: 1280,
   height: 720,
 
-  color: "#ECE8C8",
+  color: "#FFE0C4BF",
   outerColor: "#556B3D",
 
   setup({ stage, W, H, zim }) {

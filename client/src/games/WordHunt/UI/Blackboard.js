@@ -14,8 +14,8 @@ class Blackboard {
       width: this.width,
       height: this.height,
       color: "#1E3A1E",
-      borderColor: "rgba(236,232,200)",
-      borderWidth: 20,
+      borderColor: "rgba(255, 224, 196, 0.4)",
+      borderWidth: 10,
       corner: 10,
     });
 

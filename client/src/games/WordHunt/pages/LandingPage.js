@@ -20,7 +20,14 @@ class LandingPage {
     // PANEL
     //---------------------------------
 
-    const panel = new this.zim.Rectangle(850, 500, "#E9D8FD", "#F6D365", 8, 30);
+    const panel = new this.zim.Rectangle(
+      850,
+      500,
+      "rgba(255, 224, 196, 0.4)",
+      "#FFE0C4BF",
+      8,
+      30,
+    );
 
     panel.sha("rgba(0,0,0,.15)", 0, 10, 20);
     panel.center(this.container);
