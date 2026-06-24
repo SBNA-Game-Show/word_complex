@@ -221,9 +221,8 @@ class FindNounsGame {
         this.game.inputLocked = true;
         this.progressBar.showTimesUp();
 
-        this.game.inputLocked = true;
-
         this.messageBar.showTimeOverMessage(this.timeUpKey);
+        emit("hint", { text: this.timeUpKey });
 
         this.game.stage.update();
       },
@@ -267,30 +266,24 @@ class FindNounsGame {
           // foundWordsLabel.text = this.foundWords.join(", ");
           this.foundWordsCont.addWord(cleanWord);
 
-          emit("hint", "correct");
+          emit("correct");
           this.checkWin();
         }
         // INCORRECT VERB MATCH
         else if (this.verbs.includes(cleanWord)) {
           label.setColor("red");
           const definition = this.manager.defineVerb();
-          this.messageBar.show(
-            `Oops! "${cleanWord}" is a VERB. ${definition}`,
-            "black",
-            1000,
-          );
-          emit("hint", `Oops! "${cleanWord}" is a VERB. ${definition}`);
+          emit("hint", {
+            text: `Oops! "${cleanWord}" is a VERB. ${definition}`,
+          });
         }
         // INCORRECT ADJECTIVE MATCH
         else if (this.adjectives.includes(cleanWord)) {
           label.setColor("orange");
           const definition = this.manager.defineAdjective();
-          this.messageBar.show(
-            `Oops! "${cleanWord}" is an ADJECTIVE. ${definition}`,
-            "black",
-            1200,
-          );
-          emit("wrong");
+          emit("hint", {
+            text: `Oops! "${cleanWord}" is an ADJECTIVE. ${definition}`,
+          });
         }
 
         this.game.stage.update();
@@ -337,6 +330,7 @@ class FindNounsGame {
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
       this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
+      emit("roundOver");
     }
   }
 
