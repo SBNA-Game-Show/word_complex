@@ -43,8 +43,6 @@ class FindNounsGame {
     this.hintsUsed = 0;
 
     this.gameOver = false;
-
-    this.newCoins = 0;
   }
 
   displayPassage() {
@@ -327,10 +325,12 @@ class FindNounsGame {
       );
       this.game.TOTAL_SCORE += acquiredTotalScore;
       console.log("New Game Total: ", acquiredTotalScore);
-      this.playerInformation.update(this.score);
 
-      this.newCoins = this.manager.assignCoins(acquiredTotalScore);
-      console.log("COINS ASSIGNED: ", this.newCoins);
+      const earnedCoins = this.manager.assignCoins(acquiredTotalScore);
+      console.log("COINS ASSIGNED: ", earnedCoins);
+      this.game.EARNED_COINS += earnedCoins;
+      console.log("GAME Earned POints: ", this.game.EARNED_COINS);
+      this.playerInformation.update(this.score);
 
       this.game.inputLocked = true;
 

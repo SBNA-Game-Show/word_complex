@@ -37,7 +37,7 @@ class PlayerInformation {
     const stats = [
       { key: "Player", value: this.player || "Guest" },
       { key: "Score", value: 0 },
-      { key: "Coins", value: this.game.playerCoins || 0 },
+      { key: "Coins", value: this.game.EARNED_COINS || 0 },
       { key: "Total", value: this.game.TOTAL_SCORE || 0 },
     ];
 
@@ -94,7 +94,7 @@ class PlayerInformation {
           break;
 
         case "Coins":
-          value = this.game.playerCoins || 0;
+          value = this.game.EARNED_COINS || 0;
           break;
 
         case "Total":
