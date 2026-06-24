@@ -126,7 +126,7 @@ class FindNounsGame {
       this.game.startVerbGame();
     };
 
-    // 1. Highlight nouns as blue when clicked
+    // 1. Highlight nouns as green when clicked
     this.controlPanel.hintClicked = () => {
       console.log("Hint Clicked - Highlighting Nouns");
       if (this.passageDisplay && this.passageDisplay.wordLabels) {
@@ -161,43 +161,43 @@ class FindNounsGame {
     // FOUND VERBS BOX
     //-----------------------------------
 
-    const foundBox = new this.game.zim.Rectangle({
-      width: this.blackboard.width - 80,
-      height: 160,
-      color: "#274527",
-      corner: 8,
-    });
+    // const foundBox = new this.game.zim.Rectangle({
+    //   width: this.blackboard.width - 80,
+    //   height: 160,
+    //   color: "#274527",
+    //   corner: 8,
+    // });
 
-    foundBox.pos(40, this.blackboard.height - 190);
+    // foundBox.pos(40, this.blackboard.height - 190);
 
-    foundBox.addTo(this.blackboard);
+    // foundBox.addTo(this.blackboard);
 
-    const foundTitle = new this.game.zim.Label({
-      text: "Found Nouns",
-      size: 30,
-      color: "#00ff88",
-    });
+    // const foundTitle = new this.game.zim.Label({
+    //   text: "Found Nouns",
+    //   size: 30,
+    //   color: "#00ff88",
+    // });
 
-    foundTitle.pos(60, this.blackboard.height - 180);
+    // foundTitle.pos(60, this.blackboard.height - 180);
 
-    foundTitle.addTo(this.blackboard);
+    // foundTitle.addTo(this.blackboard);
 
-    const foundWordsLabel = new this.game.zim.Label({
-      text: "",
-      size: 24,
-      color: "white",
-      align: "left",
-      lineWidth: this.blackboard.width - 140,
-    });
+    // const foundWordsLabel = new this.game.zim.Label({
+    //   text: "",
+    //   size: 24,
+    //   color: "white",
+    //   align: "left",
+    //   lineWidth: this.blackboard.width - 140,
+    // });
 
-    foundWordsLabel.pos(60, this.blackboard.height - 130);
+    // foundWordsLabel.pos(60, this.blackboard.height - 130);
 
-    foundWordsLabel.addTo(this.blackboard);
-    // this.foundWordsCont = new FoundContainer(this.game);
+    // foundWordsLabel.addTo(this.blackboard);
+    this.foundWordsCont = new FoundContainer(this.game);
+    const foundWordsContainer = this.foundWordsCont.update();
 
-    // this.foundWordsCont.pos(40, 500);
-    // this.foundWordsCont.addTo(this.blackboard);
-    //  this.foundWordsCont.update();
+    this.foundWordsCont.pos(40, 500);
+    this.foundWordsCont.addTo(this.blackboard);
 
     //-----------------------------------
     // Timer to start the game
@@ -264,8 +264,8 @@ class FindNounsGame {
           this.progressBar.setFound(this.foundWords.length);
 
           label.setColor("#00ff88");
-          foundWordsLabel.text = this.foundWords.join(", ");
-          // this.foundWordsCont.addWord(cleanWord);
+          // foundWordsLabel.text = this.foundWords.join(", ");
+          this.foundWordsCont.addWord(cleanWord);
 
           emit("hint", "correct");
           this.checkWin();
@@ -324,12 +324,12 @@ class FindNounsGame {
         this.score,
       );
       this.game.TOTAL_SCORE += acquiredTotalScore;
-      console.log("New Game Total: ", acquiredTotalScore);
+      // console.log("New Game Total: ", acquiredTotalScore);
 
       const earnedCoins = this.manager.assignCoins(acquiredTotalScore);
-      console.log("COINS ASSIGNED: ", earnedCoins);
+      // console.log("COINS ASSIGNED: ", earnedCoins);
       this.game.EARNED_COINS += earnedCoins;
-      console.log("GAME Earned POints: ", this.game.EARNED_COINS);
+      // console.log("GAME Earned POints: ", this.game.EARNED_COINS);
       this.playerInformation.update(this.score);
 
       this.game.inputLocked = true;
