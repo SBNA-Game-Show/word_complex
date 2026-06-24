@@ -33,7 +33,7 @@ class FindNounsGame {
     this.playerInformation = null;
     this.passageDisplay = null;
     this.controlPanel = null;
-    this.foundWords = null;
+    this.foundWordsCont = null;
 
     this.continueButton = null;
     this.exitButton = null;
@@ -163,42 +163,43 @@ class FindNounsGame {
     // FOUND VERBS BOX
     //-----------------------------------
 
-    // const foundBox = new this.game.zim.Rectangle({
-    //   width: this.blackboard.width - 80,
-    //   height: 160,
-    //   color: "#274527",
-    //   corner: 8,
-    // });
+    const foundBox = new this.game.zim.Rectangle({
+      width: this.blackboard.width - 80,
+      height: 160,
+      color: "#274527",
+      corner: 8,
+    });
 
-    // foundBox.pos(40, this.blackboard.height - 190);
+    foundBox.pos(40, this.blackboard.height - 190);
 
-    // foundBox.addTo(this.blackboard);
+    foundBox.addTo(this.blackboard);
 
-    // const foundTitle = new this.game.zim.Label({
-    //   text: "Found Nouns",
-    //   size: 30,
-    //   color: "#00ff88",
-    // });
+    const foundTitle = new this.game.zim.Label({
+      text: "Found Nouns",
+      size: 30,
+      color: "#00ff88",
+    });
 
-    // foundTitle.pos(60, this.blackboard.height - 180);
+    foundTitle.pos(60, this.blackboard.height - 180);
 
-    // foundTitle.addTo(this.blackboard);
+    foundTitle.addTo(this.blackboard);
 
-    // const foundWordsLabel = new this.game.zim.Label({
-    //   text: "",
-    //   size: 24,
-    //   color: "white",
-    //   align: "left",
-    //   lineWidth: this.blackboard.width - 140,
-    // });
+    const foundWordsLabel = new this.game.zim.Label({
+      text: "",
+      size: 24,
+      color: "white",
+      align: "left",
+      lineWidth: this.blackboard.width - 140,
+    });
 
-    // foundWordsLabel.pos(60, this.blackboard.height - 130);
+    foundWordsLabel.pos(60, this.blackboard.height - 130);
 
-    // foundWordsLabel.addTo(this.blackboard);
-    this.foundWords = new FoundContainer(this.game);
-    this.foundWords.update();
-    this.foundWords.pos(40, 500);
-    this.foundWords.addTo(this.blackboard);
+    foundWordsLabel.addTo(this.blackboard);
+    // this.foundWordsCont = new FoundContainer(this.game);
+   
+    // this.foundWordsCont.pos(40, 500);
+    // this.foundWordsCont.addTo(this.blackboard);
+    //  this.foundWordsCont.update();
 
     //-----------------------------------
     // Timer to start the game
@@ -266,6 +267,7 @@ class FindNounsGame {
 
           label.setColor("#00ff88");
           foundWordsLabel.text = this.foundWords.join(", ");
+          // this.foundWordsCont.addWord(cleanWord);
 
           emit("hint", "correct");
           this.checkWin();
