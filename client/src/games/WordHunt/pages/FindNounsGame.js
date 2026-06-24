@@ -297,7 +297,7 @@ class FindNounsGame {
       },
     );
 
-    passageDisplayCont.pos(50, 130);
+    passageDisplayCont.pos(50, 150);
     passageDisplayCont.addTo(this.blackboard);
 
     this.game.stage.update();

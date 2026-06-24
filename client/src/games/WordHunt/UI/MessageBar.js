@@ -27,7 +27,7 @@ class MessageBar {
     this.onExit = null;
     this.onContinue = null;
 
-    this.countdownRunning= false
+    this.countdownRunning = false;
   }
 
   show(text, color = "black", duration = 1200) {
@@ -446,7 +446,7 @@ class MessageBar {
       this.messageContainer.pos(this.game.width / 2, this.game.height / 2);
 
       // Clean striking label with no shapes boxing it up
-      const label = new ZimLabel(this.game, text, 72, "white").createLabel();
+      const label = new ZimLabel(this.game, text, 72, "black").createLabel();
       label.addTo(this.messageContainer);
       label.pos(-label.label.width / 2, -label.label.height / 2);
 
