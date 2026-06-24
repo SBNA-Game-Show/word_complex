@@ -80,7 +80,7 @@ class PassageDisplay {
         if (!word) return;
 
         const cleanWord = this.manager.normalize(word);
-        const label = new ZimLabel(this.game, word, 20, "white").createLabel();
+        const label = new ZimLabel(this.game, word, 22, "white").createLabel();
 
         label.addTo(textContainer);
 

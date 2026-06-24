@@ -79,10 +79,11 @@ class LandingPage {
     //---------------------------------
 
     const title = new this.zim.Label({
-      text: "Parts of Speech Adventure",
+      text: "Grammar: Treasure Hunt",
       size: 54,
       color: "#6A0DAD",
       bold: true,
+      font: "Fredoka",
     });
 
     title.center(this.container);
@@ -93,12 +94,13 @@ class LandingPage {
     //---------------------------------
 
     const subtitle = new this.zim.Label({
-      text: "Find Nouns, Verbs and Adjectives\nthrough fun word challenges!",
-      size: 28,
+      text: "Discover nouns, verbs, and adjectives hidden in passages. \nScore points, improve your grammar, and top the leaderboard!",
+      size: 24,
       color: "#444",
       bold: true,
       align: "center",
       lineHeight: 38,
+      font: "Fredoka",
     });
 
     subtitle.center(this.container);
@@ -131,7 +133,7 @@ class LandingPage {
 
     this.button.center(this.container);
     this.button.y = 360;
-    this.button.label.font = "Arial";
+    this.button.label.font = "Fredoka";
     this.button.label.size = 32;
     this.button.label.bold = true;
 

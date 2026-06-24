@@ -16,6 +16,7 @@ class ZimLabel {
       text: this.text,
       size: this.fontSize,
       color: this.color,
+      font: "Fredoka",
     });
 
     return this;

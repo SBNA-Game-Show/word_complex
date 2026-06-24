@@ -64,7 +64,7 @@ class MessageBar {
     const bg = new this.game.zim.Rectangle({
       width: containerWidth,
       height: containerHeight,
-      color: "#FFF8F0",
+      color: "#1E3A1E",
       corner: 16,
       borderColor: "#E9D8A6",
       borderWidth: 2,
@@ -185,7 +185,7 @@ class MessageBar {
     const bg = new this.game.zim.Rectangle({
       width: 500,
       height: 180,
-      color: "#FFF8F0",
+      color: "#1E3A1E",
       corner: 16,
       borderColor: "#E9D8A6",
       borderWidth: 2,
@@ -270,7 +270,7 @@ class MessageBar {
     const bg = new this.game.zim.Rectangle({
       width: containerWidth,
       height: containerHeight,
-      color: "#FFF8F0",
+      color: "#1E3A1E",
       corner: 16,
       borderColor: "#E9D8A6",
       borderWidth: 2,

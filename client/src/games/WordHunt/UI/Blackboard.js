@@ -13,7 +13,7 @@ class Blackboard {
     const background = new this.zim.Rectangle({
       width: this.width,
       height: this.height,
-      color: "#1E3A1E",
+      color: "#1E3A1E", // green
       borderColor: "rgba(255, 224, 196, 0.4)",
       borderWidth: 10,
       corner: 10,

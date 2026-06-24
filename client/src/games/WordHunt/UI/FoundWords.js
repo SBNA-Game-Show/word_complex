@@ -236,8 +236,9 @@ class FoundContainer {
     // 2. Add Title straight inside the scroll container frame
     const titleLabel = new this.game.zim.Label({
       text: this.titleText,
-      size: 30,
+      size: 22,
       color: "#00ff88",
+      font: "Fredoka",
     });
     titleLabel.pos(20, 15);
     titleLabel.addTo(this.textContainer);
