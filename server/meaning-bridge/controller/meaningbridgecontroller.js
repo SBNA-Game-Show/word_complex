@@ -1,5 +1,11 @@
-const { generateSynonymMatchPuzzle, generateAntonymMatchPuzzle, generateDefinitionMatchPuzzle } = require("../service/generatepuzzle");
-const { retrieveStoryById } = require("../../raw-data-connect/retrieveTokenizedStoryById");
+const {
+  generateSynonymMatchPuzzle,
+  generateAntonymMatchPuzzle,
+  generateDefinitionMatchPuzzle,
+} = require("../service/generatepuzzle");
+const {
+  retrieveStoryById,
+} = require("../../raw-data-connect/retrieveTokenizedStoryById");
 
 const HARDCODED_STORY_ID = "73a1ae3b-3c35-414b-8f9d-e4e241fe49e1";
 
@@ -25,12 +31,16 @@ function buildPuzzle({ story, mode, pairCount }) {
 }
 
 function getPassageTitle(story) {
-  if (story.title && story.title.englishversion) return story.title.englishversion;
-  if (story.title && story.title.sanskritversion) return story.title.sanskritversion;
+  if (story.title && story.title.englishversion)
+    return story.title.englishversion;
+  if (story.title && story.title.sanskritversion)
+    return story.title.sanskritversion;
   return "Untitled Story";
 }
 
-async function getMeaningBridgeCandidateStories({ requestedStoryId = null } = {}) {
+async function getMeaningBridgeCandidateStories({
+  requestedStoryId = null,
+} = {}) {
   const storyIds = [];
   if (requestedStoryId) storyIds.push(requestedStoryId);
   if (!storyIds.includes(HARDCODED_STORY_ID)) storyIds.push(HARDCODED_STORY_ID);
@@ -44,6 +54,7 @@ async function getMeaningBridgeCandidateStories({ requestedStoryId = null } = {}
       // Skip stories that can't be retrieved; fall back to the next candidate.
     }
     //just for checking
+    //checkign again test
   }
 
   return stories;
@@ -64,7 +75,7 @@ function buildPuzzleFromCandidateStories({ candidates, mode, pairCount }) {
   throw new Error(
     lastError
       ? `Could not build a ${mode} puzzle from any story: ${lastError.message}`
-      : `Could not build a ${mode} puzzle from any story.`
+      : `Could not build a ${mode} puzzle from any story.`,
   );
 }
 
@@ -137,7 +148,8 @@ const generateMeaningBridgeRound = async (req, res) => {
     return res.status(500).json({
       success: false,
       ok: false,
-      error: error instanceof Error ? error.message : "Failed to generate round.",
+      error:
+        error instanceof Error ? error.message : "Failed to generate round.",
     });
   }
 };
