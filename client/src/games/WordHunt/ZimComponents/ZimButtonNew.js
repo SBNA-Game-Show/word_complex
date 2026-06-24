@@ -22,7 +22,7 @@ class ZimButton {
     this.bg = new this.zim.Rectangle({
       width: this.width,
       height: this.height,
-      color: "rgba(255, 224, 196, 0.4)",
+      color: "rgba(255, 224, 196, 0.8)",
       corner: 10,
     });
 

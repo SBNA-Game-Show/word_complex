@@ -159,7 +159,7 @@ class MessageBar {
     }
   }
 
-  showWinningMessage(text, time, color = "black") {
+  showWinningMessage(text, time, color = "white") {
     this.clearActiveMessages();
     this.game.isInputLocked = true;
 
@@ -187,8 +187,8 @@ class MessageBar {
       height: 180,
       color: "#1E3A1E",
       corner: 16,
-      borderColor: "#E9D8A6",
-      borderWidth: 2,
+      borderColor: "rgba(255, 224, 196, 0.8)",
+      borderWidth: 5,
     });
 
     bg.addTo(this.winningContainer);
@@ -239,7 +239,7 @@ class MessageBar {
 
     return this.winningContainer;
   }
-  showTimeOverMessage(text, color = "black") {
+  showTimeOverMessage(text, color = "white") {
     this.clearActiveMessages();
     this.game.isInputLocked = true;
 
@@ -272,8 +272,8 @@ class MessageBar {
       height: containerHeight,
       color: "#1E3A1E",
       corner: 16,
-      borderColor: "#E9D8A6",
-      borderWidth: 2,
+      borderColor: "rgba(255, 224, 196, 0.8)",
+      borderWidth: 5,
     });
 
     bg.addTo(this.timeOverContainer);

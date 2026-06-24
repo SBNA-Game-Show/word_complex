@@ -8,7 +8,7 @@ class BackButton {
     const backBtn = new this.game.zim.Button({
       width: 90,
       height: 35,
-      backgroundColor: "rgba(255, 224, 196, 0.4)",
+      backgroundColor: "rgba(255, 224, 196, 0.8)",
       label: new this.game.zim.Label({
         text: "← Back",
         size: 16,
