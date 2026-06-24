@@ -85,7 +85,7 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
                   <span className="character-glow" aria-hidden="true" />
                   <img
                     className="character-img"
-                    src={`/characters/${character.id}.png`}
+                    src={`/characters/${character.id}.webp`}
                     alt={character.name}
                     draggable="false"
                   />
