@@ -40,11 +40,13 @@ class Game {
     this.gameTime = 0;
     this.isInputLocked = false;
 
-    // GAME TIMINGS
+    // BASE SETTINGS
     this.WORD_TIMING = 2 / 60;
     this.BASE_SCORE = 1;
     this.BASE_PENALTY = 0.25;
     this.BASE_HINTS = 1;
+    this.BASE_COIN = 2; // FOR EACH 10 points 2 coins
+    this.BASE_COIN_SCORE = 10;
 
     //score
     this.TOTAL_SCORE = 0;
@@ -88,8 +90,8 @@ class Game {
   async start() {
     this.landingPage = new LandingPage(this).createLandingPage();
 
-    // await this.serviceManager.getPassageByIdEnglish();
-    await this.serviceManager.getPassageByIdSanskrit();
+    await this.serviceManager.getPassageByIdEnglish();
+    // await this.serviceManager.getPassageByIdSanskrit();
 
     this.messageBar = new MessageBar(this);
 

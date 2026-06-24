@@ -44,7 +44,7 @@ class FindNounsGame {
 
     this.gameOver = false;
 
-    this.newTotal = 0;
+    this.newCoins = 0;
   }
 
   displayPassage() {
@@ -111,7 +111,7 @@ class FindNounsGame {
       this.game.inputLocked = false;
 
       this.game.stage.removeAllChildren();
-      // this.displayPassage();
+      this.displayPassage();
     };
 
     //-----------------------------------
@@ -196,7 +196,7 @@ class FindNounsGame {
 
     foundWordsLabel.addTo(this.blackboard);
     // this.foundWordsCont = new FoundContainer(this.game);
-   
+
     // this.foundWordsCont.pos(40, 500);
     // this.foundWordsCont.addTo(this.blackboard);
     //  this.foundWordsCont.update();
@@ -320,14 +320,17 @@ class FindNounsGame {
       const seconds = Math.floor((elapsedMs % 60000) / 1000);
 
       // console.log(`TIME USED: ${minutes}:${seconds}`);
-      this.game.TOTAL_SCORE += this.manager.setGameTotal(
-        this.game.findNounsGame,
+      const acquiredTotalScore = this.manager.setGameTotal(
         this.foundWords.length,
         elapsedMs,
         this.score,
       );
-      console.log("New Game Total: ", this.game.TOTAL_SCORE);
+      this.game.TOTAL_SCORE += acquiredTotalScore;
+      console.log("New Game Total: ", acquiredTotalScore);
       this.playerInformation.update(this.score);
+
+      this.newCoins = this.manager.assignCoins(acquiredTotalScore);
+      console.log("COINS ASSIGNED: ", this.newCoins);
 
       this.game.inputLocked = true;
 

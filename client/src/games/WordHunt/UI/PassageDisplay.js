@@ -40,8 +40,8 @@ class PassageDisplay {
   }
 
   displayPassage(onWordClick) {
-    // console.trace("🔥 displayPassage CALLED");
-    // console.log("Display Passage");
+    console.trace("🔥 displayPassage CALLED");
+    console.log("Display Passage");
     const margin = 60;
     const lineHeight = 45;
     const spacing = 14;

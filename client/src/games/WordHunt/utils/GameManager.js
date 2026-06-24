@@ -172,7 +172,7 @@ class GameManager {
     return null;
   }
 
-  setGameTotal(gameType, foundCount, elapsedMs, score) {
+  setGameTotal(foundCount, elapsedMs, score) {
     // 1. Convert the elapsed time from milliseconds to decimal minutes
     // to match the scale used by this.game.gameTime
     const timeElapsedInMinutes = elapsedMs / 60000;
@@ -192,7 +192,19 @@ class GameManager {
   }
 
   assignCoins(score) {
-    
+    console.log("Assign coins method called with score:", score);
+
+    const cutoff = this.game.BASE_COIN_SCORE;
+    const baseCoin = this.game.BASE_COIN;
+
+    // Floor the score to remove decimals, then see how many 10s fit into it
+    const tenPointBlocks = Math.floor(score / cutoff);
+
+    if (tenPointBlocks > 0) {
+      return tenPointBlocks * 2; // Returns 2 coins for 10pts, 4 coins for 20pts, etc.
+    }
+
+    return 0;
   }
 }
 
