@@ -2,6 +2,7 @@ import BackgroundDecor from "./BackgroundDecor";
 import { getGame } from "../games";
 import { useAuth } from "../auth/AuthContext";
 import UserBadge from "./UserBadge";
+import { useCanvasZoom } from "./useCanvasZoom";
 
 /**
  * GameScreen
@@ -11,7 +12,14 @@ import UserBadge from "./UserBadge";
  * Responsibilities:
  * - Render the fixed game header.
  * - Render the selected game component from the central game registry.
- * - Keep shared platform UI: Back button, game title, user badge, logout.
+ * - Keep shared platform UI such as Back, game title, user badge, and logout.
+ * - Apply game-specific wrapper classes so each game can be styled safely.
+ *
+ * Canvas zoom:
+ * Every ZIMJS game gets +/- zoom controls (see useCanvasZoom), handled outside
+ * the game logic through the CSS variable `--canvas-zoom`, which App.css applies
+ * as a transform on the canvas. This resizes the canvas without touching ZIMJS
+ * gameplay coordinates or the game logic itself.
  */
 export default function GameScreen({ gameId, onBack }) {
   const { logout, user } = useAuth();
@@ -19,9 +27,18 @@ export default function GameScreen({ gameId, onBack }) {
   const game = getGame(gameId);
   const Game = game?.Component;
 
+  // Used to generate scoped CSS classes such as:
+  // game-screen-meaning-bridge
+  // canvas-shell-meaning-bridge
+  const gameClassName = gameId || "unknown";
+
+  // Manual canvas zoom (1 = 100%). Applied to every game via --canvas-zoom.
+  const { zoom: canvasZoom, controls: zoomControls } = useCanvasZoom();
+
   return (
     <main
-      className={`game-screen game-screen-${gameId || "unknown"}`}
+      className={`game-screen game-screen-${gameClassName}`}
+      style={{ "--canvas-zoom": canvasZoom }}
       data-testid={`game-screen-${gameId}`}
     >
       <BackgroundDecor />
@@ -49,6 +66,8 @@ export default function GameScreen({ gameId, onBack }) {
           <span><span className="step-num">2</span> Order</span>
           <span><span className="step-num">3</span> Check</span>
         </div>
+
+        {zoomControls}
 
         <UserBadge user={user} onLogout={logout} />
       </header>

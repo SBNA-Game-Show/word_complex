@@ -5,6 +5,7 @@ import { getSceneConfig } from "./sceneConfig";
 import { subscribe } from "./sceneBus";
 import { pickLine } from "./speechLines";
 import CharacterHelper from "./CharacterHelper";
+import { useCanvasZoom } from "../components/useCanvasZoom";
 import "./GameScene.css";
 
 // How long a speech bubble lingers before it starts leaving.
@@ -44,6 +45,9 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
   // `entered` flips to true one frame after mount so CSS transitions/animations
   // run from their "before" state into the "after" state.
   const [entered, setEntered] = useState(false);
+
+  // Manual canvas zoom (1 = 100%), applied to the canvas via --canvas-zoom.
+  const { zoom: canvasZoom, controls: zoomControls } = useCanvasZoom();
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
@@ -104,6 +108,8 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
         //    the background and the character layer share, so the character
         //    stays anchored to the artwork on any display. ──────────────────
         "--scene-aspect": config?.backgroundAspect ?? 16 / 9,
+        // Manual canvas zoom from the +/- controls.
+        "--canvas-zoom": canvasZoom,
       }}
     >
       {/* Full-screen illustrated background (slides in from the left). */}
@@ -137,6 +143,8 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
           <p className="eyebrow">Now playing</p>
           <h1>{game?.title ?? "Game"}</h1>
         </div>
+
+        {zoomControls}
       </header>
 
       <div className="scene-stage">

@@ -65,7 +65,7 @@ export default function CharacterHelper({ characterId, character, entered, speec
         <img
           className="character-helper-img"
           // ── Selected character image ─────────────────────────────────────
-          src={`/characters/${characterId}.png`}
+          src={`/characters/${characterId}.webp`}
           alt=""
           draggable="false"
         />
