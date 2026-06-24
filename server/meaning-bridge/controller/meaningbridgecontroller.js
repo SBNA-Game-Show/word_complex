@@ -30,6 +30,43 @@ function getPassageTitle(story) {
   return "Untitled Story";
 }
 
+async function getMeaningBridgeCandidateStories({ requestedStoryId = null } = {}) {
+  const storyIds = [];
+  if (requestedStoryId) storyIds.push(requestedStoryId);
+  if (!storyIds.includes(HARDCODED_STORY_ID)) storyIds.push(HARDCODED_STORY_ID);
+
+  const stories = [];
+  for (const storyId of storyIds) {
+    try {
+      const story = await retrieveStoryById(storyId);
+      if (story) stories.push(story);
+    } catch (error) {
+      // Skip stories that can't be retrieved; fall back to the next candidate.
+    }
+  }
+
+  return stories;
+}
+
+function buildPuzzleFromCandidateStories({ candidates, mode, pairCount }) {
+  let lastError = null;
+
+  for (const story of candidates) {
+    try {
+      const puzzle = buildPuzzle({ story, mode, pairCount });
+      return { story, source: String(story._id), puzzle };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw new Error(
+    lastError
+      ? `Could not build a ${mode} puzzle from any story: ${lastError.message}`
+      : `Could not build a ${mode} puzzle from any story.`
+  );
+}
+
 const getMeaningBridgeHealth = async (req, res) => {
   return res.status(200).json({
     success: true,
