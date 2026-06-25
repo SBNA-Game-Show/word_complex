@@ -158,55 +158,6 @@ class FindVerbGame {
       }
     };
 
-    //-----------------------------------
-    // FOUND VERBS BOX
-    //-----------------------------------
-
-    // const foundBox = new this.game.zim.Rectangle({
-    //   width: this.blackboard.width - 80,
-    //   height: 160,
-    //   color: "#274527",
-    //   corner: 8,
-    // });
-
-    // foundBox.pos(40, this.blackboard.height - 190);
-
-    // foundBox.addTo(this.blackboard);
-
-    // const foundTitle = new this.game.zim.Label({
-    //   text: "Found Verbs",
-    //   size: 30,
-    //   color: "#00ff88",
-    // });
-
-    // foundTitle.pos(60, this.blackboard.height - 180);
-
-    // foundTitle.addTo(this.blackboard);
-
-    // const foundWordsLabel = new this.game.zim.Label({
-    //   text: "",
-    //   size: 24,
-    //   color: "white",
-    //   align: "left",
-    //   lineWidth: this.blackboard.width - 140,
-    // });
-
-    // foundWordsLabel.pos(60, this.blackboard.height - 130);
-
-    // foundWordsLabel.addTo(this.blackboard);
-
-    // //-----------------------------------
-    // // STORY
-    // //-----------------------------------
-
-    // const margin = 60;
-
-    // let x = margin;
-    // let y = 160;
-
-    // const lineHeight = 42;
-
-    // const maxWidth = this.blackboard.width - 80;
     this.foundWordsCont = new FoundContainer(this.game);
     const foundWordsContainer = this.foundWordsCont.update();
 
