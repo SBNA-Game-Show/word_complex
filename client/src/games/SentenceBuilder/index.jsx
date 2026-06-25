@@ -3,6 +3,7 @@ import { getPassageReconstructionGame } from "../../services/passageReconstructi
 import { emit } from "../../scenes/sceneBus";
 import { createHintPolicy } from "../shared/hintPolicy";
 import { createHintButton } from "../shared/hintButton";
+import { createCountdown } from "../shared/countdownPolicy";
 
 const zimFont = "Fredoka";
 
@@ -38,6 +39,16 @@ export default createZimGame({
     let checks = 0;
     let correctChecks = 0;
     let feedbackActive = false; // blocks checkAnswer while a feedback popup is showing
+    // A wrong "Check" costs points (floored at 0, like the hint penalty) on top of
+    // burning an attempt, so the final score reflects accuracy.
+    const WRONG_PENALTY = 20;
+    // Whole-game 90s countdown. The pure policy tracks remaining seconds + pause;
+    // the ZIM interval below drives it and a HUD label shows it. When it expires the
+    // whole game ends with a results screen (see endByTimeout / showResults).
+    const countdown = createCountdown({ seconds: 90 });
+    let timerInterval = null; // ZIM intervalObject (one for the whole game)
+    let timerLabel = null; // live HUD label, re-pointed on every makeStatus()
+    let gameOver = false; // set once the game ends (timeout or finish); blocks input
     // Hint system: 2 hints per round, each costs 25 points. The policy is shared,
     // game-agnostic logic; the button is a shared in-canvas trigger; the buddy
     // delivers the hint text via sceneBus (see applyHint).
@@ -57,6 +68,47 @@ export default createZimGame({
       label.addTo(container);
       label.loc(x, y);
       return label;
+    }
+
+    // "90" -> "1:30". Seconds are zero-padded; minutes are not.
+    function formatTime(totalSeconds) {
+      const safe = Math.max(0, totalSeconds);
+      const minutes = Math.floor(safe / 60);
+      const seconds = safe % 60;
+      return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    // Refresh the HUD timer label from the countdown. Runs every tick; guards for
+    // the label being absent (e.g. on the results screen, which has no HUD).
+    function updateTimerLabel() {
+      if (!timerLabel) return;
+      timerLabel.text = `Time ${formatTime(countdown.remaining())}`;
+      // Warm gold normally, coral in the final 15s for urgency.
+      timerLabel.color = countdown.remaining() <= 15 ? "#d2553f" : palette.inkSoft;
+      stage.update();
+    }
+
+    // One ZIM interval drives the whole-game clock. It lives on the Frame's Ticker,
+    // so it survives stage.removeAllChildren() and keeps counting across rounds.
+    function startTimer() {
+      if (timerInterval) timerInterval.clear();
+      // immediate:false so the first tick happens after 1s, not synchronously at
+      // creation (which would decrement before showSentencePreview pauses the clock).
+      timerInterval = zim.interval({
+        time: 1,
+        immediate: false,
+        call: () => {
+          countdown.tick();
+          updateTimerLabel();
+          if (countdown.expired()) endByTimeout();
+        },
+      });
+    }
+
+    // Time ran out: end the game on the spot with the timed-out results screen.
+    function endByTimeout() {
+      if (gameOver) return;
+      showResults({ timedOut: true });
     }
 
     function makeBackground() {
@@ -94,8 +146,14 @@ export default createZimGame({
       const hud = new zim.Container().addTo(stage);
       const round = new zim.Label(`Round ${roundIndex + 1}/${rounds.length}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(0, 0);
       const scoreLabel = new zim.Label(`Score ${score}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(round.width + 16, 0);
-      new zim.Label(`Attempts ${attemptsLeft}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(round.width + scoreLabel.width + 32, 0);
-      hud.setBounds(0, 0, round.width + scoreLabel.width + hud.getChildAt(2).width + 32, 24);
+      const attemptsLabel = new zim.Label(`Attempts ${attemptsLeft}`, 18, zimFont, palette.inkSoft)
+        .addTo(hud).loc(round.width + scoreLabel.width + 32, 0);
+      // Live countdown segment. Re-pointing `timerLabel` here (the same trick used
+      // for hintButton) keeps the reference valid after stage.removeAllChildren().
+      timerLabel = new zim.Label(`Time ${formatTime(countdown.remaining())}`, 18, zimFont, palette.inkSoft)
+        .addTo(hud).loc(round.width + scoreLabel.width + attemptsLabel.width + 48, 0);
+      timerLabel.color = countdown.remaining() <= 15 ? "#d2553f" : palette.inkSoft;
+      hud.setBounds(0, 0, round.width + scoreLabel.width + attemptsLabel.width + timerLabel.width + 48, 24);
 
       // Soft rounded "card" behind the HUD so it reads against the sky.
       const pad = 16;
@@ -284,7 +342,7 @@ export default createZimGame({
     // The player drags it themselves. This is the ONLY game-specific piece of the
     // hint system; the policy and button are shared, reusable code.
     function applyHint() {
-      if (feedbackActive) return; // same guard as checkAnswer
+      if (gameOver || feedbackActive) return; // same guard as checkAnswer
       if (!hintPolicy.canUse()) return;
 
       const answer = rounds[roundIndex].answer;
@@ -323,6 +381,9 @@ export default createZimGame({
       // button — which calls renderRound — keeps hints already spent this round.
       hintPolicy.reset();
       hintedSlots.clear();
+      // Freeze the clock while the player memorises the sentence — it resumes when
+      // the round board appears (renderRound). Play and feedback popups keep ticking.
+      countdown.pause();
       stage.removeAllChildren();
 
       // Sky → meadow background matching the scene art
@@ -387,7 +448,13 @@ export default createZimGame({
     }
 
     function renderRound(message = "Drag each phrase into the numbered story slots.") {
+      // If the clock ran out (e.g. while a wrong-answer popup's auto-dismiss tween
+      // was still pending), the results screen is already up — don't rebuild over it.
+      if (gameOver) return;
       feedbackActive = false;
+      // Active play — make sure the clock is running (it was paused for the preview;
+      // Reset and wrong-popup dismissal also route here and should keep it running).
+      countdown.resume();
       stage.removeAllChildren();
       tiles.length = 0;
       zones.length = 0;
@@ -404,7 +471,7 @@ export default createZimGame({
     }
 
     function checkAnswer() {
-      if (feedbackActive) return;
+      if (gameOver || feedbackActive) return;
 
       const placed = zones.map((zone) => zone.tile?.chunk || "");
       const isComplete = placed.every(Boolean);
@@ -423,6 +490,7 @@ export default createZimGame({
         showCorrect();
       } else {
         feedbackActive = true;
+        score = Math.max(0, score - WRONG_PENALTY);
         attemptsLeft -= 1;
         if (attemptsLeft <= 0) showRoundOver();
         else showWrong();
@@ -451,9 +519,9 @@ export default createZimGame({
         valign: "center"
       }).addTo(popup).loc(0, 18);
 
-      // Hint line
+      // Hint line (also tells the player a wrong check cost points)
       new zim.Label({
-        text: "Check the order — who acts, then what they do.",
+        text: `Check the order — who acts, then what they do. (-${WRONG_PENALTY})`,
         size: 19,
         font: zimFont,
         color: "#a0513e",
@@ -574,37 +642,60 @@ export default createZimGame({
       stage.update();
     }
 
+    // Natural finish — the player solved every round. Thin wrapper so existing
+    // callers read clearly; the timeout path calls showResults directly.
     function showComplete() {
-      emit("complete");
+      showResults({ timedOut: false });
+    }
+
+    // The single end-of-game screen, used both when the clock runs out (timedOut)
+    // and when every round is solved. Stops the timer, blocks further input, and
+    // reports the final score plus how many rounds were right vs. missed.
+    function showResults({ timedOut }) {
+      gameOver = true;
+      if (timerInterval) {
+        timerInterval.clear();
+        timerInterval = null;
+      }
+      feedbackActive = true;
+      emit(timedOut ? "timeUp" : "complete");
+
+      const roundsRight = correctChecks;
+      const roundsWrong = rounds.length - correctChecks; // unreached rounds count as missed
       const accuracy = checks ? Math.round((correctChecks / checks) * 100) : 100;
-      stage.removeAllChildren();
+
+      stage.removeAllChildren(); // wipes any board/popup that was on screen at timeout
       makeBackground();
-      new zim.Rectangle(680, 360, "rgba(255,255,255,.82)", palette.goldDeep, 5, 28).loc(210, 166).addTo(stage);
+      new zim.Rectangle(680, 360, "rgba(255,255,255,.82)", palette.goldDeep, 5, 28).loc(210, 168).addTo(stage);
       const makecenteredLabel = (text, size, color, y) =>
         new zim.Label({ text, size, font: zimFont, color, align: "center", valign: "top" })
           .addTo(stage).loc(W / 2, y);
-      makecenteredLabel("Quest Complete", 48, palette.ink, 226);
-      makecenteredLabel(`Final score: ${score}`, 30, "#3a5240", 306);
-      makecenteredLabel(`Accuracy: ${accuracy}%`, 30, "#3a5240", 354);
-      makecenteredLabel("You reconstructed all three story sentences.", 24, palette.inkSoft, 414);
+      makecenteredLabel(timedOut ? "Time's Up!" : "Quest Complete", 48, palette.ink, 210);
+      makecenteredLabel(`Final score: ${score}`, 32, "#3a5240", 282);
+      makecenteredLabel(`Rounds right: ${roundsRight}/${rounds.length}`, 28, "#3a7a4a", 332);
+      makecenteredLabel(`Rounds missed: ${roundsWrong}/${rounds.length}`, 28, "#a05038", 372);
+      makecenteredLabel(`Accuracy: ${accuracy}%`, 22, palette.inkSoft, 414);
       const againLabel = new zim.Label("Play Again", 18, zimFont, "#ffffff");
       againLabel.fontOptions = "bold";
       const again = new zim.Button({
         width: 190,
-        height: 56,
+        height: 52,
         label: againLabel,
         backgroundColor: palette.goldDeep,
         rollBackgroundColor: palette.gold,
         downBackgroundColor: "#b58c33",
         color: "#ffffff",
         corner: 20
-      }).loc(455, 452).addTo(stage);
+      }).loc(455, 456).addTo(stage);
       again.on("click", () => {
         roundIndex = 0;
         score = 0;
         attemptsLeft = 3;
         checks = 0;
         correctChecks = 0;
+        gameOver = false;
+        countdown.reset();
+        startTimer();
         showSentencePreview();
       });
       stage.update();
@@ -626,6 +717,7 @@ export default createZimGame({
       }
 
       rounds = response.data.rounds;
+      startTimer(); // whole-game clock; paused immediately by showSentencePreview
       showSentencePreview();
     }
 
