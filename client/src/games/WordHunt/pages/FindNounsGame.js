@@ -90,10 +90,12 @@ class FindNounsGame {
       this.timer.stop();
       this.game.stage.removeAllChildren();
       this.game.startVerbGame();
+      this.foundWordsCont.reset();
     };
     // Exiting to Home page
     this.messageBar.onExit = () => {
       this.timer.stop();
+      this.foundWordsCont.reset();
       this.game.stage.removeAllChildren();
       this.game.start();
     };
@@ -102,6 +104,7 @@ class FindNounsGame {
       // console.log("Restart triggered");
 
       this.gameOver = false;
+      this.foundWordsCont.reset();
       this.foundWords = [];
       this.score = 0;
 
@@ -220,6 +223,8 @@ class FindNounsGame {
         this.gameOver = true;
         this.game.inputLocked = true;
         this.progressBar.showTimesUp();
+        this.game.TOTAL_SCORE += this.score;
+        this.playerInformation.update(this.score);
 
         this.messageBar.showTimeOverMessage(this.timeUpKey);
         emit("hint", { text: this.timeUpKey });
