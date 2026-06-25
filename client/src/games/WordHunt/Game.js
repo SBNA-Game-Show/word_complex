@@ -69,7 +69,7 @@ class Game {
             totalScore: 0,
           },
           Verb: {
-            bestTime: "0.00",
+            bestTime: "0.25",
             coins: 0,
             totalScore: 0,
           },
@@ -82,6 +82,7 @@ class Game {
       },
     ];
     this.hasGameStarted = false;
+    
   }
 
   //----------------------------------

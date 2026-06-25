@@ -385,6 +385,9 @@ class GameManager {
     if (gameType === this.game.nounGameKey) {
       return this.helper.calculateScore(foundCount, this.nounCount, hintsUsed);
     }
+    if (gameType === this.game.verbGameKey) {
+      return this.helper.calculateScore(foundCount, this.verbCount, hintsUsed);
+    }
     return null;
   }
 

@@ -23,7 +23,6 @@ class FindNounsGame {
     this.adjectives = game.wordTypes.adjectives;
     this.challenge = `Find All ${this.nouns.length} Nouns`;
     this.timer = new Timer(game);
-    this.timeUpKey = "Oops ! Times UP";
 
     this.score = 0;
     this.foundWords = [];
@@ -43,6 +42,8 @@ class FindNounsGame {
     this.hintsUsed = 0;
 
     this.gameOver = false;
+
+    this.timeUpKey = "Oops ! Times UP";
   }
 
   displayPassage() {
@@ -65,12 +66,14 @@ class FindNounsGame {
     this.blackboard.addTo(this.game.stage);
 
     //-----------------------------------
-    // SCORE
+    // HEADER
     //-----------------------------------
+    // PROGRESS BAR
     this.progressBar = new ProgressBar(this.game, this.challenge);
     const progressBarContainer = this.progressBar.create();
     progressBarContainer.pos(this.blackboard.width - 300, 40);
     progressBarContainer.addTo(this.blackboard);
+    // PLAYER INFORMATION SCORE, COINS
     this.playerInformation = new PlayerInformation(this.game);
     const playerInfoCont = this.playerInformation.create();
 
@@ -233,6 +236,10 @@ class FindNounsGame {
       },
     );
 
+    //-----------------------------------
+    // DISPLAYING PASSAGE AND HANDLING GAME LOGIC
+    //-----------------------------------
+
     // 2. Generate container and handle click callbacks
     if (this.passageDisplay) {
       this.passageDisplay.destroy();
@@ -335,7 +342,7 @@ class FindNounsGame {
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
       this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
-      emit("roundOver");
+      emit("complete");
     }
   }
 

@@ -3,6 +3,7 @@ import ZimLabel from "../ZimComponents/ZimLabelNew";
 import ZimContainer from "../ZimComponents/ZimContainerNew";
 import BackButton from "../../../zimcomponents/BackButton";
 import MessageBar from "./MessageBar";
+import { emit } from "../../../scenes/sceneBus";
 
 class ControlPanel {
   constructor(game) {
@@ -73,7 +74,7 @@ class ControlPanel {
           targetLabel.pos(150, 30);
           this.game.stage.update();
         }, 1000);
-        this.message.show(`Oops !.... Used up All Hints`, 500);
+        emit("hint", { text: `Oops !.... Used up All Hints` });
         return;
       }
       this.isProcessingClick = true;
