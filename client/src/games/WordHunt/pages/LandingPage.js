@@ -12,7 +12,7 @@ class LandingPage {
   }
 
   createLandingPage() {
-    console.log("Landing page");
+    // console.log("Landing page");
 
     this.container = new this.zim.Container(850, 500);
 

@@ -45,7 +45,7 @@ export const retrieveSanskritVersion = async (storyId) => {
     }
 
     const result = await response.json();
-    console.log("Sanskrit Version Response: ", result);
+    // console.log("Sanskrit Version Response: ", result);
     return result.data;
   } catch (error) {
     console.error("Failed to fetch English version:", error);
