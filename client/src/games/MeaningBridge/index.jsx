@@ -1,5 +1,6 @@
 import { createZimGame } from "../createZimGame";
 import { fetchMeaningBridgeRound } from "../../services/meaningBridgeApi";
+import { emit } from "../../scenes/sceneBus";
 
 const PAIR_COUNTS = [4, 5, 6];
 
@@ -751,11 +752,12 @@ export default createZimGame({
       hintBtn.cursor = "pointer";
       hintBtn.on("click", () => {
         if (!selectedLeft) {
-          showPrompt("👈 Pick a word from the left panel first!", H - 90, 38);
+          emit("hint", { text: "👈 Pick a word from the left panel first!" });
           return;
         }
-        const hint = puzzle.hints?.[selectedLeft.id];
-        if (hint) showHint(hint);
+        const hint = puzzle.hints?.[selectedLeft.id]
+          || `Try matching "${selectedLeft.label}" with one of the options on the right.`;
+        emit("hint", { text: hint });
       });
 
       // Skip button (left side)
@@ -785,49 +787,6 @@ export default createZimGame({
         roundIndex = Math.min(roundIndex + 1, PAIR_COUNTS.length - 1);
         loadRound();
       });
-    }
-
-    function showHint(text) {
-      const old = stage.getChildByName("hint_bubble");
-      if (old) stage.removeChild(old);
-
-      const bW = 420,
-        bH = 52;
-      const bx = (W - bW) / 2;
-      const by = H - 62 - bH - 10;
-
-      const bubble = new zim.Container().addTo(stage);
-      bubble.name = "hint_bubble";
-      bubble.mouseChildren = false;
-
-      new zim.Rectangle({
-        width: bW,
-        height: bH,
-        color: "#fffbe6",
-        borderColor: "#c9a830",
-        borderWidth: 1.5,
-        corner: 14,
-      }).addTo(bubble);
-      new zim.Label({
-        text: text,
-        size: 15,
-        font: FONT,
-        color: "#7a5800",
-        align: "center",
-        valign: "center",
-        lineWidth: bW - 24,
-      })
-        .addTo(bubble)
-        .loc(bW / 2, bH / 2);
-      bubble.loc(bx, by);
-      stage.update();
-
-      setTimeout(() => {
-        if (stage.contains(bubble)) {
-          stage.removeChild(bubble);
-          stage.update();
-        }
-      }, 3000);
     }
 
     // ── LOADING / ERROR ───────────────────────────────────────────────
@@ -976,7 +935,7 @@ export default createZimGame({
     function onCardClick(item, side, cardY, cardH) {
       // Enforce: must pick a word (left) before picking a meaning (right)
       if (side === "right" && !selectedLeft) {
-        showPrompt("👈 Pick a word from the left panel first!", cardY, cardH);
+        emit("hint", { text: "👈 Pick a word from the left panel first!" });
         return;
       }
 

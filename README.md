@@ -2,6 +2,9 @@
 
 An educational Sanskrit word game platform built with React + ZimJS (frontend) and Node.js + Express + MongoDB Atlas (backend).
 
+> ## 🔴 Current Priority: Meaning Bridge
+> All active development is focused on **Meaning Bridge** (game #02). Do not start work on any other game or feature until Meaning Bridge is complete. See the [Meaning Bridge — Rebuild History](#meaning-bridge--rebuild-history) section for full context, current state, and what remains to be built.
+
 ## Project Structure
 
 ```
@@ -13,7 +16,7 @@ word_complex/
 └── CONTRIBUTING.md   # Start here — branching rules and standards
 ```
 
-> `trialnextjs/` is NOT part of this project — ignore it.
+> `trialnextjs/` and `wordComplexDEMO/` are NOT part of this project — ignore both.
 
 ## Tech Stack
 
@@ -119,6 +122,15 @@ That's it — the launcher card appears automatically.
 { ...yourGameMeta }   // no Component = locked card in launcher
 ```
 
+### Shared Game Utilities
+
+Two helpers live in `client/src/games/shared/` and are used across games:
+
+- **`hintPolicy.js`** — `createHintPolicy({ maxPerRound, penalty })` — tracks how many hints a player has used and deducts points on each hint
+- **`hintButton.js`** — `createHintButton(...)` — renders the in-canvas hint trigger button; dispatches hint events via `sceneBus`
+
+Import and use these instead of rolling per-game hint logic.
+
 ### Design Rules for Every Game
 
 Every game canvas must feel like part of the same app:
@@ -144,10 +156,27 @@ Every game canvas must feel like part of the same app:
 
 | # | Game | Status | Notes |
 |---|------|--------|-------|
-| 01 | Passage Reconstruction | ✅ Playable | Fetches real stories from MongoDB |
-| 02 | Meaning Bridge | 🔨 Being rebuilt | See below |
+| 01 | Passage Reconstruction | ✅ Playable | Fetches stories from MongoDB via `/api/v1/passageReconstruct/game` |
+| 02 | Meaning Bridge | ✅ Playable | Rebuilt — see rebuild history below |
 | 03 | Context Cloze Quest | ✅ Playable | Static story (hardcoded) |
 | 04 | Word Hunt | ✅ Playable | Static story (hardcoded) |
+| 05 | Fill in the Blanks | 🔨 In progress | Backend + frontend service done; game component pending |
+
+---
+
+## Backend API Routes (Summary)
+
+All routes are served from `http://localhost:5000`. See `server/README.md` for full details.
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/passageReconstruct/game` | Passage Reconstruction game data (live MongoDB) |
+| GET | `/api/v1/fillInBlanks` | Fill in the Blanks game data (supports `?language`, `?difficulty`, `?wordTypes`) |
+| GET | `/api/v1/matchWords` | Match Words game data |
+| GET | `/api/v1/wordHunt` | Word Hunt game data |
+| POST | `/api/v1/meaningBridge/generate` | Generate Meaning Bridge word-match puzzle |
+| GET | `/api/v1/meaningBridge/health` | Health check |
+| GET | `/api/v1/meaningBridge/debug-story` | Raw MongoDB story (dev only) |
 
 ---
 
@@ -198,6 +227,8 @@ Every game canvas must feel like part of the same app:
 - Per-player score tracking
 - Hints system (data already exists in `puzzle.hints` from the backend)
 
+> **Note on scoring:** All current games score on the frontend only. `/submit` and `/leaderboard` routes exist in the codebase (meaning-bridge module) but are not wired up. Server-side scoring is a v2 concern across all games.
+
 ---
 
 ### What was there (removed)
@@ -238,6 +269,39 @@ A simple word-matching game that follows the same `createZimGame` pattern as eve
 - **Collection**: `tokenized_stories`
 - Each story document contains: `title`, `category`, `englishVersion`, `sanskritVersion`, `transliteratedVersion`, `tokenized_sanskrit_version`, `tokenized_english_version`, `storyMoral`, `actors`
 - **IP Whitelist**: MongoDB Atlas restricts by IP — ensure your network IP is whitelisted
+
+## Fill in the Blanks — In Progress
+
+### Backend
+
+**Route:** `GET /api/v1/fillInBlanks`
+
+**Query params:**
+- `language` — `english` (default) or `sanskrit`
+- `difficulty` — `easy` (3 blanks), `medium` (6 blanks), `hard` (9 blanks)
+- `wordTypes` — comma-separated POS tags, e.g. `NOUN,VERB` (default: `NOUN`)
+
+**Response shape:**
+```json
+{
+  "success": true,
+  "data": {
+    "storyId": "...",
+    "text": "The ___ ran across the field.",
+    "answers": ["rabbit"],
+    "distractors": ["cat", "dog"],
+    "blanks": [{ "index": 1, "answer": "rabbit" }]
+  }
+}
+```
+
+**Module:** `server/fillinblanks/` — controller, service, routes, and Jest tests are all complete.
+
+**Frontend service:** `client/src/services/FillInTheBlankFrontendService.js` — `getFillInBlanks(options)` is ready to call.
+
+**What's missing:** The game component (`client/src/games/FillInBlanks/index.jsx`) and its registration in `client/src/games/index.js`. Once the component is built and registered, the game will appear in the launcher automatically.
+
+---
 
 ## Testing
 
