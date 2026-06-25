@@ -5,7 +5,8 @@
 // and how long the swipe transition lasts.
 //
 // To give a future game (e.g. Word Hunt, Fill in the Blanks) its own environment:
-//   1. Drop its background art in client/public/scenes/<name>.png
+//   1. Drop its background art in client/public/scenes/<name>.png, then run
+//      `npm run optimize:images` to generate the shipped .webp (see scripts/)
 //   2. Add a new entry below keyed by the game's `id` (from games/index.js)
 //   3. That's it — App.jsx will automatically route it through the scene system.
 //
@@ -16,7 +17,7 @@ export const sceneConfigs = {
   "sentence-builder": {
     // ── Passage Reconstruction background image ─────────────────────────────
     // Full-screen illustrated background drawn behind the canvas + character.
-    background: "/scenes/passage-reconstruction.png",
+    background: "/scenes/passage-reconstruction.webp",
 
     // ── Transition / swipe duration (keep within ~600–900ms) ────────────────
     // Controls how long the menu swipes away before the scene mounts, and is
@@ -59,7 +60,7 @@ export const sceneConfigs = {
   // Meaning Bridge. Background is part of the same matched art set as Passage
   // Reconstruction (1672 x 941), so it reuses the same aspect + character spot.
   "meaning-bridge": {
-    background: "/scenes/meaning-bridge.png",
+    background: "/scenes/meaning-bridge.webp",
     transitionMs: 750,
     backgroundAspect: 1672 / 941,
     canvas: { maxWidth: 1100, side: "left", offsetX: "8%" },
@@ -76,7 +77,7 @@ export const sceneConfigs = {
   // Context Cloze Quest. NOTE: the art file is named context-cloze.png while the
   // game id is "context-cloze-quest".
   "context-cloze-quest": {
-    background: "/scenes/context-cloze.png",
+    background: "/scenes/context-cloze.webp",
     transitionMs: 750,
     backgroundAspect: 1672 / 941,
     canvas: { maxWidth: 1100, side: "left", offsetX: "8%" },
@@ -93,7 +94,7 @@ export const sceneConfigs = {
   // Word Hunt. Its ZIM canvas is 1280 x 720, so it gets a slightly wider canvas
   // cap than the 1100-wide games.
   "word-hunt": {
-    background: "/scenes/word-hunt.png",
+    background: "/scenes/word-hunt.webp",
     transitionMs: 750,
     backgroundAspect: 1672 / 941,
     canvas: { maxWidth: 1200, side: "left", offsetX: "8%" },
