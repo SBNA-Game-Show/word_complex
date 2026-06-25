@@ -1,6 +1,6 @@
 import ZimLabel from "../ZimComponents/ZimLabelNew";
 import Blackboard from "../UI/Blackboard";
-import BackButton from "../../../zimcomponents/BackButton";
+import BackButton from "../ZimComponents/BackButton";
 import Chalk from "../UI/Chalk";
 import ProgressBar from "../UI/ProgressBar";
 import MessageBar from "../UI/MessageBar";
@@ -92,7 +92,7 @@ class FindNounsGame {
     this.messageBar = new MessageBar(this.game);
     // Continue Button Functionality
     this.messageBar.onContinue = () => {
-      this.gameOver = true
+      this.gameOver = true;
       this.timer.stop();
       this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
@@ -102,7 +102,7 @@ class FindNounsGame {
     };
     // Exiting to Home page
     this.messageBar.onExit = () => {
-      this.gameOver = true
+      this.gameOver = true;
       this.timer.stop();
       this.game.hasGameStarted = false;
       this.foundWordsCont.reset();
@@ -115,7 +115,7 @@ class FindNounsGame {
       // console.log("Restart triggered");
       this.gameOver = false;
       this.timer.stop();
-      
+
       this.foundWordsCont.reset();
       this.foundWords = [];
       this.score = 0;
@@ -136,8 +136,16 @@ class FindNounsGame {
     controlPanelCont.pos(this.blackboard.width - 1225, 20);
     controlPanelCont.addTo(this.blackboard);
 
+    this.controlPanel.onBackClicked = () => {
+      this.gameOver = true;
+      this.timer.stop();
+      this.game.hasGameStarted = false;
+      this.game.stage.removeAllChildren();
+      this.game.start();
+    };
+
     this.controlPanel.onNextClicked = () => {
-      this.gameOver = true
+      this.gameOver = true;
       this.game.hasGameStarted = false;
       this.timer.stop();
       this.game.stage.removeAllChildren();

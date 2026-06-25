@@ -324,8 +324,6 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
 import Chalk from "../UI/Chalk";
-import BackButton from "../../../zimcomponents/BackButton";
-
 import { emit } from "../../../scenes/sceneBus";
 import Timer from "../utils/Timer";
 import GameManager from "../utils/GameManager";
@@ -452,6 +450,14 @@ class FindVerbGame {
     const controlPanelCont = this.controlPanel.create();
     controlPanelCont.pos(this.blackboard.width - 1225, 20);
     controlPanelCont.addTo(this.blackboard);
+
+    this.controlPanel.onBackClicked = () => {
+      this.gameOver = true;
+      this.timer.stop();
+      this.game.hasGameStarted = false;
+      this.game.stage.removeAllChildren();
+      this.game.start();
+    };
 
     this.controlPanel.onNextClicked = () => {
       this.gameOver = true;

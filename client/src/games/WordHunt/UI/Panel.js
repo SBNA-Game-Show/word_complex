@@ -1,15 +1,17 @@
 import ZimButton from "../ZimComponents/ZimButtonNew";
 import ZimLabel from "../ZimComponents/ZimLabelNew";
 import ZimContainer from "../ZimComponents/ZimContainerNew";
-import BackButton from "../../../zimcomponents/BackButton";
+import BackButton from "../ZimComponents/BackButton";
 import MessageBar from "./MessageBar";
 import { emit } from "../../../scenes/sceneBus";
+import Timer from "../utils/Timer";
 
 class ControlPanel {
   constructor(game) {
     this.game = game;
     this.zim = game.zim;
     this.message = new MessageBar(game);
+    this.timer = new Timer(game);
 
     this.eyeEmojiWrapper = null;
     this.blinkTimer = 0;
@@ -17,6 +19,7 @@ class ControlPanel {
     this.nextButton = null;
     this.onNextClicked = null;
     this.hintClicked = null;
+    this.onBackClicked = null;
 
     // NEW: Callback triggered when the 10-second timer finishes
     this.onHintExpired = null;
@@ -152,6 +155,12 @@ class ControlPanel {
     if (backBtnInstance && typeof backBtnInstance.pos === "function") {
       backBtnInstance.pos(20, 31);
     }
+
+    backBtn.backButtonTapped = () => {
+      if (this.onBackClicked) {
+        this.onBackClicked();
+      }
+    };
 
     this.nextButton = new ZimButton(
       this.game,
