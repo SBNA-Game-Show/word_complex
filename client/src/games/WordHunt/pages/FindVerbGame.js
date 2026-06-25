@@ -27,6 +27,7 @@ class FindVerbGame {
     this.score = 0;
     this.foundWords = [];
 
+    this.blackboard = null;
     this.progressBar = null;
     this.messageBar = null;
     this.playerInformation = null;
