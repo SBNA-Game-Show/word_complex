@@ -111,6 +111,7 @@ class FindVerbGame {
       this.score = 0;
 
       this.game.hasGameStarted = false;
+      this.game.TOTAL_SCORE = 0;
       this.timer.stop();
       this.game.inputLocked = false;
 

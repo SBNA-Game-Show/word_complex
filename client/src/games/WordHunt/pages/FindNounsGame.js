@@ -114,6 +114,7 @@ class FindNounsGame {
       this.foundWords = [];
       this.score = 0;
       this.game.hasGameStarted = false;
+      this.game.TOTAL_SCORE = 0;
 
       this.game.inputLocked = false;
 
