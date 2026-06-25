@@ -82,7 +82,6 @@ class Game {
       },
     ];
     this.hasGameStarted = false;
-    
   }
 
   //----------------------------------
@@ -101,10 +100,11 @@ class Game {
       this.landingPage.button.mouseEnabled = false;
       // console.log("Button Tapped");
       this.landingPage.hide();
-      this.messageBar.countdownTimer(() => {
-        // ✅ ONLY START GAME AFTER COUNTDOWN FINISHES
-        this.startNounGame();
-      });
+      // this.messageBar.countdownTimer(() => {
+      //   // ✅ ONLY START GAME AFTER COUNTDOWN FINISHES
+      //   this.startNounGame();
+      // });
+      this.startNounGame();
     });
 
     this.stage.update();
@@ -117,11 +117,13 @@ class Game {
   startNounGame() {
     if (this.hasGameStarted) return;
     this.hasGameStarted = true;
-    this.findNounsGame = new FindNounsGame(this);
+    this.messageBar.countdownTimer(() => {
+      this.findNounsGame = new FindNounsGame(this);
 
-    this.findNounsGame.displayPassage();
+      this.findNounsGame.displayPassage();
 
-    this.stage.update();
+      this.stage.update();
+    });
   }
 
   //----------------------------------
@@ -129,11 +131,15 @@ class Game {
   //----------------------------------
 
   startVerbGame() {
-    this.findVerbGame = new FindVerbGame(this);
+    if (this.hasGameStarted) return;
+    this.hasGameStarted = true;
+    this.messageBar.countdownTimer(() => {
+      this.findVerbGame = new FindVerbGame(this);
 
-    this.findVerbGame.displayPassage();
+      this.findVerbGame.displayPassage();
 
-    this.stage.update();
+      this.stage.update();
+    });
   }
 
   //----------------------------------
@@ -141,11 +147,15 @@ class Game {
   //----------------------------------
 
   startAdjectiveGame() {
-    this.findAdjectiveGame = new FindAdjectiveGame(this);
+    if (this.hasGameStarted) return;
+    this.hasGameStarted = true;
+    this.messageBar.countdownTimer(() => {
+      this.findAdjectiveGame = new FindAdjectiveGame(this);
 
-    this.findAdjectiveGame.displayPassage();
+      this.findAdjectiveGame.displayPassage();
 
-    this.stage.update();
+      this.stage.update();
+    });
   }
 }
 

@@ -98,6 +98,7 @@ class FindNounsGame {
     // Exiting to Home page
     this.messageBar.onExit = () => {
       this.timer.stop();
+      this.game.hasGameStarted = false;
       this.foundWordsCont.reset();
       this.game.stage.removeAllChildren();
       this.game.start();
@@ -107,11 +108,12 @@ class FindNounsGame {
       // console.log("Restart triggered");
 
       this.gameOver = false;
+      this.timer.stop();
       this.foundWordsCont.reset();
       this.foundWords = [];
       this.score = 0;
+      this.game.hasGameStarted = false;
 
-      this.timer.stop();
       this.game.inputLocked = false;
 
       this.game.stage.removeAllChildren();
@@ -127,6 +129,7 @@ class FindNounsGame {
     controlPanelCont.addTo(this.blackboard);
 
     this.controlPanel.onNextClicked = () => {
+      this.game.hasGameStarted = false;
       this.timer.stop();
       this.game.stage.removeAllChildren();
       this.game.startVerbGame();
@@ -342,6 +345,7 @@ class FindNounsGame {
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
       this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
+      this.game.hasGameStarted = false;
       emit("complete");
     }
   }

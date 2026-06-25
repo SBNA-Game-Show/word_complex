@@ -67,21 +67,6 @@ class FindVerbGame {
     this.blackboard.addTo(this.game.stage);
 
     //-----------------------------------
-    // SCORE
-    //-----------------------------------
-
-    const heading = new ZimLabel(
-      this.game,
-      "Search For All Verbs From The Passage",
-    ).createLabel();
-
-    heading.scale = 0.75;
-    heading.color = "white";
-
-    heading.pos(180, 20);
-    heading.addTo(this.blackboard);
-
-    //-----------------------------------
     // HEADER
     //-----------------------------------
     // PROGRESS BAR FOR TIME TRACKING
@@ -103,6 +88,7 @@ class FindVerbGame {
     // MOVING FORWARD TO ADJECTIVE GAME
     this.messageBar.onContinue = () => {
       this.timer.stop();
+      this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
       this.game.startAdjectiveGame();
       this.foundWordsCont.reset();
@@ -111,16 +97,19 @@ class FindVerbGame {
     this.messageBar.onExit = () => {
       this.timer.stop();
       this.foundWordsCont.reset();
+      this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
       this.game.start();
     };
 
-    this.manager.onRestart = () => {
+    this.messageBar.onRestart = () => {
+      console.log("Restart Trigerred");
       this.gameOver = false;
       this.foundWordsCont.reset();
       this.foundWords = [];
       this.score = 0;
 
+      this.game.hasGameStarted = false;
       this.timer.stop();
       this.game.inputLocked = false;
 
@@ -137,6 +126,7 @@ class FindVerbGame {
 
     this.controlPanel.onNextClicked = () => {
       this.timer.stop();
+      this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
       this.game.startAdjectiveGame();
     };
@@ -364,6 +354,7 @@ class FindVerbGame {
       console.log("GAME KEY", this.game.verbGameKey);
 
       this.messageBar.showWinningMessage(this.game.verbGameKey, completionTime);
+      this.game.hasGameStarted = false;
       emit("complete");
     }
   }
