@@ -173,7 +173,7 @@ class FindVerbGame {
     //-----------------------------------
     // FOUND VERBS BOX
     //-----------------------------------
-    this.foundWordsCont = new FoundContainer(this.game);
+    this.foundWordsCont = new FoundContainer(this.game, this.game.verbGameKey);
     const foundWordsContainer = this.foundWordsCont.update();
 
     this.foundWordsCont.pos(40, 500);

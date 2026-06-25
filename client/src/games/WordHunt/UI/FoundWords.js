@@ -2,7 +2,7 @@ import ZimLabel from "../ZimComponents/ZimLabelNew";
 import ZimContainer from "../ZimComponents/ZimContainerNew";
 
 class FoundContainer {
-  constructor(game, title = "Found Nouns") {
+  constructor(game, title) {
     this.game = game;
     this.titleText = title;
 
@@ -68,7 +68,7 @@ class FoundContainer {
 
     // 2. Add Title straight inside the scroll container frame
     const titleLabel = new this.game.zim.Label({
-      text: this.titleText,
+      text: `Found ${this.titleText}`,
       size: 24,
       color: "white",
       font: "Fredoka",

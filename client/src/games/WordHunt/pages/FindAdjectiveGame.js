@@ -180,7 +180,7 @@ class FindAdjectiveGame {
     // FOUND WORDS BOX
     //-----------------------------------
 
-    this.foundWordsCont = new FoundContainer(this.game);
+    this.foundWordsCont = new FoundContainer(this.game, this.game.adjGameKey);
     const foundWordsContainer = this.foundWordsCont.update();
 
     this.foundWordsCont.pos(40, 500);
