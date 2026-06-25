@@ -430,7 +430,7 @@ class FindVerbGame {
 
     this.messageBar.onRestart = () => {
       console.log("Restart Triggered");
-      this.gameOver = true;
+      this.gameOver = false;
       this.timer.stop(); // Completely clear loop state first
 
       this.foundWordsCont.reset();

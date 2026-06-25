@@ -112,7 +112,7 @@ class FindAdjectiveGame {
     // Restart the same game
     this.messageBar.onRestart = () => {
       console.log("Restart Trigerred");
-      this.gameOver = true;
+      this.gameOver = false;
       this.timer.stop();
 
       this.foundWordsCont.reset();

@@ -113,9 +113,9 @@ class FindNounsGame {
     // Restarting same game when time is up
     this.messageBar.onRestart = () => {
       // console.log("Restart triggered");
-
-      this.gameOver = true;
+      this.gameOver = false;
       this.timer.stop();
+      
       this.foundWordsCont.reset();
       this.foundWords = [];
       this.score = 0;
