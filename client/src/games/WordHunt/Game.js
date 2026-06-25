@@ -28,7 +28,7 @@ class Game {
     this.findVerbGame = null;
     this.findAdjectiveGame = null;
 
-    this.messageBar = null;
+    this.messageBar = new MessageBar(this);
 
     // game Keys
     this.nounGameKey = "Noun";
@@ -47,6 +47,8 @@ class Game {
     this.BASE_HINTS = 1;
     this.BASE_COIN = 2; // FOR EACH 10 points 2 coins
     this.BASE_COIN_SCORE = 10;
+    this.languages = ["EN", "SA"];
+    this.LANGUAGE = this.languages[0];
 
     //score
     this.TOTAL_SCORE = 0;
@@ -89,22 +91,37 @@ class Game {
   //----------------------------------
 
   async start() {
+    this.hasGameStarted = false; // Reset explicitly on menu returns
     this.landingPage = new LandingPage(this).createLandingPage();
 
-    // await this.serviceManager.getPassageByIdEnglish();
-    await this.serviceManager.getPassageByIdSanskrit();
+    // 🛠️ FIXED: Removed early API calls from here.
+    // They now run dynamically down below when the user taps "Start Adventure".
 
-    this.messageBar = new MessageBar(this);
-
-    this.landingPage.button.tap(() => {
+    this.landingPage.button.tap(async () => {
       this.landingPage.button.mouseEnabled = false;
-      // console.log("Button Tapped");
-      this.landingPage.hide();
-      // this.messageBar.countdownTimer(() => {
-      //   // ✅ ONLY START GAME AFTER COUNTDOWN FINISHES
-      //   this.startNounGame();
-      // });
-      this.startNounGame();
+
+      // Show a quick visual state clue that it's loading data
+      this.landingPage.button.text = "Loading...";
+      this.stage.update();
+
+      try {
+        // 🛠️ FIXED: Flow control intercepts language configuration on click execution
+        if (this.LANGUAGE === "SA") {
+          console.log("Loading Sanskrit pipeline data assets...");
+          await this.serviceManager.getPassageByIdSanskrit();
+        } else {
+          console.log("Loading English pipeline data assets...");
+          await this.serviceManager.getPassageByIdEnglish();
+        }
+
+        this.landingPage.hide();
+        this.startNounGame();
+      } catch (error) {
+        console.error("Failed loading backend content: ", error);
+        this.landingPage.button.mouseEnabled = true;
+        this.landingPage.button.text = "Start Adventure";
+        this.stage.update();
+      }
     });
 
     this.stage.update();
