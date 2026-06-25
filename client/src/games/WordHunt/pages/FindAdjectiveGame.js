@@ -55,6 +55,7 @@ class FindAdjectiveGame {
     console.log("Adjectives: ", this.adjectives);
 
     this.manager.setGameTime(this.game.adjGameKey);
+    this.game.hasGameStarted = true;
 
     //-----------------------------------
     // BOARD
@@ -91,6 +92,7 @@ class FindAdjectiveGame {
     this.messageBar = new MessageBar(this.game);
     // Restarting the Noun Game
     this.messageBar.onContinue = () => {
+      this.gameOver = true;
       this.timer.stop();
       this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
@@ -99,6 +101,7 @@ class FindAdjectiveGame {
     };
     //MOVING TO LANDING  PAGE
     this.messageBar.onExit = () => {
+      this.gameOver = true;
       this.timer.stop();
       this.foundWordsCont.reset();
       this.game.hasGameStarted = false;
@@ -109,15 +112,16 @@ class FindAdjectiveGame {
     // Restart the same game
     this.messageBar.onRestart = () => {
       console.log("Restart Trigerred");
-      this.gameOver = false;
+      this.gameOver = true;
+      this.timer.stop();
+
       this.foundWordsCont.reset();
       this.foundWords = [];
       this.score = 0;
 
       this.game.hasGameStarted = false;
       this.game.TOTAL_SCORE = 0;
-      this.timer.stop();
-      this.game.inputLocked = false;
+      this.game.isInputLocked = false;
 
       this.game.stage.removeAllChildren();
       this.displayPassage();
@@ -128,11 +132,14 @@ class FindAdjectiveGame {
     this.controlPanel = new ControlPanel(this.game);
     const controlPanelCont = this.controlPanel.create();
     controlPanelCont.pos(this.blackboard.width - 1225, 20);
+    controlPanelCont.addTo(this.blackboard);
 
     this.controlPanel.onNextClicked = () => {
+      this.gameOver = true;
       this.timer.stop();
       this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
+      this.game.start();
       emit("hint", { text: "More Coming Soon" });
     };
 
@@ -144,6 +151,7 @@ class FindAdjectiveGame {
           if (this.adjectives.includes(wordObj.text)) {
             if (!this.foundWords.includes(wordObj.text)) {
               wordObj.instance.setColor("green");
+              this.game.isInputLocked = true;
             }
           }
         });
@@ -179,18 +187,18 @@ class FindAdjectiveGame {
 
     this.timer.start(
       ({ minutes, seconds }) => {
-        if (this.gameOver) {
+        if (this.gameOver || !this.game.hasGameStarted) {
           return;
         }
         this.progressBar.setTime(minutes, seconds);
       },
 
       () => {
-        if (this.gameOver) {
+        if (this.gameOver || !this.game.hasGameStarted) {
           return;
         }
         this.gameOver = true;
-        this.game.inputLocked = true;
+        this.game.isInputLocked = true;
         this.progressBar.showTimesUp();
         this.game.TOTAL_SCORE += this.score;
         this.playerInformation.update(this.score);
@@ -211,7 +219,7 @@ class FindAdjectiveGame {
     this.passageDisplay = new PassageDisplay(this.game, this.blackboard);
     const passageDisplayCont = this.passageDisplay.displayPassage(
       (cleanWord, label) => {
-        if (this.game.inputLocked) {
+        if (this.game.isInputLocked) {
           return;
         }
         // Game Logic
@@ -267,8 +275,6 @@ class FindAdjectiveGame {
 
           const definition = this.manager.defineVerb();
 
-          messageLabel.text = `Oops! "${cleanWord}" is a verb`;
-
           emit("hint", {
             text: `Oops! "${cleanWord}" is a VERB. ${definition}`,
           });
@@ -278,8 +284,8 @@ class FindAdjectiveGame {
     );
     passageDisplayCont.pos(50, 150);
     passageDisplayCont.addTo(this.blackboard);
-    this.game.stage.update();
 
+    this.game.stage.update();
     return this.blackboard;
   }
 

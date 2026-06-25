@@ -73,6 +73,11 @@ class Game {
             coins: 0,
             totalScore: 0,
           },
+          Adjective: {
+            bestTime: "0.10",
+            coins: 0,
+            totalScore: 0,
+          },
         },
       },
     ];
