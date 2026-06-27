@@ -1,29 +1,13 @@
 const express = require("express");
-
-const {
-  getMeaningBridgeHealth,
-  generateMeaningBridgeRound,
-  generateSentenceMatchRound,
-  submitMeaningBridgeRound,
-  getMeaningBridgeLeaderboard,
-  debugStoryStructure,
-} = require("../controller/meaningbridgecontroller");
-
-const { requireMeaningBridgeApiKey } = require("../middleware/apikey");
+const { getMeaningBridgeHealth, generateMeaningBridgeRound } = require("../controller/meaningbridgecontroller");
 
 const meaningBridgeRouter = express.Router();
 
 meaningBridgeRouter.get("/health", getMeaningBridgeHealth);
+meaningBridgeRouter.post("/generate", generateMeaningBridgeRound);
 
-// Debug endpoint - returns raw story from MongoDB so we can inspect token field names
-meaningBridgeRouter.get("/debug-story", debugStoryStructure);
-
-meaningBridgeRouter.post("/generate", requireMeaningBridgeApiKey, generateMeaningBridgeRound);
-
-meaningBridgeRouter.post("/generate-sentence", requireMeaningBridgeApiKey, generateSentenceMatchRound);
-
-meaningBridgeRouter.post("/submit", requireMeaningBridgeApiKey, submitMeaningBridgeRound);
-
-meaningBridgeRouter.get("/leaderboard", requireMeaningBridgeApiKey, getMeaningBridgeLeaderboard);
+// Removed for v1 (simple game — no server-side scoring needed):
+// POST /submit     — server-side round scoring (add back when leaderboard is built)
+// GET  /leaderboard — player rankings (add back in v2)
 
 module.exports = meaningBridgeRouter;
