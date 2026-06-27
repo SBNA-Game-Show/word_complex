@@ -1,4 +1,4 @@
-import ZimContainer from "../../../Zimcomponents/ZimContainer";
+import ZimContainer from "../../../zimcomponents/ZimContainer";
 import ZimLabel from "../ZimComponents/ZimLabelNew";
 import ZimButton from "../ZimComponents/ZimButtonNew";
 
