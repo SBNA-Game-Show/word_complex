@@ -41,7 +41,7 @@ class Game {
     this.isInputLocked = false;
 
     // BASE SETTINGS
-    this.WORD_TIMING = 5 / 60;
+    this.WORD_TIMING = 2 / 60;
     this.BASE_SCORE = 1;
     this.BASE_PENALTY = 0.25;
     this.BASE_HINTS = 1;
