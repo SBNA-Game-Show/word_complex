@@ -50,7 +50,10 @@ const guides = {
     ],
     tips: [
       ["3 attempts per round", "You get three tries before that round resets."],
-      ["Use story logic", "Ask who acts first, what happens next, and what finishes the thought."],
+      [
+        "Use story logic",
+        "Ask who acts first, what happens next, and what finishes the thought.",
+      ],
       ["Reset helps", "Clear the slots if your order starts to feel tangled."],
       ["Stars stack up", "Every correct round adds to your score."],
     ],
@@ -97,10 +100,19 @@ const guides = {
       },
     ],
     tips: [
-      ["Read every option", "The first familiar word is not always the best match."],
-      ["Use meaning first", "Match the idea, not just similar-looking letters."],
+      [
+        "Read every option",
+        "The first familiar word is not always the best match.",
+      ],
+      [
+        "Use meaning first",
+        "Match the idea, not just similar-looking letters.",
+      ],
       ["Say it aloud", "A clue often becomes clearer when you hear it."],
-      ["Compare close choices", "If two choices feel close, test each one in the clue."],
+      [
+        "Compare close choices",
+        "If two choices feel close, test each one in the clue.",
+      ],
     ],
   },
   "context-cloze-quest": {
@@ -146,19 +158,25 @@ const guides = {
       },
     ],
     tips: [
-      ["Context is the clue", "Nearby words usually point to the missing meaning."],
+      [
+        "Context is the clue",
+        "Nearby words usually point to the missing meaning.",
+      ],
       ["Check grammar", "The answer should sound right in the sentence."],
-      ["Look for tone", "A funny, serious, or spooky passage changes which word fits best."],
+      [
+        "Look for tone",
+        "A funny, serious, or spooky passage changes which word fits best.",
+      ],
       ["Reread after choosing", "The whole paragraph should flow naturally."],
     ],
   },
   "word-hunt": {
     title: "Word Hunt",
-    label: "Hidden words",
+    label: "Hidden Words",
     steps: [
       {
-        title: "Scan the puzzle",
-        copy: "Look across, down, and diagonally for the hidden vocabulary words.",
+        title: "Scan the passage",
+        copy: "Read Carefully and look for hidden nouns, verbs, and adjectives within the passage ",
         badgeColor: "var(--ocean)",
         artClass: "htp-art-drag",
         art: (
@@ -171,8 +189,8 @@ const guides = {
         ),
       },
       {
-        title: "Trace the word",
-        copy: "Start at the first letter and drag through each letter until the whole word is selected.",
+        title: "Select the word",
+        copy: "Click a word to highlight it and identify whether it is a noun, verb, or adjective",
         badgeColor: "var(--grape)",
         artClass: "htp-art-order",
         art: (
@@ -183,8 +201,8 @@ const guides = {
         ),
       },
       {
-        title: "Collect the clue",
-        copy: "Found words disappear from the list so you can focus on what remains.",
+        title: "Tap the hint Icon",
+        copy: "Tap the emoji to receive hints. You earn 1 hint for every 10 words (2 hints at 20 words, 3 at 30, and so on).",
         badgeColor: "var(--leaf)",
         artClass: "htp-art-check",
         art: (
@@ -196,15 +214,33 @@ const guides = {
       },
     ],
     tips: [
-      ["Start with rare letters", "Letters like z, q, x, and k are easier to spot."],
-      ["Search both directions", "A word may hide forward or backward."],
-      ["Use the list", "Cross off words mentally as you find them."],
-      ["Slow scanning wins", "Move row by row when the puzzle feels crowded."],
+      [
+        "Timed challenge",
+        "You are given limited time based on the number of words to find.",
+        "If replaying a passage, your best previous performance is used as the starting benchmark.",
+      ],
+      [
+        "Scoring",
+        "Each correct word earns 1 point.",
+        "Using hints reduces your final score by 25% per hint used.",
+      ],
+      [
+        "Time bonuses",
+        "Finish within 1/4 of the allotted time: +10 bonus points.",
+        "Finish within 1/2 of the allotted time: +5 bonus points.",
+        "Finish within 3/4 of the allotted time: +3 bonus points.",
+        "No bonus is awarded after 3/4 of the allotted time.",
+      ],
+      ["Coins", "Earn 2 coins for every 10 points scored."],
     ],
   },
 };
 
-export default function HowToPlay({ gameId = "sentence-builder", onBack, onPlay }) {
+export default function HowToPlay({
+  gameId = "sentence-builder",
+  onBack,
+  onPlay,
+}) {
   const { logout, user } = useAuth();
   const guide = guides[gameId] ?? guides["sentence-builder"];
 
@@ -215,7 +251,9 @@ export default function HowToPlay({ gameId = "sentence-builder", onBack, onPlay 
       <header className="htp-header">
         <div className="htp-nav-left">
           <button className="back-button" type="button" onClick={onBack}>
-            <span className="back-arrow" aria-hidden="true">&larr;</span>
+            <span className="back-arrow" aria-hidden="true">
+              &larr;
+            </span>
             Back
           </button>
           <div className="header-titles">
@@ -235,7 +273,10 @@ export default function HowToPlay({ gameId = "sentence-builder", onBack, onPlay 
                 <div className={`htp-art ${step.artClass}`} aria-hidden="true">
                   {step.art}
                 </div>
-                <span className="htp-num-badge" style={{ background: step.badgeColor }}>
+                <span
+                  className="htp-num-badge"
+                  style={{ background: step.badgeColor }}
+                >
                   {index + 1}
                 </span>
                 <h2>{step.title}</h2>
@@ -250,7 +291,10 @@ export default function HowToPlay({ gameId = "sentence-builder", onBack, onPlay 
           <div className="htp-tips">
             {guide.tips.map(([title, copy], index) => (
               <div className="htp-tip" key={title}>
-                <span className="htp-tip-icon" style={{ background: tipColors[index] }}>
+                <span
+                  className="htp-tip-icon"
+                  style={{ background: tipColors[index] }}
+                >
                   {index + 1}
                 </span>
                 <div>
@@ -265,7 +309,9 @@ export default function HowToPlay({ gameId = "sentence-builder", onBack, onPlay 
         <div className="htp-footer">
           <button className="btn-primary" type="button" onClick={onPlay}>
             Play {guide.title}
-            <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+            <span className="btn-arrow" aria-hidden="true">
+              &rarr;
+            </span>
           </button>
         </div>
       </div>

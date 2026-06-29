@@ -2,40 +2,126 @@ import LandingPage from "./pages/LandingPage";
 import FindNounsGame from "./pages/FindNounsGame";
 import FindVerbGame from "./pages/FindVerbGame";
 import FindAdjectiveGame from "./pages/FindAdjectiveGame";
+import MessageBar from "./UI/MessageBar";
+import GameManger from "./utils/GameManager";
+
+import GameServiceManager from "./utils/GameServiceManager";
 
 class Game {
   constructor(setup) {
+    this.frame = setup.frame;
     this.stage = setup.stage;
     this.width = setup.W;
     this.height = setup.H;
     this.zim = setup.zim;
+    this.serviceManager = new GameServiceManager(this);
 
-    this.storyData = setup.storyData;
-    this.wordTypes = setup.wordTypes;
+    this.data = null;
+    this.passageArray = null;
+    this.tokenizedArray = null;
+    this.storyData = null;
+    this.wordTypes = null;
 
     this.landingPage = null;
 
     this.findNounsGame = null;
     this.findVerbGame = null;
     this.findAdjectiveGame = null;
+
+    this.messageBar = new MessageBar(this);
+
+    // game Keys
+    this.nounGameKey = "Noun";
+    this.verbGameKey = "Verb";
+    this.adjGameKey = "Adjective";
+
+    // game logic variables
+    this.currentStoryId = "04e9ae48-5570-4cd0-8968-a2179353164b";
+    this.gameTime = 0;
+    this.isInputLocked = false;
+
+    // BASE SETTINGS
+    this.WORD_TIMING = 2 / 60;
+    this.BASE_SCORE = 1;
+    this.BASE_PENALTY = 0.25;
+    this.BASE_HINTS = 1;
+    this.BASE_COIN = 2; // FOR EACH 10 points 2 coins
+    this.BASE_COIN_SCORE = 10;
+    this.languages = ["EN", "SA"];
+    this.LANGUAGE = this.languages[0];
+
+    //score
+    this.TOTAL_SCORE = 0;
+    this.EARNED_COINS = 0;
+
+    // Player
+    this.player = "Jack";
+    this.playerCoins = 0;
+    this.totalScore = 0;
+    this.maxScore = 0;
+    this.allowedHints = 0;
+    this.hintPenalty = 0;
+    this.playerInfo = [
+      // {
+      //   storyId: "04e9ae48-5570-4cd0-8968-a2179353164b",
+      //   games: {
+      //     Noun: {
+      //       bestTime: "0.13",
+      //       coins: 0,
+      //       totalScore: 0,
+      //     },
+      //     Verb: {
+      //       bestTime: "0.25",
+      //       coins: 0,
+      //       totalScore: 0,
+      //     },
+      //     Adjective: {
+      //       bestTime: "0.10",
+      //       coins: 0,
+      //       totalScore: 0,
+      //     },
+      //   },
+      // },
+    ];
+    this.hasGameStarted = false;
   }
 
   //----------------------------------
   // START GAME
   //----------------------------------
 
-  start() {
+  async start() {
+    this.hasGameStarted = false; // Reset explicitly on menu returns
+    this.landingPage = new LandingPage(this).createLandingPage();
 
-    this.landingPage =
-      new LandingPage(this)
-        .createLandingPage();
+    // 🛠️ FIXED: Removed early API calls from here.
+    // They now run dynamically down below when the user taps "Start Adventure".
 
-    this.landingPage.button.tap(() => {
+    this.landingPage.button.tap(async () => {
+      this.landingPage.button.mouseEnabled = false;
 
-      this.landingPage.hide();
+      // Show a quick visual state clue that it's loading data
+      this.landingPage.button.text = "Loading...";
+      this.stage.update();
 
-      this.startNounGame();
+      try {
+        // 🛠️ FIXED: Flow control intercepts language configuration on click execution
+        if (this.LANGUAGE === "SA") {
+          console.log("Loading Sanskrit pipeline data assets...");
+          await this.serviceManager.getPassageByIdSanskrit();
+        } else {
+          console.log("Loading English pipeline data assets...");
+          await this.serviceManager.getPassageByIdEnglish();
+        }
 
+        this.landingPage.hide();
+        this.startNounGame();
+      } catch (error) {
+        console.error("Failed loading backend content: ", error);
+        this.landingPage.button.mouseEnabled = true;
+        this.landingPage.button.text = "Start Adventure";
+        this.stage.update();
+      }
     });
 
     this.stage.update();
@@ -46,14 +132,15 @@ class Game {
   //----------------------------------
 
   startNounGame() {
+    if (this.hasGameStarted) return;
+    this.hasGameStarted = true;
+    this.messageBar.countdownTimer(() => {
+      this.findNounsGame = new FindNounsGame(this);
 
-    this.findNounsGame =
-      new FindNounsGame(this);
+      this.findNounsGame.displayPassage();
 
-    this.findNounsGame
-      .displayPassage();
-
-    this.stage.update();
+      this.stage.update();
+    });
   }
 
   //----------------------------------
@@ -61,14 +148,15 @@ class Game {
   //----------------------------------
 
   startVerbGame() {
+    if (this.hasGameStarted) return;
+    this.hasGameStarted = true;
+    this.messageBar.countdownTimer(() => {
+      this.findVerbGame = new FindVerbGame(this);
 
-    this.findVerbGame =
-      new FindVerbGame(this);
+      this.findVerbGame.displayPassage();
 
-    this.findVerbGame
-      .displayPassage();
-
-    this.stage.update();
+      this.stage.update();
+    });
   }
 
   //----------------------------------
@@ -76,14 +164,15 @@ class Game {
   //----------------------------------
 
   startAdjectiveGame() {
+    if (this.hasGameStarted) return;
+    this.hasGameStarted = true;
+    this.messageBar.countdownTimer(() => {
+      this.findAdjectiveGame = new FindAdjectiveGame(this);
 
-    this.findAdjectiveGame =
-      new FindAdjectiveGame(this);
+      this.findAdjectiveGame.displayPassage();
 
-    this.findAdjectiveGame
-      .displayPassage();
-
-    this.stage.update();
+      this.stage.update();
+    });
   }
 }
 

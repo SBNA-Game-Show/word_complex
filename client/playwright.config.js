@@ -21,6 +21,7 @@ export default defineConfig({
     env: {
       ...process.env,
       VITE_E2E_AUTH_BYPASS: "true",
+      VITE_E2E: "true",
     },
   },
   projects: [

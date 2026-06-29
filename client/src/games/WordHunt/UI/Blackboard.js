@@ -4,23 +4,24 @@ class Blackboard {
     this.zim = game.zim;
     this.width = width;
     this.height = height;
+
+    this.board = null;
   }
 
   create() {
-    const board = new this.zim.Container(this.width, this.height);
-
+    this.board = new this.zim.Container(this.width, this.height);
     const background = new this.zim.Rectangle({
       width: this.width,
       height: this.height,
-      color: "#1E3A1E",
-      borderColor: "#5C4033",
-      borderWidth: 20,
+      color: "#1E3A1E", // green
+      borderColor: "rgba(255, 224, 196, 0.4)",
+      borderWidth: 10,
       corner: 10,
     });
 
-    background.addTo(board);
+    background.addTo(this.board);
 
-    return board;
+    return this.board;
   }
 }
 
