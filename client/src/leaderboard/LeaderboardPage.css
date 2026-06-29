@@ -18,8 +18,8 @@
    so the mascot reads clearly — mirroring how the ZIM game canvases sit left
    of their scene art. Tune --wizard-* if the balcony fit drifts. */
 .lb-page {
-  --wizard-right: 10%;
-  --wizard-bottom: 12%;
+  --wizard-right: 22%;
+  --wizard-bottom: 10%;
 }
 
 .lb-scene {
