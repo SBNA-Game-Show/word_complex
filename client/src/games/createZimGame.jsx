@@ -15,7 +15,8 @@ export function createZimGame({
   scaling,
   setup,
 }) {
-  function ZimGameComponent() {
+  //This lets any ZIM game receive app-level props such as authUser.
+  function ZimGameComponent(props = {}) {
     const holderRef = useRef(null);
     // Track whether this effect instance has already initialized ZIM.
     // Guards against React StrictMode's double-invoke of effects.
@@ -45,6 +46,8 @@ export function createZimGame({
             W: frame.width,
             H: frame.height,
             zim,
+            props,
+            ...props,
             isDisposed: () => disposed,
           });
 
@@ -74,7 +77,6 @@ export function createZimGame({
         console.error("[ZimGame] Frame creation failed:", err);
       }
 
-
       return () => {
         disposed = true;
         initializedRef.current = false;
@@ -101,7 +103,10 @@ export function createZimGame({
           }
         } catch (err) {
           // ZIM dispose can throw if the canvas was already removed
-          console.warn("[ZimGame] Dispose error (safe to ignore):", err.message);
+          console.warn(
+            "[ZimGame] Dispose error (safe to ignore):",
+            err.message,
+          );
         }
 
         if (holder) {
