@@ -8,6 +8,7 @@ export default function Launcher({
   onAbout,
   onHowToPlay,
   onChooseCharacter,
+  onLeaderboard,
   isZooming = false,
   isLaunching = false,
 }) {
@@ -41,6 +42,16 @@ export default function Launcher({
               <span className="dot" /> {user?.stars ?? 0} stars
             </span>
           </div>
+          <button
+            type="button"
+            className="leaderboard-button"
+            onClick={onLeaderboard}
+            aria-label="Open leaderboards"
+            title="Leaderboards"
+          >
+            <span aria-hidden="true">🏆</span>
+            <span className="leaderboard-button-label">Ranks</span>
+          </button>
           <UserBadge user={user} onLogout={logout} />
         </div>
       </header>

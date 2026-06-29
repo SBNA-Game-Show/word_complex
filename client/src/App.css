@@ -1,3 +1,32 @@
+/* Leaderboard access button in the launcher topbar */
+.leaderboard-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd84d, #ff9a3c);
+  color: #1d2b66;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(255, 154, 60, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.leaderboard-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(255, 154, 60, 0.45);
+}
+.leaderboard-button-label {
+  font-size: 0.9rem;
+}
+@media (max-width: 620px) {
+  .leaderboard-button-label {
+    display: none;
+  }
+}
+
 :root {
   --ink: #1d2b66;
   --ink-soft: #4859a0;

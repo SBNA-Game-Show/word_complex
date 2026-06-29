@@ -1,0 +1,453 @@
+/* LeaderboardPage.css
+   Leaderboard screen styling. Reuses the global design tokens from App.css
+   (--ink, --cream, --sunshine, --ocean, shadows, Fredoka font). The wizard and
+   sky are separate layers so the wizard can idle-animate over a static scene. */
+
+.lb-page {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  color: var(--ink);
+}
+
+/* ---- Layers: sky background + wizard mascot ----------------------------
+   The scene is fixed to the viewport so the wizard stays sitting on the
+   tower balcony while the leaderboard content scrolls over it. The wizard is
+   anchored to the right (on the balcony); the content column is offset left
+   so the mascot reads clearly — mirroring how the ZIM game canvases sit left
+   of their scene art. Tune --wizard-* if the balcony fit drifts. */
+.lb-page {
+  --wizard-right: 10%;
+  --wizard-bottom: 12%;
+}
+
+.lb-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.lb-scene-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* pin the tower/balcony to the right edge so the wizard's anchor is stable */
+  object-position: right center;
+}
+
+/* horizontal wash: readable on the left (behind the card), clear on the
+   right so the tower and wizard stay vivid */
+.lb-scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 247, 230, 0.82) 0%,
+    rgba(255, 247, 230, 0.55) 38%,
+    rgba(255, 247, 230, 0.12) 62%,
+    rgba(255, 247, 230, 0) 80%
+  );
+}
+
+.lb-wizard {
+  position: absolute;
+  right: var(--wizard-right);
+  bottom: var(--wizard-bottom);
+  width: clamp(170px, 18vw, 300px);
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 16px 18px rgba(45, 60, 130, 0.28));
+  transform-origin: 50% 95%;
+  /* gentle settle, as if perched on the balcony */
+  animation: lb-wizard-bob 5s ease-in-out infinite;
+}
+
+@keyframes lb-wizard-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+/* ---- Content column ----------------------------------------------------
+   Offset left (not centered) so the right side stays open for the tower +
+   wizard, matching the mockup composition. */
+.lb-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1080px;
+  margin-left: clamp(2rem, 17vw, 18rem);
+  margin-right: auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.lb-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.lb-back {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.1rem;
+  border: none;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.15s ease;
+}
+.lb-back:hover {
+  transform: translateY(-2px);
+}
+
+.lb-titles h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  color: var(--ink);
+  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.8);
+}
+.lb-titles p {
+  margin: 0.2rem 0 0;
+  color: var(--ink-soft);
+  font-weight: 600;
+  text-shadow: 0 1px 8px rgba(255, 255, 255, 0.7);
+}
+
+/* ---- Segmented switcher ------------------------------------------------ */
+.lb-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  margin-bottom: 1.25rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-soft);
+  width: fit-content;
+}
+
+.lb-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.lb-tab:hover {
+  color: var(--ink);
+}
+.lb-tab.is-active {
+  background: #ffffff;
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: var(--shadow-pop);
+}
+.lb-tab--master {
+  color: var(--grape);
+}
+.lb-tab--master.is-active {
+  color: var(--grape);
+}
+.lb-star {
+  color: var(--tangerine);
+}
+
+/* ---- Main card --------------------------------------------------------- */
+.lb-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 28px;
+  padding: 1.75rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.lb-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.lb-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.lb-card-head h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.lb-trophy {
+  font-size: 1.5rem;
+}
+
+/* Refresh button — re-pulls the board without reloading the page */
+.lb-refresh {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--sky);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-pop);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.lb-refresh:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: #bfe7fb;
+}
+.lb-refresh:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.lb-refresh-icon {
+  display: inline-block;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.lb-refresh-icon.is-spinning {
+  animation: lb-spin 0.7s linear infinite;
+}
+@keyframes lb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Podium ------------------------------------------------------------ */
+.lb-podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1.75rem;
+}
+
+.lb-podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.5rem 1rem 1.25rem;
+  border-radius: 22px;
+  color: #ffffff;
+  text-align: center;
+  box-shadow: var(--shadow-pop);
+  position: relative;
+}
+.lb-podium-slot.is-empty {
+  background: transparent;
+  box-shadow: none;
+}
+/* center slot (gold) sits taller */
+.lb-podium-slot--gold {
+  background: linear-gradient(135deg, var(--sunshine), var(--tangerine));
+  padding-top: 2.25rem;
+  padding-bottom: 1.75rem;
+}
+.lb-podium-slot--silver {
+  background: linear-gradient(135deg, var(--sky), var(--ocean));
+}
+.lb-podium-slot--bronze {
+  background: linear-gradient(135deg, var(--tangerine), var(--bubblegum));
+}
+
+.lb-podium-rank {
+  position: absolute;
+  top: -0.9rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  color: var(--ink);
+  border-radius: 50%;
+  font-weight: 700;
+  box-shadow: var(--shadow-pop);
+}
+.lb-podium-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.lb-podium-score {
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.lb-podium-time {
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* ---- Ranked list ------------------------------------------------------- */
+.lb-list-head {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  padding: 0 1rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9aa6cc;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  border-radius: 16px;
+  margin-bottom: 0.35rem;
+  background: #fffaf0;
+}
+.lb-row:nth-child(even) {
+  background: #ffffff;
+}
+.lb-row.is-you {
+  background: rgba(207, 238, 255, 0.55);
+  box-shadow: inset 0 0 0 2px var(--ocean);
+}
+.lb-row--pinned {
+  margin-top: 0.75rem;
+}
+
+.lb-rank {
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.lb-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+.lb-player-name {
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lb-you-tag {
+  flex: 0 0 auto;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--ocean);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.lb-col-score {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.lb-col-score strong {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.lb-time {
+  font-size: 0.75rem;
+  font-style: normal;
+  color: var(--ink-soft);
+}
+
+/* ---- Avatars ----------------------------------------------------------- */
+.lb-avatar {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--grape), var(--ocean));
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.lb-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lb-avatar--podium {
+  width: 56px;
+  height: 56px;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  font-size: 1.1rem;
+}
+
+/* ---- States ------------------------------------------------------------ */
+.lb-state {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.lb-state--error {
+  color: var(--bubblegum);
+}
+.lb-state--hint {
+  padding: 1rem;
+  margin-top: 0.5rem;
+  background: #fff1c2;
+  border-radius: 14px;
+  color: var(--ink-soft);
+}
+
+/* ---- Responsive -------------------------------------------------------- */
+@media (max-width: 760px) {
+  .lb-wizard {
+    display: none;
+  }
+  .lb-content {
+    margin: 0 auto;
+  }
+  .lb-podium {
+    grid-template-columns: 1fr;
+  }
+  .lb-podium-slot--gold {
+    order: -1;
+  }
+  .lb-switcher {
+    width: 100%;
+  }
+}

@@ -6,6 +6,7 @@ import GameScreen from "./components/GameScreen";
 import HowToPlay from "./components/HowToPlay";
 import AboutPage from "./components/AboutPage";
 import CharacterSelect from "./components/CharacterSelect";
+import { LeaderboardPage } from "./leaderboard";
 import GameScene from "./scenes/GameScene";
 import { getSceneConfig } from "./scenes/sceneConfig";
 import { usePreloadImages } from "./preloadImages";
@@ -117,8 +118,11 @@ function AuthenticatedApp() {
           onAbout={() => setScreen("about")}
           onHowToPlay={openHowToPlay}
           onChooseCharacter={openCharacters}
+          onLeaderboard={() => setScreen("leaderboard")}
           isZooming={transitionPhase === "zoom-in"}
         />
+      ) : screen === "leaderboard" ? (
+        <LeaderboardPage onBack={() => setScreen("launcher")} />
       ) : screen === "characters" ? (
         <CharacterSelect
           selectedId={selectedCharacterId}
