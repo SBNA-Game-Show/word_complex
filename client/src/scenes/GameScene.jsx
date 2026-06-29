@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { useAuth } from "../auth";
 import { getGame } from "../games";
 import { getSceneConfig } from "./sceneConfig";
 import { subscribe } from "./sceneBus";
@@ -35,12 +36,14 @@ const SPEECH_OUT_MS = 300;
  * class one frame after mount (see GameScene.css for the keyframes/timing).
  */
 export default function GameScene({ gameId, selectedCharacterId, onBack }) {
+  const { user } = useAuth();
   const game = getGame(gameId);
   const Game = game?.Component;
   const config = getSceneConfig(gameId);
 
   // Resolve which character to show: the player's pick, else the scene default.
-  const characterId = selectedCharacterId || config?.defaultCharacterId || "tomely";
+  const characterId =
+    selectedCharacterId || config?.defaultCharacterId || "tomely";
 
   // `entered` flips to true one frame after mount so CSS transitions/animations
   // run from their "before" state into the "after" state.
@@ -79,16 +82,19 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
       // How long the bubble stays before it starts leaving. Hints get a long
       // dwell so there's time to read and act on them; a game can also override
       // per-message via `emit("hint", { text, holdMs })`.
-      const dwell = payload?.holdMs ?? (mood === "hint" ? HINT_SPEECH_MS : SPEECH_MS);
+      const dwell =
+        payload?.holdMs ?? (mood === "hint" ? HINT_SPEECH_MS : SPEECH_MS);
       // Phase 1: after the dwell time, flip to "leaving" so the bubble plays
       // its pop-out animation. Phase 2: unmount once that animation finishes.
       speechTimersRef.current.push(
         setTimeout(() => {
-          setSpeech((prev) => (prev && prev.id === id ? { ...prev, leaving: true } : prev));
+          setSpeech((prev) =>
+            prev && prev.id === id ? { ...prev, leaving: true } : prev,
+          );
         }, dwell),
         setTimeout(() => {
           setSpeech((prev) => (prev && prev.id === id ? null : prev));
-        }, dwell + SPEECH_OUT_MS)
+        }, dwell + SPEECH_OUT_MS),
       );
     });
     return () => {
@@ -151,7 +157,11 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
         {/* Left: the ZIM canvas (fades in after the background settles). */}
         <section className="scene-canvas">
           <div className="scene-canvas-frame">
-            {Game ? <Game /> : <p className="missing-game">Game not found.</p>}
+            {Game ? (
+              <Game authUser={user} />
+            ) : (
+              <p className="missing-game">Game not found.</p>
+            )}
           </div>
         </section>
       </div>

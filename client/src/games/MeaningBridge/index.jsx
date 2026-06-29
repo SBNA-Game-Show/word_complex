@@ -90,7 +90,7 @@ export default createZimGame({
   color: "#fde8f2",
   outerColor: "#1d2b66",
 
-  setup({ stage, W, H, zim }) {
+  setup({ stage, W, H, zim, authUser }) {
     const FONT = "Fredoka";
 
     // ── Palette ──────────────────────────────────────────────────────
@@ -134,10 +134,6 @@ export default createZimGame({
 
     // ── Session state ────────────────────────────────────────────────
     let screen = "landing";
-
-    let playerName = "Bridge Builder";
-    let isEditingPlayerName = false;
-    let replacePlayerNameOnNextInput = false;
 
     let roundIndex = 0;
     let totalScore = 0;
@@ -923,10 +919,32 @@ export default createZimGame({
       showFinalScore();
     }
 
-    function getNormalizedPlayerName() {
-      const trimmed = String(playerName || "").trim();
+    function getAuthDisplayName() {
+      const candidates = [
+        authUser?.name,
+        authUser?.displayName,
+        authUser?.nickname,
+        authUser?.username,
+        authUser?.email,
+      ];
 
-      return trimmed || "Bridge Builder";
+      const resolved = candidates
+        .map((value) => String(value || "").trim())
+        .find(Boolean);
+
+      if (!resolved || resolved.toLowerCase() === "guest") {
+        return authUser?.isGuest ? "Guest" : "Reader";
+      }
+
+      return resolved;
+    }
+
+    function getPlayerIdentityType() {
+      return authUser?.isGuest ? "Guest" : "Signed in";
+    }
+
+    function getNormalizedPlayerName() {
+      return getAuthDisplayName();
     }
 
     function getMatchedCount() {
@@ -949,7 +967,8 @@ export default createZimGame({
       window.__meaningBridgeZimDebug = {
         screen,
         playerName: getNormalizedPlayerName(),
-        isEditingPlayerName,
+        isEditingPlayerName: false,
+        playerIdentityType: getPlayerIdentityType(),
         currentMode,
         activeChallenge: getActiveChallenge()?.shortTitle || "",
         roundIndex,
@@ -1758,10 +1777,6 @@ export default createZimGame({
     function resetSessionForNewAdventure() {
       stopTimedTimer();
 
-      playerName = getNormalizedPlayerName();
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-
       roundIndex = 0;
       totalScore = 0;
       roundStartScore = 0;
@@ -1793,74 +1808,6 @@ export default createZimGame({
       scoreSubmitError = "";
 
       submittedResultSummary = null;
-    }
-
-    function beginPlayerNameEdit() {
-      screen = "challenge";
-      isEditingPlayerName = true;
-      replacePlayerNameOnNextInput =
-        getNormalizedPlayerName() === "Bridge Builder";
-      drawChallengeScene();
-    }
-
-    function finishPlayerNameEdit() {
-      playerName = getNormalizedPlayerName();
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-      drawChallengeScene();
-    }
-
-    function cancelPlayerNameEdit() {
-      playerName = getNormalizedPlayerName();
-      isEditingPlayerName = false;
-      replacePlayerNameOnNextInput = false;
-      drawChallengeScene();
-    }
-
-    function handlePlayerNameTyping(event) {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        finishPlayerNameEdit();
-        return true;
-      }
-
-      if (event.key === "Escape") {
-        event.preventDefault();
-        cancelPlayerNameEdit();
-        return true;
-      }
-
-      if (event.key === "Backspace") {
-        event.preventDefault();
-
-        if (replacePlayerNameOnNextInput) {
-          playerName = "";
-          replacePlayerNameOnNextInput = false;
-        } else {
-          playerName = playerName.slice(0, -1);
-        }
-
-        drawChallengeScene();
-        return true;
-      }
-
-      if (event.key.length === 1) {
-        event.preventDefault();
-
-        if (replacePlayerNameOnNextInput) {
-          playerName = "";
-          replacePlayerNameOnNextInput = false;
-        }
-
-        if (playerName.length < 18) {
-          playerName += event.key;
-        }
-
-        drawChallengeScene();
-        return true;
-      }
-
-      return false;
     }
 
     function drawSoftCloud(x, y, scale = 1) {
@@ -1941,21 +1888,21 @@ export default createZimGame({
       return button;
     }
 
-    function drawPlayerNamePill({ x, y }) {
+    function drawPlayerIdentityPill({ x, y }) {
       const pill = new zim.Container().addTo(stage).loc(x, y);
       pill.mouseChildren = false;
 
       new zim.Rectangle({
-        width: 220,
+        width: 240,
         height: 48,
         color: "rgba(255,255,255,0.88)",
-        borderColor: isEditingPlayerName ? C.grape : rgba(C.leaf, 0.45),
-        borderWidth: isEditingPlayerName ? 3 : 2,
+        borderColor: rgba(C.leaf, 0.45),
+        borderWidth: 2,
         corner: 24,
       }).addTo(pill);
 
       new zim.Label({
-        text: "Player",
+        text: getPlayerIdentityType(),
         size: 11,
         font: FONT,
         color: C.sub,
@@ -1965,19 +1912,15 @@ export default createZimGame({
         .loc(20, 8);
 
       new zim.Label({
-        text: isEditingPlayerName
-          ? `${playerName || "Type name"}|`
-          : getNormalizedPlayerName(),
-        size: 16,
+        text: `Playing as ${getNormalizedPlayerName()}`,
+        size: 15,
         font: FONT,
-        color: isEditingPlayerName ? C.grape : C.ink,
+        color: C.ink,
         bold: true,
+        lineWidth: 198,
       })
         .addTo(pill)
-        .loc(20, 25);
-
-      pill.cursor = "pointer";
-      pill.on("click", beginPlayerNameEdit);
+        .loc(20, 26);
 
       return pill;
     }
@@ -2347,8 +2290,8 @@ export default createZimGame({
       stage.removeAllChildren();
       drawBackground();
 
-      drawPlayerNamePill({
-        x: W - 260,
+      drawPlayerIdentityPill({
+        x: W - 280,
         y: 24,
       });
 
@@ -3735,12 +3678,6 @@ export default createZimGame({
         return;
       }
 
-      if (isEditingPlayerName) {
-        if (handlePlayerNameTyping(event)) {
-          return;
-        }
-      }
-
       if (isEditingCustomTimer) {
         if (handleCustomTimerTyping(event)) {
           return;
@@ -3806,12 +3743,6 @@ export default createZimGame({
         if (["1", "2", "3"].includes(key)) {
           event.preventDefault();
           selectChallengeByIndex(Number(key) - 1);
-          return;
-        }
-
-        if (key === "e") {
-          event.preventDefault();
-          beginPlayerNameEdit();
           return;
         }
 

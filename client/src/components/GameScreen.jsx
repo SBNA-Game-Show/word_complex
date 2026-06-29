@@ -62,9 +62,15 @@ export default function GameScreen({ gameId, onBack }) {
         </div>
 
         <div className="game-header-meta" aria-hidden="true">
-          <span><span className="step-num">1</span> Drag</span>
-          <span><span className="step-num">2</span> Order</span>
-          <span><span className="step-num">3</span> Check</span>
+          <span>
+            <span className="step-num">1</span> Drag
+          </span>
+          <span>
+            <span className="step-num">2</span> Order
+          </span>
+          <span>
+            <span className="step-num">3</span> Check
+          </span>
         </div>
 
         {zoomControls}
@@ -76,7 +82,11 @@ export default function GameScreen({ gameId, onBack }) {
         className={`canvas-shell canvas-shell-${gameId || "unknown"}`}
         data-testid={`canvas-shell-${gameId}`}
       >
-        {Game ? <Game /> : <p className="missing-game">Game not found.</p>}
+        {Game ? (
+          <Game authUser={user} />
+        ) : (
+          <p className="missing-game">Game not found.</p>
+        )}
       </section>
     </main>
   );
