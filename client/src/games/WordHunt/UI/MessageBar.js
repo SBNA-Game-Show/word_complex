@@ -28,6 +28,8 @@ class MessageBar {
     this.onContinue = null;
 
     this.countdownRunning = false;
+    this.countdownTimeouts = [];
+    this.countdownFlareIntervalId = null;
   }
 
   show(text, color = "black", duration = 1200) {
@@ -149,6 +151,14 @@ class MessageBar {
   }
 
   clearActiveMessages() {
+    this.countdownRunning = false;
+    this.countdownTimeouts.forEach(clearTimeout);
+    this.countdownTimeouts = [];
+    if (this.countdownFlareIntervalId) {
+      clearInterval(this.countdownFlareIntervalId);
+      this.countdownFlareIntervalId = null;
+    }
+
     if (this.messageContainer) {
       this.messageContainer.removeFrom();
       this.messageContainer = null;
@@ -349,9 +359,21 @@ class MessageBar {
   countdownTimer(onComplete) {
     this.clearActiveMessages();
     this.game.isInputLocked = true;
+    this.countdownRunning = true;
 
     const steps = ["READY", "3", "2", "1", "GO"];
     let index = 0;
+
+    const scheduleCountdownStep = (callback, delay) => {
+      const timeoutId = setTimeout(() => {
+        this.countdownTimeouts = this.countdownTimeouts.filter(
+          (id) => id !== timeoutId,
+        );
+        callback();
+      }, delay);
+      this.countdownTimeouts.push(timeoutId);
+      return timeoutId;
+    };
 
     // A list of vibrant neon colors for the random fireworks ambient cycle
     const ambientColors = [
@@ -427,12 +449,14 @@ class MessageBar {
     };
 
     // Trigger the loops every 150ms to populate the board with continuous activity
-    const flareIntervalId = setInterval(spawnRandomFlareBurst, 150);
+    this.countdownFlareIntervalId = setInterval(spawnRandomFlareBurst, 150);
 
     // -----------------------------------------------------------------
     // STEP TEXT RENDERING COMPONENT
     // -----------------------------------------------------------------
     const showNext = () => {
+      if (!this.countdownRunning) return;
+
       if (this.messageContainer) {
         this.messageContainer.removeFrom();
         this.messageContainer = null;
@@ -470,11 +494,17 @@ class MessageBar {
       index++;
 
       if (index < steps.length) {
-        setTimeout(showNext, 800);
+        scheduleCountdownStep(showNext, 800);
       } else {
-        setTimeout(() => {
+        scheduleCountdownStep(() => {
+          if (!this.countdownRunning) return;
+
           // TERMINATION & CLEANUP
-          clearInterval(flareIntervalId); // Kill the background background fireworks engine loop cleanly
+          if (this.countdownFlareIntervalId) {
+            clearInterval(this.countdownFlareIntervalId);
+            this.countdownFlareIntervalId = null;
+          }
+          this.countdownRunning = false;
 
           if (this.messageContainer) {
             this.messageContainer.removeFrom();

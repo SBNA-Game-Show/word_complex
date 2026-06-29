@@ -3,6 +3,7 @@ import { getPassageReconstructionGame } from "../../services/passageReconstructi
 import { emit } from "../../scenes/sceneBus";
 import { createHintPolicy } from "../shared/hintPolicy";
 import { createHintButton } from "../shared/hintButton";
+import { createCountdown } from "../shared/countdownPolicy";
 
 const zimFont = "Fredoka";
 
@@ -31,6 +32,7 @@ export default createZimGame({
   color: "#cfe9f7",
   outerColor: "#0e2233",
   setup({ frame, stage, W, H, zim }) {
+    let disposed = false;
     let rounds = [];
     let roundIndex = 0;
     let score = 0;
@@ -38,6 +40,16 @@ export default createZimGame({
     let checks = 0;
     let correctChecks = 0;
     let feedbackActive = false; // blocks checkAnswer while a feedback popup is showing
+    // A wrong "Check" costs points (floored at 0, like the hint penalty) on top of
+    // burning an attempt, so the final score reflects accuracy.
+    const WRONG_PENALTY = 20;
+    // Whole-game 90s countdown. The pure policy tracks remaining seconds + pause;
+    // the ZIM interval below drives it and a HUD label shows it. When it expires the
+    // whole game ends with a results screen (see endByTimeout / showResults).
+    const countdown = createCountdown({ seconds: 90 });
+    let timerInterval = null; // ZIM intervalObject (one for the whole game)
+    let timerLabel = null; // live HUD label, re-pointed on every makeStatus()
+    let gameOver = false; // set once the game ends (timeout or finish); blocks input
     // Hint system: 2 hints per round, each costs 25 points. The policy is shared,
     // game-agnostic logic; the button is a shared in-canvas trigger; the buddy
     // delivers the hint text via sceneBus (see applyHint).
@@ -47,9 +59,35 @@ export default createZimGame({
     // second hint moves on to a different phrase instead of repeating itself
     const tiles = [];
     const zones = [];
-    const slotWidth = 200;
-    const slotHeight = 160;
-    const cloudWidth = 190;
+
+    // --- Dynamic cloud / slot sizing -------------------------------------
+    // Clouds size themselves to their phrase: the label wraps at TILE_WRAP and
+    // the cloud grows (mainly taller) around it. Slots are made uniform per
+    // round, sized to the round's largest cloud. See measureCloud / computeLayout.
+    const TILE_FONT = 20; // phrase font size (bold)
+    const TILE_WRAP = 156; // px width at which a phrase wraps to a new line
+    // A cloud's drawn silhouette is only full-width across its MIDDLE band (the
+    // top/bottom taper into the wispy lobes). So the cloud is sized as a multiple
+    // of the wrapped text block — wider, and especially TALLER for multi-line
+    // phrases — so every line sits inside that wide middle and never hits a lobe.
+    const CLOUD_W_RATIO = 1.6; // cloud width  ÷ text width
+    const CLOUD_H_RATIO = 2.4; // cloud height ÷ text height (lobes eat ~half the height)
+    const CLOUD_W_EXTRA = 8;
+    const CLOUD_H_EXTRA = 10;
+    const CLOUD_MIN_W = 205; // even short phrases get a full, round cloud (not slim)
+    const CLOUD_MAX_W = 252; // capped so 4 clouds always fit the canvas width
+    const CLOUD_MIN_H = 124;
+    const CLOUD_MAX_H = 178; // capped so 2 scatter rows still fit below the slots
+    const TEXT_VALIGN = 0.55; // text sits at the cloud body's true centre (lower than 0.5)
+    const SLOT_PAD_W = 16; // slot is this much wider than the largest cloud
+    const SLOT_PAD_H = 8; // slot is this much taller than the largest cloud
+    const SLOT_INSET = 10; // clouds are capped to (slotWidth - SLOT_INSET)
+    const ZONE_Y = 80; // top of the numbered slot row
+    // Scatter layout cached per round so tiles keep their spots across the
+    // re-renders that Reset and wrong-answer dismissal trigger.
+    let layoutCache = { round: -1, layout: null };
+
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
     function addLabel(text, size, color, x, y, align = "left", container = stage) {
       const label = new zim.Label(text, size, zimFont, color);
@@ -57,6 +95,57 @@ export default createZimGame({
       label.addTo(container);
       label.loc(x, y);
       return label;
+    }
+
+    // "90" -> "1:30". Seconds are zero-padded; minutes are not.
+    function formatTime(totalSeconds) {
+      const safe = Math.max(0, totalSeconds);
+      const minutes = Math.floor(safe / 60);
+      const seconds = safe % 60;
+      return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    // Refresh the HUD timer label from the countdown. Runs every tick; guards for
+    // the label being absent (e.g. on the results screen, which has no HUD).
+    function updateTimerLabel() {
+      if (disposed) return;
+      if (!timerLabel) return;
+      timerLabel.text = `Time ${formatTime(countdown.remaining())}`;
+      // Warm gold normally, coral in the final 15s for urgency.
+      timerLabel.color = countdown.remaining() <= 15 ? "#d2553f" : palette.inkSoft;
+      stage.update();
+    }
+
+    // One ZIM interval drives the whole-game clock. It lives on the Frame's Ticker,
+    // so it survives stage.removeAllChildren() and keeps counting across rounds.
+    function startTimer() {
+      if (disposed) return;
+      if (timerInterval) timerInterval.clear();
+      // immediate:false so the first tick happens after 1s, not synchronously at
+      // creation (which would decrement before showSentencePreview pauses the clock).
+      timerInterval = zim.interval({
+        time: 1,
+        immediate: false,
+        call: () => {
+          if (disposed) {
+            if (timerInterval) {
+              timerInterval.clear();
+              timerInterval = null;
+            }
+            return;
+          }
+          countdown.tick();
+          updateTimerLabel();
+          if (countdown.expired()) endByTimeout();
+        },
+      });
+    }
+
+    // Time ran out: end the game on the spot with the timed-out results screen.
+    function endByTimeout() {
+      if (disposed) return;
+      if (gameOver) return;
+      showResults({ timedOut: true });
     }
 
     function makeBackground() {
@@ -94,8 +183,14 @@ export default createZimGame({
       const hud = new zim.Container().addTo(stage);
       const round = new zim.Label(`Round ${roundIndex + 1}/${rounds.length}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(0, 0);
       const scoreLabel = new zim.Label(`Score ${score}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(round.width + 16, 0);
-      new zim.Label(`Attempts ${attemptsLeft}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(round.width + scoreLabel.width + 32, 0);
-      hud.setBounds(0, 0, round.width + scoreLabel.width + hud.getChildAt(2).width + 32, 24);
+      const attemptsLabel = new zim.Label(`Attempts ${attemptsLeft}`, 18, zimFont, palette.inkSoft)
+        .addTo(hud).loc(round.width + scoreLabel.width + 32, 0);
+      // Live countdown segment. Re-pointing `timerLabel` here (the same trick used
+      // for hintButton) keeps the reference valid after stage.removeAllChildren().
+      timerLabel = new zim.Label(`Time ${formatTime(countdown.remaining())}`, 18, zimFont, palette.inkSoft)
+        .addTo(hud).loc(round.width + scoreLabel.width + attemptsLabel.width + 48, 0);
+      timerLabel.color = countdown.remaining() <= 15 ? "#d2553f" : palette.inkSoft;
+      hud.setBounds(0, 0, round.width + scoreLabel.width + attemptsLabel.width + timerLabel.width + 48, 24);
 
       // Soft rounded "card" behind the HUD so it reads against the sky.
       const pad = 16;
@@ -162,32 +257,32 @@ export default createZimGame({
       });
     }
 
-    function makeTile(text, x, y) {
-      const tileWidth = cloudWidth;
+    function makeTile(text, x, y, w, h) {
       const tile = new zim.Container().loc(x, y).addTo(stage);
       tile.homeX = x;
       tile.homeY = y;
       tile.chunk = text;
       tile.zoneIndex = null;
-      tile.widthValue = tileWidth;
-      tile.setBounds(0, 0, tileWidth, 118);
+      tile.widthValue = w;
+      tile.heightValue = h;
+      tile.setBounds(0, 0, w, h);
       tile.mouseChildren = false;
 
-      const shadow = makeCloudShape(palette.cloudShadow, palette.cloudShadow, 0, tileWidth).addTo(tile).loc(0, 9);
+      const shadow = makeCloudShape(palette.cloudShadow, palette.cloudShadow, 0, w, h).addTo(tile).loc(0, 9);
       shadow.alpha = 0.9;
-      makeCloudShape(palette.cloud, palette.cloudEdge, 3, tileWidth).addTo(tile);
+      makeCloudShape(palette.cloud, palette.cloudEdge, 3, w, h).addTo(tile);
 
-      const labelSize = text.length > 15 ? 18 : text.length > 12 ? 19 : 21;
       const label = new zim.Label({
         text,
-        size: labelSize,
+        size: TILE_FONT,
         font: zimFont,
         color: palette.ink,
         align: "center",
         valign: "center",
-        bold: true
+        bold: true,
+        lineWidth: TILE_WRAP
       });
-      label.addTo(tile).loc(tileWidth / 2, 61);
+      label.addTo(tile).loc(w / 2, h * TEXT_VALIGN);
       tile.cursor = "pointer";
       tile.drag();
       tile.on("mousedown", () => tile.top());
@@ -195,23 +290,23 @@ export default createZimGame({
       tiles.push(tile);
     }
 
-    function makeZone(index, x, y) {
+    function makeZone(index, x, y, w, h) {
       const zone = new zim.Container().loc(x, y).addTo(stage);
       zone.tile = null;
-      zone.widthValue = slotWidth;
-      zone.heightValue = slotHeight;
+      zone.widthValue = w;
+      zone.heightValue = h;
 
       // Sandy "story stone" slot that echoes the path/stones in the background.
-      new zim.Rectangle(slotWidth, 12, palette.stoneShadow, palette.stoneShadow, 0, 14)
-        .addTo(zone).loc(0, slotHeight - 6);
+      new zim.Rectangle(w, 12, palette.stoneShadow, palette.stoneShadow, 0, 14)
+        .addTo(zone).loc(0, h - 6);
 
-      const tablet = new zim.Rectangle(slotWidth, slotHeight, "rgba(241,227,189,0.62)", palette.stoneEdge, 2, 14)
+      const tablet = new zim.Rectangle(w, h, "rgba(241,227,189,0.62)", palette.stoneEdge, 2, 14)
         .addTo(zone);
-      tablet.setBounds(0, 0, slotWidth, slotHeight);
+      tablet.setBounds(0, 0, w, h);
 
       // Dashed inner guide so empty slots read as "drop here".
       const guide = new zim.Shape().addTo(zone);
-      guide.s(palette.stoneEdge).ss(2).sd([7, 6]).rr(12, 12, slotWidth - 24, slotHeight - 24, 10);
+      guide.s(palette.stoneEdge).ss(2).sd([7, 6]).rr(12, 12, w - 24, h - 24, 10);
 
       new zim.Label({
         text: String(index + 1),
@@ -221,13 +316,15 @@ export default createZimGame({
         align: "center",
         valign: "center",
         bold: true
-      }).addTo(zone).loc(slotWidth / 2, slotHeight / 2);
+      }).addTo(zone).loc(w / 2, h / 2);
       zones.push(zone);
     }
 
-    function makeCloudShape(fill, stroke, strokeWidth, width = 180) {
+    // Cloud puff drawn in a 180×118 box, then scaled to the requested width and
+    // height. Height defaults to the natural ratio so decorative sky clouds (which
+    // pass width only) keep their original proportions.
+    function makeCloudShape(fill, stroke, strokeWidth, width = 180, height = (width * 118) / 180) {
       const cloud = new zim.Shape();
-      const scale = width / 180;
       cloud.f(fill).s(stroke).ss(strokeWidth)
         .mt(31, 70)
         .bt(15, 70, 8, 58, 14, 46)
@@ -241,16 +338,106 @@ export default createZimGame({
         .bt(30, 101, 14, 93, 15, 79)
         .bt(16, 73, 22, 70, 31, 70)
         .cp();
-      cloud.scaleX = scale;
-      cloud.setBounds(0, 0, width, 118);
+      cloud.scaleX = width / 180;
+      cloud.scaleY = height / 118;
+      cloud.setBounds(0, 0, width, height);
       return cloud;
+    }
+
+    // Measure a phrase and return the cloud dimensions that wrap around it. The
+    // probe Label measures the wrapped text without being added to the stage.
+    function measureCloud(text) {
+      const probe = new zim.Label({
+        text,
+        size: TILE_FONT,
+        font: zimFont,
+        bold: true,
+        lineWidth: TILE_WRAP
+      });
+      return {
+        w: clamp(probe.width * CLOUD_W_RATIO + CLOUD_W_EXTRA, CLOUD_MIN_W, CLOUD_MAX_W),
+        h: clamp(probe.height * CLOUD_H_RATIO + CLOUD_H_EXTRA, CLOUD_MIN_H, CLOUD_MAX_H)
+      };
+    }
+
+    // Per-round layout: uniform slot size (fits the round's biggest cloud), the
+    // centred slot-row x positions, and a scattered, non-overlapping set of tile
+    // positions in the bottom play area. Pure geometry — cached by getLayout.
+    function computeLayout(current) {
+      const n = current.answer.length;
+      const tileSizes = current.chunks.map((chunk) => measureCloud(chunk));
+
+      // Uniform slot size from the largest cloud this round.
+      const maxCloudW = Math.max(...tileSizes.map((s) => s.w));
+      const maxCloudH = Math.max(...tileSizes.map((s) => s.h));
+      const margin = 20;
+      const gap = 12;
+      // Shrink slots if 4-across + gaps would overflow the canvas width.
+      const fitW = (W - 2 * margin - (n - 1) * gap) / n;
+      const zoneW = Math.min(maxCloudW + SLOT_PAD_W, fitW);
+      const zoneH = maxCloudH + SLOT_PAD_H;
+      const cloudCapW = zoneW - SLOT_INSET; // no cloud may exceed its slot
+
+      // Centred slot row.
+      const rowW = n * zoneW + (n - 1) * gap;
+      const startX = (W - rowW) / 2;
+      const zoneX = current.answer.map((_, i) => startX + i * (zoneW + gap));
+
+      // Scatter the tiles over a jittered grid in the bottom play area. Each tile
+      // is confined to its own cell (so no two clouds overlap); a random offset
+      // inside the cell + the varied cloud sizes give the scattered look.
+      const areaTop = ZONE_Y + zoneH + 18;
+      const areaBottom = 645; // just above the instruction text / controls
+      const areaMargin = 50;
+      const areaX0 = areaMargin;
+      const areaW = W - 2 * areaMargin;
+      const areaH = areaBottom - areaTop;
+      const cols = Math.ceil(Math.sqrt(n));
+      const rows = Math.ceil(n / cols);
+      const cellW = areaW / cols;
+      const cellH = areaH / rows;
+
+      // Randomise which cell each tile lands in for variety between rounds.
+      const cells = current.answer.map((_, i) => i);
+      for (let i = cells.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cells[i], cells[j]] = [cells[j], cells[i]];
+      }
+
+      const tiles = tileSizes.map((size, i) => {
+        const w = Math.min(size.w, cloudCapW);
+        const h = size.h;
+        const cell = cells[i];
+        const col = cell % cols;
+        const row = Math.floor(cell / cols);
+        const slackX = Math.max(0, (cellW - w) / 2);
+        const slackY = Math.max(0, (cellH - h) / 2);
+        const jitterX = (Math.random() * 2 - 1) * slackX * 0.85;
+        const jitterY = (Math.random() * 2 - 1) * slackY * 0.85;
+        return {
+          w,
+          h,
+          x: areaX0 + col * cellW + (cellW - w) / 2 + jitterX,
+          y: areaTop + row * cellH + (cellH - h) / 2 + jitterY
+        };
+      });
+
+      return { zoneW, zoneH, zoneY: ZONE_Y, zoneX, tiles };
+    }
+
+    // Cache the layout per round so the scattered positions stay put across the
+    // re-renders triggered by Reset and wrong-answer dismissal.
+    function getLayout(current) {
+      if (layoutCache.round === roundIndex && layoutCache.layout) return layoutCache.layout;
+      layoutCache = { round: roundIndex, layout: computeLayout(current) };
+      return layoutCache.layout;
     }
 
     function snapTile(tile) {
       let matchedZone = null;
       zones.forEach((zone) => {
         const centerX = tile.x + tile.widthValue / 2;
-        const centerY = tile.y + 58;
+        const centerY = tile.y + tile.heightValue / 2;
         const insideX = centerX > zone.x && centerX < zone.x + zone.widthValue;
         const insideY = centerY > zone.y && centerY < zone.y + zone.heightValue;
         if (insideX && insideY) matchedZone = zone;
@@ -267,7 +454,7 @@ export default createZimGame({
         tile.animate({
           props: {
             x: matchedZone.x + (matchedZone.widthValue - tile.widthValue) / 2,
-            y: matchedZone.y + 34
+            y: matchedZone.y + (matchedZone.heightValue - tile.heightValue) / 2
           },
           time: 0.2
         });
@@ -284,7 +471,7 @@ export default createZimGame({
     // The player drags it themselves. This is the ONLY game-specific piece of the
     // hint system; the policy and button are shared, reusable code.
     function applyHint() {
-      if (feedbackActive) return; // same guard as checkAnswer
+      if (gameOver || feedbackActive) return; // same guard as checkAnswer
       if (!hintPolicy.canUse()) return;
 
       const answer = rounds[roundIndex].answer;
@@ -323,6 +510,9 @@ export default createZimGame({
       // button — which calls renderRound — keeps hints already spent this round.
       hintPolicy.reset();
       hintedSlots.clear();
+      // Freeze the clock while the player memorises the sentence — it resumes when
+      // the round board appears (renderRound). Play and feedback popups keep ticking.
+      countdown.pause();
       stage.removeAllChildren();
 
       // Sky → meadow background matching the scene art
@@ -382,12 +572,21 @@ export default createZimGame({
         props: { scaleX: 1 },
         time: 1.5,
         ease: "linear",
-        call: () => renderRound()
+        call: () => {
+          if (!disposed) renderRound();
+        }
       });
     }
 
     function renderRound(message = "Drag each phrase into the numbered story slots.") {
+      if (disposed) return;
+      // If the clock ran out (e.g. while a wrong-answer popup's auto-dismiss tween
+      // was still pending), the results screen is already up — don't rebuild over it.
+      if (gameOver) return;
       feedbackActive = false;
+      // Active play — make sure the clock is running (it was paused for the preview;
+      // Reset and wrong-popup dismissal also route here and should keep it running).
+      countdown.resume();
       stage.removeAllChildren();
       tiles.length = 0;
       zones.length = 0;
@@ -395,16 +594,19 @@ export default createZimGame({
       makeStatus(message);
 
       const current = rounds[roundIndex];
-      const zoneStart = 100;
-      const tilePositions = [72, 325, 578, 831];
-      current.answer.forEach((_, index) => makeZone(index, zoneStart + index * 230, 88));
-      current.chunks.forEach((chunk, index) => makeTile(chunk, tilePositions[index], 350));
+      const layout = getLayout(current);
+      current.answer.forEach((_, index) =>
+        makeZone(index, layout.zoneX[index], layout.zoneY, layout.zoneW, layout.zoneH));
+      current.chunks.forEach((chunk, index) => {
+        const t = layout.tiles[index];
+        makeTile(chunk, t.x, t.y, t.w, t.h);
+      });
       makeBottomControls();
       stage.update();
     }
 
     function checkAnswer() {
-      if (feedbackActive) return;
+      if (gameOver || feedbackActive) return;
 
       const placed = zones.map((zone) => zone.tile?.chunk || "");
       const isComplete = placed.every(Boolean);
@@ -423,6 +625,7 @@ export default createZimGame({
         showCorrect();
       } else {
         feedbackActive = true;
+        score = Math.max(0, score - WRONG_PENALTY);
         attemptsLeft -= 1;
         if (attemptsLeft <= 0) showRoundOver();
         else showWrong();
@@ -451,9 +654,9 @@ export default createZimGame({
         valign: "center"
       }).addTo(popup).loc(0, 18);
 
-      // Hint line
+      // Hint line (also tells the player a wrong check cost points)
       new zim.Label({
-        text: "Check the order — who acts, then what they do.",
+        text: `Check the order — who acts, then what they do. (-${WRONG_PENALTY})`,
         size: 19,
         font: zimFont,
         color: "#a0513e",
@@ -488,6 +691,7 @@ export default createZimGame({
 
       let dismissed = false;
       function dismiss() {
+        if (disposed) return;
         if (dismissed) return;
         dismissed = true;
         bar.stopAnimate(true);
@@ -538,6 +742,7 @@ export default createZimGame({
         corner: 20
       }).addTo(success).loc(-75, 74);
       next.on("click", () => {
+        if (disposed) return;
         if (roundIndex === rounds.length - 1) {
           showComplete();
         } else {
@@ -568,54 +773,83 @@ export default createZimGame({
         corner: 20
       }).loc(475, 398).addTo(stage);
       retry.on("click", () => {
+        if (disposed) return;
         attemptsLeft = 3;
         showSentencePreview();
       });
       stage.update();
     }
 
+    // Natural finish — the player solved every round. Thin wrapper so existing
+    // callers read clearly; the timeout path calls showResults directly.
     function showComplete() {
-      emit("complete");
+      showResults({ timedOut: false });
+    }
+
+    // The single end-of-game screen, used both when the clock runs out (timedOut)
+    // and when every round is solved. Stops the timer, blocks further input, and
+    // reports the final score plus how many rounds were right vs. missed.
+    function showResults({ timedOut }) {
+      if (disposed) return;
+      gameOver = true;
+      if (timerInterval) {
+        timerInterval.clear();
+        timerInterval = null;
+      }
+      feedbackActive = true;
+      emit(timedOut ? "timeUp" : "complete");
+
+      const roundsRight = correctChecks;
+      const roundsWrong = rounds.length - correctChecks; // unreached rounds count as missed
       const accuracy = checks ? Math.round((correctChecks / checks) * 100) : 100;
-      stage.removeAllChildren();
+
+      stage.removeAllChildren(); // wipes any board/popup that was on screen at timeout
       makeBackground();
-      new zim.Rectangle(680, 360, "rgba(255,255,255,.82)", palette.goldDeep, 5, 28).loc(210, 166).addTo(stage);
+      new zim.Rectangle(680, 360, "rgba(255,255,255,.82)", palette.goldDeep, 5, 28).loc(210, 168).addTo(stage);
       const makecenteredLabel = (text, size, color, y) =>
         new zim.Label({ text, size, font: zimFont, color, align: "center", valign: "top" })
           .addTo(stage).loc(W / 2, y);
-      makecenteredLabel("Quest Complete", 48, palette.ink, 226);
-      makecenteredLabel(`Final score: ${score}`, 30, "#3a5240", 306);
-      makecenteredLabel(`Accuracy: ${accuracy}%`, 30, "#3a5240", 354);
-      makecenteredLabel("You reconstructed all three story sentences.", 24, palette.inkSoft, 414);
+      makecenteredLabel(timedOut ? "Time's Up!" : "Quest Complete", 48, palette.ink, 210);
+      makecenteredLabel(`Final score: ${score}`, 32, "#3a5240", 282);
+      makecenteredLabel(`Rounds right: ${roundsRight}/${rounds.length}`, 28, "#3a7a4a", 332);
+      makecenteredLabel(`Rounds missed: ${roundsWrong}/${rounds.length}`, 28, "#a05038", 372);
+      makecenteredLabel(`Accuracy: ${accuracy}%`, 22, palette.inkSoft, 414);
       const againLabel = new zim.Label("Play Again", 18, zimFont, "#ffffff");
       againLabel.fontOptions = "bold";
       const again = new zim.Button({
         width: 190,
-        height: 56,
+        height: 52,
         label: againLabel,
         backgroundColor: palette.goldDeep,
         rollBackgroundColor: palette.gold,
         downBackgroundColor: "#b58c33",
         color: "#ffffff",
         corner: 20
-      }).loc(455, 452).addTo(stage);
+      }).loc(455, 456).addTo(stage);
       again.on("click", () => {
+        if (disposed) return;
         roundIndex = 0;
         score = 0;
         attemptsLeft = 3;
         checks = 0;
         correctChecks = 0;
+        gameOver = false;
+        countdown.reset();
+        startTimer();
         showSentencePreview();
       });
       stage.update();
     }
 
     async function loadAndStart() {
+      if (disposed) return;
       stage.removeAllChildren();
       new zim.Label("Loading story...", 28, zimFont, "#073b49").addTo(stage).center(stage);
       stage.update();
 
       const response = await getPassageReconstructionGame();
+
+      if (disposed) return;
 
       if (!response || !response.data || !response.data.rounds) {
         stage.removeAllChildren();
@@ -626,10 +860,23 @@ export default createZimGame({
       }
 
       rounds = response.data.rounds;
+      layoutCache = { round: -1, layout: null }; // fresh data — drop any cached scatter
+      startTimer(); // whole-game clock; paused immediately by showSentencePreview
       showSentencePreview();
     }
 
     loadAndStart();
+
+    return () => {
+      disposed = true;
+      if (timerInterval) {
+        timerInterval.clear();
+        timerInterval = null;
+      }
+      timerLabel = null;
+      stage.removeAllChildren();
+      stage.update();
+    };
   }
 });
 
