@@ -8,6 +8,7 @@ const matchWords = require("./matchwords/routes/matchwordsroutes");
 const passageReconstruction = require("./passagereconstruction/routes/passagereconstructionroutes");
 const wordHunt = require("./wordhunt/routes/wordhuntroutes");
 const meaningBridge = require("./meaning-bridge/routes/meaningbridgeroutes");
+const leaderboard = require("./leaderboard/routes/leaderboardRoutes");
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use("/api/v1/matchWords", matchWords);
 app.use("/api/v1/passageReconstruct", passageReconstruction);
 app.use("/api/v1/wordHunt", wordHunt);
 app.use("/api/v1/meaningBridge", meaningBridge);
+app.use("/api/v1/leaderboard", leaderboard);
 
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, "./views/404.html"));
