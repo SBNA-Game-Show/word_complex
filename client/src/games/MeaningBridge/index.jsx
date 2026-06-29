@@ -92,6 +92,22 @@ export default createZimGame({
 
   setup({ stage, W, H, zim, authUser }) {
     const FONT = "Fredoka";
+    let disposed = false;
+    const scheduledTimeouts = new Set();
+
+    function scheduleTimeout(callback, delay) {
+      const timeoutId = setTimeout(() => {
+        scheduledTimeouts.delete(timeoutId);
+        if (!disposed) callback();
+      }, delay);
+      scheduledTimeouts.add(timeoutId);
+      return timeoutId;
+    }
+
+    function clearScheduledTimeouts() {
+      scheduledTimeouts.forEach(clearTimeout);
+      scheduledTimeouts.clear();
+    }
 
     // ── Palette ──────────────────────────────────────────────────────
     const C = {
@@ -863,6 +879,11 @@ export default createZimGame({
     }
 
     function updateTimedClock() {
+      if (disposed) {
+        stopTimedTimer();
+        return;
+      }
+
       if (!isTimedMode()) {
         return;
       }
@@ -888,6 +909,7 @@ export default createZimGame({
     }
 
     function startTimedSession() {
+      if (disposed) return;
       stopTimedTimer();
 
       timedSecondsTotal = getSelectedTimerSeconds();
@@ -2947,6 +2969,7 @@ export default createZimGame({
     }
 
     async function loadRound() {
+      if (disposed) return;
       screen = "loading";
       errorMessage = "";
       roundStartScore = totalScore;
@@ -2957,6 +2980,8 @@ export default createZimGame({
           currentMode,
           getCurrentPairCount(),
         );
+
+        if (disposed) return;
 
         puzzle = data.puzzle;
         matches = {};
@@ -2975,6 +3000,8 @@ export default createZimGame({
 
         renderGame();
       } catch (error) {
+        if (disposed) return;
+
         console.error("Meaning Bridge round load failed:", error);
 
         showError(
@@ -3042,7 +3069,7 @@ export default createZimGame({
       toast.loc(tx, ty);
       stage.update();
 
-      promptTimeout = setTimeout(() => {
+      promptTimeout = scheduleTimeout(() => {
         if (stage.contains(toast)) stage.removeChild(toast);
         stage.update();
       }, 1800);
@@ -3070,7 +3097,7 @@ export default createZimGame({
 
       if (selectedLeft && selectedRight) {
         renderGame();
-        setTimeout(checkPair, 300);
+        scheduleTimeout(checkPair, 300);
         return;
       }
       renderGame();
@@ -3090,7 +3117,7 @@ export default createZimGame({
           completedPuzzles += 1;
           snapshotCompletedRoundForSubmit();
           renderGame();
-          setTimeout(showRoundComplete, 700);
+          scheduleTimeout(showRoundComplete, 700);
           return;
         }
       } else {
@@ -3103,7 +3130,7 @@ export default createZimGame({
         flashWrong = { leftId: selectedLeft.id, rightId: selectedRight.id };
         selectedRight = null; // keep left selected — user can keep guessing from the right
         renderGame();
-        setTimeout(() => {
+        scheduleTimeout(() => {
           flashWrong = null;
           renderGame();
         }, 650);
@@ -3899,5 +3926,21 @@ export default createZimGame({
 
     // ── Kick off ──────────────────────────────────────────────────────
     drawLandingScene();
+
+    return () => {
+      disposed = true;
+      stopTimedTimer();
+      if (promptTimeout) {
+        clearTimeout(promptTimeout);
+        promptTimeout = null;
+      }
+      clearScheduledTimeouts();
+      if (typeof window !== "undefined" && window.__meaningBridgeKeyCleanup) {
+        window.__meaningBridgeKeyCleanup();
+        window.__meaningBridgeKeyCleanup = null;
+      }
+      stage.removeAllChildren();
+      stage.update();
+    };
   },
 });

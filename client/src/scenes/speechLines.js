@@ -30,6 +30,12 @@ export const SPEECH_LINES = {
     "You rebuilt every passage — amazing!",
     "Quest complete! I knew you could do it.",
   ],
+  // The countdown ran out before the player finished.
+  timeUp: [
+    "Out of time — great effort, though!",
+    "The clock beat us this round. Let's try again!",
+    "Time's up! You were so close.",
+  ],
   // Player asked for a hint. Normally the game emits "hint" with a specific line in
   // the payload (e.g. which cloud goes where); these are generic fallbacks.
   hint: [

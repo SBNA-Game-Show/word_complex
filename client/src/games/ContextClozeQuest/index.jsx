@@ -21,10 +21,23 @@ export default createZimGame({
 
   setup({ stage, W, H, zim }) {
     const zimFont = "Fredoka";
+    let disposed = false;
+    let gameRunId = 0;
+    let timerInterval = null;
     let selectedWordTypes = ["noun"];
     let selectedDifficulty = "easy";
 
+    function clearGameTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
     function showMenu() {
+      gameRunId += 1;
+      clearGameTimer();
+      if (disposed) return;
       stage.removeAllChildren();
 
       // ── Dreamy purple sky background ──────────────────────────────────────
@@ -277,6 +290,9 @@ export default createZimGame({
     }
 
     function startGame() {
+      if (disposed) return;
+      const runId = ++gameRunId;
+      clearGameTimer();
       stage.removeAllChildren();
 
       new zim.Rectangle(W, H, "#ffffff").addTo(stage);
@@ -356,19 +372,23 @@ export default createZimGame({
       };
 
       let remainingTime = timeLimits[selectedDifficulty];
-      let timerInterval;
 
       function startTimer() {
-        clearInterval(timerInterval);
+        clearGameTimer();
 
         timerInterval = setInterval(() => {
+          if (disposed || runId !== gameRunId) {
+            clearGameTimer();
+            return;
+          }
+
           remainingTime--;
 
           timerLabel.text = `⏱ ${remainingTime}s`;
           timerScoreLabel.text = `Timer Score: ${remainingTime * 5}`;
 
           if (remainingTime <= 0) {
-            clearInterval(timerInterval);
+            clearGameTimer();
 
             feedbackBar.color = "#ffe1e1";
             feedbackLabel.text = "⏰ Time is up!";
@@ -478,6 +498,8 @@ export default createZimGame({
         difficulty: selectedDifficulty,
         wordTypes: selectedWordTypes.map((type) => wordTypeMap[type]),
       }).then((result) => {
+        if (disposed || runId !== gameRunId) return;
+
         const gameData = result.data;
 
         words = gameData.wordBank;
@@ -682,7 +704,7 @@ export default createZimGame({
         menuButton.label.size = 22;
         menuButton.addTo(stage).loc(40, 40);
         menuButton.on("click", () => {
-          clearInterval(timerInterval);
+          clearGameTimer();
           showMenu();
         });
 
@@ -697,7 +719,7 @@ export default createZimGame({
         resetButton.label.size = 22;
         resetButton.addTo(stage).loc(270, 640);
         resetButton.on("click", () => {
-          clearInterval(timerInterval);
+          clearGameTimer();
           startGame();
         });
 
@@ -745,11 +767,11 @@ export default createZimGame({
           } else if (correctCount === totalQuestions) {
             feedbackBar.color = "#d7f3dc";
             feedbackLabel.text = `🎉 Excellent! Final Score: ${finalScore}`;
-            clearInterval(timerInterval);
+            clearGameTimer();
             feedbackLabel.color = "#0b5c24";
             emit("complete");
           } else {
-            clearInterval(timerInterval);
+            clearGameTimer();
             feedbackBar.color = "#ffe1e1";
             feedbackLabel.text = `❌ You got ${correctCount}/${totalQuestions}. Final Score: ${finalScore}`;
             feedbackLabel.color = "#a61b1b";
@@ -763,5 +785,13 @@ export default createZimGame({
     }
 
     showMenu();
+
+    return () => {
+      disposed = true;
+      gameRunId += 1;
+      clearGameTimer();
+      stage.removeAllChildren();
+      stage.update();
+    };
   },
 });

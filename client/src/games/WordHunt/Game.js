@@ -127,6 +127,29 @@ class Game {
     this.stage.update();
   }
 
+  destroy() {
+    this.hasGameStarted = false;
+    this.isInputLocked = true;
+    this.messageBar?.clearActiveMessages?.();
+
+    [
+      this.findNounsGame,
+      this.findVerbGame,
+      this.findAdjectiveGame,
+    ].forEach((activeGame) => {
+      activeGame?.timer?.stop?.();
+      if (activeGame?.controlPanel?.hintAutoCloseTimer) {
+        clearTimeout(activeGame.controlPanel.hintAutoCloseTimer);
+        activeGame.controlPanel.hintAutoCloseTimer = null;
+      }
+      activeGame?.messageBar?.clearActiveMessages?.();
+      activeGame?.passageDisplay?.destroy?.();
+    });
+
+    this.stage.removeAllChildren();
+    this.stage.update();
+  }
+
   //----------------------------------
   // NOUN GAME
   //----------------------------------

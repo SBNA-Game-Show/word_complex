@@ -10,8 +10,9 @@ export default createZimGame({
   color: "#FFE0C4BF",
   outerColor: "#556B3D",
 
-  setup({ stage, W, H, zim }) {
+  setup({ frame, stage, W, H, zim }) {
     const game = new Game({
+      frame,
       stage,
       W,
       H,
@@ -19,6 +20,10 @@ export default createZimGame({
     });
 
     game.start();
+
+    return () => {
+      game.destroy();
+    };
   },
 });
 
