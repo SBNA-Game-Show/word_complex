@@ -32,6 +32,7 @@ export default createZimGame({
   color: "#cfe9f7",
   outerColor: "#0e2233",
   setup({ frame, stage, W, H, zim }) {
+    let disposed = false;
     let rounds = [];
     let roundIndex = 0;
     let score = 0;
@@ -107,6 +108,7 @@ export default createZimGame({
     // Refresh the HUD timer label from the countdown. Runs every tick; guards for
     // the label being absent (e.g. on the results screen, which has no HUD).
     function updateTimerLabel() {
+      if (disposed) return;
       if (!timerLabel) return;
       timerLabel.text = `Time ${formatTime(countdown.remaining())}`;
       // Warm gold normally, coral in the final 15s for urgency.
@@ -117,6 +119,7 @@ export default createZimGame({
     // One ZIM interval drives the whole-game clock. It lives on the Frame's Ticker,
     // so it survives stage.removeAllChildren() and keeps counting across rounds.
     function startTimer() {
+      if (disposed) return;
       if (timerInterval) timerInterval.clear();
       // immediate:false so the first tick happens after 1s, not synchronously at
       // creation (which would decrement before showSentencePreview pauses the clock).
@@ -124,6 +127,13 @@ export default createZimGame({
         time: 1,
         immediate: false,
         call: () => {
+          if (disposed) {
+            if (timerInterval) {
+              timerInterval.clear();
+              timerInterval = null;
+            }
+            return;
+          }
           countdown.tick();
           updateTimerLabel();
           if (countdown.expired()) endByTimeout();
@@ -133,6 +143,7 @@ export default createZimGame({
 
     // Time ran out: end the game on the spot with the timed-out results screen.
     function endByTimeout() {
+      if (disposed) return;
       if (gameOver) return;
       showResults({ timedOut: true });
     }
@@ -561,11 +572,14 @@ export default createZimGame({
         props: { scaleX: 1 },
         time: 1.5,
         ease: "linear",
-        call: () => renderRound()
+        call: () => {
+          if (!disposed) renderRound();
+        }
       });
     }
 
     function renderRound(message = "Drag each phrase into the numbered story slots.") {
+      if (disposed) return;
       // If the clock ran out (e.g. while a wrong-answer popup's auto-dismiss tween
       // was still pending), the results screen is already up — don't rebuild over it.
       if (gameOver) return;
@@ -677,6 +691,7 @@ export default createZimGame({
 
       let dismissed = false;
       function dismiss() {
+        if (disposed) return;
         if (dismissed) return;
         dismissed = true;
         bar.stopAnimate(true);
@@ -727,6 +742,7 @@ export default createZimGame({
         corner: 20
       }).addTo(success).loc(-75, 74);
       next.on("click", () => {
+        if (disposed) return;
         if (roundIndex === rounds.length - 1) {
           showComplete();
         } else {
@@ -757,6 +773,7 @@ export default createZimGame({
         corner: 20
       }).loc(475, 398).addTo(stage);
       retry.on("click", () => {
+        if (disposed) return;
         attemptsLeft = 3;
         showSentencePreview();
       });
@@ -773,6 +790,7 @@ export default createZimGame({
     // and when every round is solved. Stops the timer, blocks further input, and
     // reports the final score plus how many rounds were right vs. missed.
     function showResults({ timedOut }) {
+      if (disposed) return;
       gameOver = true;
       if (timerInterval) {
         timerInterval.clear();
@@ -809,6 +827,7 @@ export default createZimGame({
         corner: 20
       }).loc(455, 456).addTo(stage);
       again.on("click", () => {
+        if (disposed) return;
         roundIndex = 0;
         score = 0;
         attemptsLeft = 3;
@@ -823,11 +842,14 @@ export default createZimGame({
     }
 
     async function loadAndStart() {
+      if (disposed) return;
       stage.removeAllChildren();
       new zim.Label("Loading story...", 28, zimFont, "#073b49").addTo(stage).center(stage);
       stage.update();
 
       const response = await getPassageReconstructionGame();
+
+      if (disposed) return;
 
       if (!response || !response.data || !response.data.rounds) {
         stage.removeAllChildren();
@@ -844,6 +866,17 @@ export default createZimGame({
     }
 
     loadAndStart();
+
+    return () => {
+      disposed = true;
+      if (timerInterval) {
+        timerInterval.clear();
+        timerInterval = null;
+      }
+      timerLabel = null;
+      stage.removeAllChildren();
+      stage.update();
+    };
   }
 });
 

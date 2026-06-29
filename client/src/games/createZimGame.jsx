@@ -29,7 +29,9 @@ export function createZimGame({
 
       initializedRef.current = true;
 
+      const holder = holderRef.current;
       let frame = null;
+      let setupCleanup = null;
       let disposed = false;
 
       function ready() {
@@ -37,13 +39,18 @@ export function createZimGame({
 
         const start = () => {
           if (disposed) return;
-          setup({
+          const cleanup = setup({
             frame,
             stage: frame.stage,
             W: frame.width,
             H: frame.height,
             zim,
+            isDisposed: () => disposed,
           });
+
+          if (typeof cleanup === "function") {
+            setupCleanup = cleanup;
+          }
         };
 
         if (document.fonts?.ready) {
@@ -71,14 +78,41 @@ export function createZimGame({
       return () => {
         disposed = true;
         initializedRef.current = false;
+
+        if (setupCleanup) {
+          try {
+            setupCleanup();
+          } catch (err) {
+            console.warn("[ZimGame] Setup cleanup error (safe to ignore):", err.message);
+          }
+          setupCleanup = null;
+        }
+
         try {
           if (frame) {
+            const stage = frame.stage;
+            if (stage) {
+              stage.removeAllChildren?.();
+              stage.removeAllEventListeners?.();
+              stage.update?.();
+            }
             frame.dispose();
             frame = null;
           }
         } catch (err) {
           // ZIM dispose can throw if the canvas was already removed
           console.warn("[ZimGame] Dispose error (safe to ignore):", err.message);
+        }
+
+        if (holder) {
+          holder.querySelectorAll?.("canvas").forEach((canvas) => {
+            const context = canvas.getContext?.("2d");
+            context?.clearRect(0, 0, canvas.width, canvas.height);
+          });
+
+          while (holder.firstChild) {
+            holder.removeChild(holder.firstChild);
+          }
         }
       };
     }, []);
