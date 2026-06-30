@@ -1,3 +1,32 @@
+/* Leaderboard access button in the launcher topbar */
+.leaderboard-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd84d, #ff9a3c);
+  color: #1d2b66;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(255, 154, 60, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.leaderboard-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(255, 154, 60, 0.45);
+}
+.leaderboard-button-label {
+  font-size: 0.9rem;
+}
+@media (max-width: 620px) {
+  .leaderboard-button-label {
+    display: none;
+  }
+}
+
 :root {
   --ink: #1d2b66;
   --ink-soft: #4859a0;
@@ -26,7 +55,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    url("/scenes/house-hill.png") center top / cover no-repeat fixed,
+    url("/scenes/house-hill.webp") center top / cover no-repeat fixed,
     #fff3d7;
 }
 
@@ -439,6 +468,42 @@ input {
   font-weight: 600;
   line-height: 1.4;
   text-align: center;
+}
+
+.auth-splash {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  min-height: 100vh;
+  color: var(--ink, #1d2b66);
+  font-weight: 600;
+}
+
+.auth-splash-logo {
+  display: inline-grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a1230;
+  background: linear-gradient(135deg, var(--sunshine), var(--tangerine));
+  border-radius: 24px;
+  box-shadow: 0 18px 40px rgba(255, 154, 60, 0.35);
+  animation: auth-splash-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes auth-splash-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
 }
 
 @keyframes auth-mode-copy {
@@ -1796,6 +1861,15 @@ input {
   height: 100%;
 }
 
+/* GameScreen fallback: zoom the panel via the holder (the shell itself runs an
+   entrance animation that would override a transform). Scene games scale
+   .scene-canvas-frame instead — see GameScene.css. */
+.canvas-shell .zim-holder {
+  transform: scale(var(--canvas-zoom, 1));
+  transform-origin: center center;
+  transition: transform 160ms ease;
+}
+
 /* Meaning Bridge migrated canvas containment */
 
 /*
@@ -1874,22 +1948,16 @@ input {
   box-shadow: 0 12px 24px rgba(45, 60, 130, 0.14);
 }
 
-/*
-  Actual ZIM canvas zoom:
-  This is the only thing affected by the zoom buttons.
-*/
 .canvas-shell-meaning-bridge .zim-holder canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
-  transform: scale(var(--meaning-bridge-canvas-zoom, 1));
-  transform-origin: center center;
-  transition: transform 160ms ease;
 }
 
-/* Header zoom controls shown only for Meaning Bridge. */
+/* Canvas zoom controls, shown for every game. Live in the fixed top bar so they
+   never scale with the panel and stay visible at any zoom level. */
 
-.meaning-bridge-zoom-controls {
+.canvas-zoom-controls {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1900,8 +1968,8 @@ input {
   box-shadow: 0 4px 0 rgba(29, 43, 102, 0.08);
 }
 
-.meaning-bridge-zoom-controls button,
-.meaning-bridge-zoom-controls span {
+.canvas-zoom-controls button,
+.canvas-zoom-controls span {
   min-width: 34px;
   min-height: 28px;
   padding: 0.25rem 0.55rem;
@@ -1912,19 +1980,24 @@ input {
   border-radius: 999px;
 }
 
-.meaning-bridge-zoom-controls span {
+.canvas-zoom-controls span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: #ffffff;
 }
 
-.meaning-bridge-zoom-controls button:hover {
+.canvas-zoom-controls button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-.meaning-bridge-zoom-controls button:active {
+.canvas-zoom-controls button:active:not(:disabled) {
   transform: translateY(1px);
+}
+
+.canvas-zoom-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 @media (max-width: 900px) {
@@ -1938,12 +2011,6 @@ input {
     width: 100%;
     max-width: 100%;
     border-radius: 14px;
-  }
-}
-
-@media (max-width: 760px) {
-  .meaning-bridge-zoom-controls {
-    display: none;
   }
 }
 

@@ -1,163 +1,223 @@
 const { v4: uuidv4 } = require("uuid");
 
-function normalizeWord(word) {
-  return word.toLowerCase().replace(/[^a-z]/g, "");
-}
+const SKIP_POS = new Set([
+  "SPACE",
+  "PUNCT",
+  "DET",
+  "PRON",
+  "ADP",
+  "CCONJ",
+  "SCONJ",
+  "PART",
+  "NUM",
+]);
 
 function shuffle(items) {
   const copy = [...items];
-
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1));
-    [copy[index], copy[randomIndex]] = [copy[randomIndex], copy[index]];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
   }
-
   return copy;
-}
-
-function extractCandidateEntries(passageText, dictionary) {
-  const passageWords = new Set(
-    passageText.split(/\s+/).map(normalizeWord).filter(Boolean),
-  );
-
-  return dictionary.filter((entry) =>
-    passageWords.has(normalizeWord(entry.english)),
-  );
-}
-
-function getRightLabel(entry, mode) {
-  switch (mode) {
-    case "sanskrit-to-english":
-      return {
-        label: entry.english,
-        sublabel: entry.definition,
-      };
-
-    case "word-to-definition":
-      return {
-        label: entry.definition,
-        sublabel: entry.category,
-      };
-
-    case "word-to-synonym":
-      return {
-        label: entry.synonyms[0] || entry.definition,
-        sublabel: "synonym",
-      };
-
-    case "word-to-antonym":
-      return {
-        label: entry.antonyms[0] || "No antonym available",
-        sublabel: "antonym",
-      };
-
-    case "english-to-sanskrit":
-    default:
-      return {
-        label: entry.sanskrit,
-        sublabel: entry.transliteration,
-      };
-  }
-}
-
-function getLeftLabel(entry, mode) {
-  if (mode === "sanskrit-to-english") {
-    return {
-      label: entry.sanskrit,
-      sublabel: entry.transliteration,
-    };
-  }
-
-  return {
-    label: entry.english,
-    sublabel: entry.category,
-  };
 }
 
 function createRoundId() {
   return `round_${uuidv4().replace(/-/g, "").slice(0, 10)}`;
 }
 
-function generateMeaningBridgePuzzle(params) {
-  const {
-    passage,
-    dictionary,
-    mode = "english-to-sanskrit",
-    difficulty = "medium",
-    pairCount = 4,
-  } = params;
+function generateSynonymMatchPuzzle({ story, pairCount = 4 }) {
+  const tokens = story.tokenized_english_version || [];
+  const pairs = [];
+  const seen = new Set();
 
-  const passageCandidates = extractCandidateEntries(passage.text, dictionary);
+  for (const token of tokens) {
+    if (!token || !token.text || !token.synonyms || token.synonyms.length === 0) continue;
+    if (SKIP_POS.has(token.pos)) continue;
 
-  const modeCandidates =
-    mode === "word-to-antonym"
-      ? passageCandidates.filter((entry) => entry.antonyms.length > 0)
-      : passageCandidates;
+    const word = token.text.toLowerCase();
+    const synonym = token.synonyms[0];
 
-  const candidates = modeCandidates.slice(0, pairCount);
+    if (!synonym || word === synonym) continue;
 
-  if (candidates.length < 2) {
-    throw new Error("Not enough dictionary-backed words found in passage.");
+    const key = `${word}__${synonym}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    pairs.push({ form: token.text, lemma: synonym, pos: token.pos || "WORD" });
   }
 
-  const leftItems = candidates.map((entry, index) => {
-    const left = getLeftLabel(entry, mode);
+  if (pairs.length < 2) {
+    throw new Error(`Not enough synonym data. Found ${pairs.length} pairs.`);
+  }
 
-    return {
-      id: `left_${index}_${entry.english}`,
-      label: left.label,
-      sublabel: left.sublabel,
-    };
-  });
+  const candidates = shuffle(pairs).slice(0, pairCount);
 
-  const rightItemsOrdered = candidates.map((entry, index) => {
-    const right = getRightLabel(entry, mode);
+  const leftItems = candidates.map((p, i) => ({
+    id: `left_${i}`,
+    label: p.form,
+    sublabel: p.pos.toLowerCase(),
+  }));
 
-    return {
-      id: `right_${index}_${entry.english}`,
-      label: right.label,
-      sublabel: right.sublabel,
-    };
-  });
+  const rightItemsOrdered = candidates.map((p, i) => ({
+    id: `right_${i}`,
+    label: p.lemma,
+    sublabel: "synonym",
+  }));
 
   const answerKey = Object.fromEntries(
-    leftItems.map((left, index) => [left.id, rightItemsOrdered[index].id]),
+    leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id])
   );
 
   const hints = Object.fromEntries(
-    leftItems.map((left, index) => {
-      const entry = candidates[index];
-
-      return [
-        left.id,
-        `${entry.english} is related to ${entry.category}. Transliteration: ${entry.transliteration}.`,
-      ];
-    }),
+    leftItems.map((l, i) => [
+      l.id,
+      `"${candidates[i].form}" and "${candidates[i].lemma}" have the same meaning.`,
+    ])
   );
 
   return {
     gameId: "meaning_bridge",
     roundId: createRoundId(),
-    passageId: passage.passageId,
-    chunkId: passage.chunkId,
-    mode,
-    difficulty,
-    instruction:
-      "Connect each word to its correct meaning or Sanskrit translation.",
+    mode: "word-to-synonym",
+    instruction: "Match each word to one of its synonyms.",
     leftItems,
     rightItems: shuffle(rightItemsOrdered),
     answerKey,
     hints,
-    scoreRules: {
-      correct: 10,
-      incorrect: 0,
-      hintPenalty: 2,
-      wrongAttemptPenalty: 5,
-    },
+    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
+  };
+}
+
+function generateAntonymMatchPuzzle({ story, pairCount = 4 }) {
+  const tokens = story.tokenized_english_version || [];
+  const pairs = [];
+  const seen = new Set();
+
+  for (const token of tokens) {
+    if (!token || !token.text || !token.antonyms || token.antonyms.length === 0) continue;
+    if (SKIP_POS.has(token.pos)) continue;
+
+    const word = token.text.toLowerCase();
+    const antonym = token.antonyms[0];
+
+    if (!antonym || word === antonym) continue;
+
+    const key = `${word}__${antonym}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    pairs.push({ form: token.text, lemma: antonym, pos: token.pos || "WORD" });
+  }
+
+  if (pairs.length < 2) {
+    throw new Error(`Not enough antonym data. Found ${pairs.length} pairs.`);
+  }
+
+  const candidates = shuffle(pairs).slice(0, pairCount);
+
+  const leftItems = candidates.map((p, i) => ({
+    id: `left_${i}`,
+    label: p.form,
+    sublabel: p.pos.toLowerCase(),
+  }));
+
+  const rightItemsOrdered = candidates.map((p, i) => ({
+    id: `right_${i}`,
+    label: p.lemma,
+    sublabel: "antonym",
+  }));
+
+  const answerKey = Object.fromEntries(
+    leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id])
+  );
+
+  const hints = Object.fromEntries(
+    leftItems.map((l, i) => [
+      l.id,
+      `"${candidates[i].form}" and "${candidates[i].lemma}" are opposites.`,
+    ])
+  );
+
+  return {
+    gameId: "meaning_bridge",
+    roundId: createRoundId(),
+    mode: "word-to-antonym",
+    instruction: "Match each word to its opposite (antonym).",
+    leftItems,
+    rightItems: shuffle(rightItemsOrdered),
+    answerKey,
+    hints,
+    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
+  };
+}
+
+function generateDefinitionMatchPuzzle({ story, pairCount = 4 }) {
+  const tokens = story.tokenized_english_version || [];
+  const pairs = [];
+  const seen = new Set();
+
+  for (const token of tokens) {
+    if (!token || !token.text || !token.definition) continue;
+    if (SKIP_POS.has(token.pos)) continue;
+
+    const word = token.text.toLowerCase();
+    const definition = token.definition;
+
+    if (!definition) continue;
+
+    const key = `${word}__${definition}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    pairs.push({ form: token.text, definition, pos: token.pos || "WORD" });
+  }
+
+  if (pairs.length < 2) {
+    throw new Error(`Not enough definition data. Found ${pairs.length} pairs.`);
+  }
+
+  const candidates = shuffle(pairs).slice(0, pairCount);
+
+  const leftItems = candidates.map((p, i) => ({
+    id: `left_${i}`,
+    label: p.form,
+    sublabel: p.pos.toLowerCase(),
+  }));
+
+  const rightItemsOrdered = candidates.map((p, i) => {
+    // trim long definitions to 2 lines max (~60 chars)
+    const def = p.definition.length > 60
+      ? p.definition.slice(0, 57).trimEnd() + "…"
+      : p.definition;
+    return { id: `right_${i}`, label: def, sublabel: "definition" };
+  });
+
+  const answerKey = Object.fromEntries(
+    leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id])
+  );
+
+  const hints = Object.fromEntries(
+    leftItems.map((l, i) => [
+      l.id,
+      `"${candidates[i].form}" means: "${candidates[i].definition}".`,
+    ])
+  );
+
+  return {
+    gameId: "meaning_bridge",
+    roundId: createRoundId(),
+    mode: "word-to-definition",
+    instruction: "Match each word to its definition.",
+    leftItems,
+    rightItems: shuffle(rightItemsOrdered),
+    answerKey,
+    hints,
+    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
   };
 }
 
 module.exports = {
-  extractCandidateEntries,
-  generateMeaningBridgePuzzle,
+  generateSynonymMatchPuzzle,
+  generateAntonymMatchPuzzle,
+  generateDefinitionMatchPuzzle,
 };

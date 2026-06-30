@@ -155,6 +155,7 @@
 }
 
 .scene-canvas-frame {
+  position: relative;
   width: min(100%, var(--scene-canvas-max-width, 760px));
   padding: clamp(0.5rem, 1.2vw, 1rem);
   background: rgba(255, 255, 255, 0.72);
@@ -162,12 +163,23 @@
   border: 4px solid rgba(255, 255, 255, 0.9);
   border-radius: 26px;
   box-shadow: 0 24px 48px rgba(20, 28, 60, 0.32);
+  /* Manual zoom from the +/- controls scales the whole panel. Anchored to the
+     left edge so the panel grows/shrinks toward the right (the canvas sits on
+     the left of the scene) instead of drifting away from the left. */
+  transform: scale(var(--canvas-zoom, 1));
+  transform-origin: left center;
+  transition: transform 160ms ease;
 }
 
 /* The game component renders a `.zim-holder` (see createZimGame); keep it
    filling the frame while preserving the ZIM aspect ratio. */
 .scene-canvas-frame .zim-holder {
   width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.scene-canvas-frame .zim-holder canvas {
   border-radius: 18px;
 }
 
@@ -288,21 +300,22 @@
   right: calc(50% - 30px);
   z-index: 4;
   width: max-content;
-  max-width: 250px;
-  padding: 0.72rem 1rem;
+  max-width: 340px;
+  padding: 1.05rem 1.4rem;
   background: linear-gradient(170deg, #ffffff 0%, #f2f8ff 100%);
   color: #1f3a4d;
-  font-size: clamp(0.9rem, 1.05vw, 1.05rem);
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: clamp(1.1rem, 1.55vw, 1.4rem);
+  font-weight: 700;
+  line-height: 1.4;
   letter-spacing: 0.01em;
   text-align: center;
-  border-radius: 20px;
-  border: 2px solid var(--bubble-accent, #9cc9ec);
+  border-radius: 26px;
+  border: 3px solid var(--bubble-accent, #9cc9ec);
   box-shadow:
-    0 2px 0 rgba(255, 255, 255, 0.9) inset,
-    0 14px 30px rgba(20, 28, 60, 0.22),
-    0 4px 10px rgba(20, 28, 60, 0.12);
+    0 2px 0 rgba(255, 255, 255, 0.95) inset,
+    0 18px 38px rgba(20, 28, 60, 0.24),
+    0 6px 14px rgba(20, 28, 60, 0.14),
+    0 0 0 6px var(--bubble-glow, rgba(156, 201, 236, 0.18));
   transform-origin: bottom right;
   /* Pop in with a springy overshoot, then settle into a continuous gentle
      float so it feels alive alongside the character's idle bob. */
@@ -318,24 +331,29 @@
   animation: speech-pop-out 300ms cubic-bezier(0.5, 0, 0.75, 0) both;
 }
 
+/* Each mood tints both the border accent and the soft glow ring around the
+   bubble so correct / oops / hint reactions stay visually distinct. */
 .character-speech.mood-happy {
   --bubble-accent: #7fae5a;
+  --bubble-glow: rgba(127, 174, 90, 0.2);
 }
 
 .character-speech.mood-oops {
   --bubble-accent: #e58e74;
+  --bubble-glow: rgba(229, 142, 116, 0.2);
 }
 
 .character-speech.mood-thinking {
   --bubble-accent: #f4c45a;
+  --bubble-glow: rgba(244, 196, 90, 0.22);
 }
 
 .character-speech-tail {
   position: absolute;
-  bottom: -8px;
-  right: 22px;
-  width: 16px;
-  height: 16px;
+  bottom: -10px;
+  right: 24px;
+  width: 20px;
+  height: 20px;
   background: rgba(255, 255, 255, 0.97);
   border-right: 2px solid var(--bubble-accent, #9cc9ec);
   border-bottom: 2px solid var(--bubble-accent, #9cc9ec);

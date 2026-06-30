@@ -12,6 +12,28 @@ This is the entry point for all contributors and AI agents. Read this before tou
 - Do not add AI agent files (`CLAUDE.md`, `AGENTS.md`, etc.) to the repo.
 - Do not add AI co-author attribution to commits.
 
+---
+
+## Documentation Update Rule
+
+**Whenever you change something in the codebase, you must update the relevant section in `README.md` or `server/README.md` before committing.**
+
+This applies to:
+
+| Type of Change | What to Update |
+|---------------|----------------|
+| New API route added or removed | `server/README.md` → API Routes table |
+| New game module added | `README.md` → Games section, `server/README.md` → Structure + API Routes |
+| Port or URL changed | `README.md` → Getting Started, `server/README.md` → Running Locally |
+| New npm package added | `README.md` → Tech Stack (if significant) |
+| New test file added | `server/README.md` → Testing section |
+| MongoDB collection or field changed | `README.md` → MongoDB section, `server/README.md` → Data Flow |
+| New middleware added or wired up | `server/README.md` → Structure + relevant route in API Routes table |
+| Environment variable added | `server/README.md` → Notes section |
+| Any file moved or renamed | Update the path references in whichever README mentions it |
+
+**AI agents working on this project must follow this rule too** — every code change must be accompanied by the corresponding README update in the same session.
+
 Full git workflow and commands: [`docs/Git-Repo-Rules-and-Commands.md`](docs/Git-Repo-Rules-and-Commands.md)
 
 ---

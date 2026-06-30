@@ -1,34 +1,16 @@
 const express = require("express");
-
 const {
   getMeaningBridgeHealth,
   generateMeaningBridgeRound,
-  submitMeaningBridgeRound,
+  submitMeaningBridgeScore,
   getMeaningBridgeLeaderboard,
 } = require("../controller/meaningbridgecontroller");
-
-const { requireMeaningBridgeApiKey } = require("../middleware/apikey");
 
 const meaningBridgeRouter = express.Router();
 
 meaningBridgeRouter.get("/health", getMeaningBridgeHealth);
-
-meaningBridgeRouter.post(
-  "/generate",
-  requireMeaningBridgeApiKey,
-  generateMeaningBridgeRound,
-);
-
-meaningBridgeRouter.post(
-  "/submit",
-  requireMeaningBridgeApiKey,
-  submitMeaningBridgeRound,
-);
-
-meaningBridgeRouter.get(
-  "/leaderboard",
-  requireMeaningBridgeApiKey,
-  getMeaningBridgeLeaderboard,
-);
+meaningBridgeRouter.post("/generate", generateMeaningBridgeRound);
+meaningBridgeRouter.post("/submit", submitMeaningBridgeScore);
+meaningBridgeRouter.get("/leaderboard", getMeaningBridgeLeaderboard);
 
 module.exports = meaningBridgeRouter;

@@ -54,11 +54,14 @@ export default function LoginPage() {
 
       <section className="login-shell" aria-labelledby="login-title">
         <div className="login-copy">
-          <span className="login-logo" aria-hidden="true">W</span>
+          <span className="login-logo" aria-hidden="true">
+            W
+          </span>
           <p className="eyebrow">Prototype sign in</p>
           <div className="login-copy-swap" key={`copy-${mode}`}>
             <h1 id="login-title">
-              {isSignUp ? "Create your" : "Welcome back,"} <span>word hero!</span>
+              {isSignUp ? "Create your" : "Welcome back,"}{" "}
+              <span>word hero!</span>
             </h1>
             <p>
               This is a fake auth flow for testing the interface. New accounts
@@ -137,6 +140,7 @@ export default function LoginPage() {
               <span>Username</span>
               <input
                 autoComplete="username"
+                data-testid="username-input"
                 name="username"
                 onChange={(event) => setUsername(event.target.value)}
                 placeholder={isSignUp ? "choose-a-name" : "anthony"}
@@ -149,6 +153,7 @@ export default function LoginPage() {
               <span>Password</span>
               <input
                 autoComplete="current-password"
+                data-testid="password-input"
                 name="password"
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder={isSignUp ? "4+ characters" : "demo123"}
@@ -159,8 +164,12 @@ export default function LoginPage() {
           </div>
 
           {error ? <p className="login-error">{error}</p> : null}
-
-          <button className="btn-primary login-submit" disabled={isLoading} type="submit">
+          <button
+            className="btn-primary login-submit"
+            data-testid="login-button"
+            disabled={isLoading}
+            type="submit"
+          >
             {isLoading
               ? isSignUp
                 ? "Creating..."
@@ -168,19 +177,26 @@ export default function LoginPage() {
               : isSignUp
                 ? "Create player"
                 : "Start learning"}
-            <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+            <span className="btn-arrow" aria-hidden="true">
+              &rarr;
+            </span>
           </button>
 
           <div className="auth-footer" key={`footer-${mode}`}>
-          {!isSignUp ? (
-            <button className="btn-ghost login-demo-fill" type="button" onClick={fillDemoLogin}>
-              Use demo login
-            </button>
-          ) : (
-            <p className="signup-note">
-              Temporary only. Refreshing the browser removes this prototype account.
-            </p>
-          )}
+            {!isSignUp ? (
+              <button
+                className="btn-ghost login-demo-fill"
+                type="button"
+                onClick={fillDemoLogin}
+              >
+                Use demo login
+              </button>
+            ) : (
+              <p className="signup-note">
+                Temporary only. Refreshing the browser removes this prototype
+                account.
+              </p>
+            )}
           </div>
         </form>
       </section>

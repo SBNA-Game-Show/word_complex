@@ -1,433 +1,311 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
 import Chalk from "../UI/Chalk";
-import BackButton from "../../../zimcomponents/BackButton";
-
 import { emit } from "../../../scenes/sceneBus";
+import Timer from "../utils/Timer";
+import GameManager from "../utils/GameManager";
+import ProgressBar from "../UI/ProgressBar";
+import PlayerInformation from "../UI/PlayerInfo";
+import MessageBar from "../UI/MessageBar";
+import ControlPanel from "../UI/Panel";
+import PassageDisplay from "../UI/PassageDisplay";
+import FoundContainer from "../UI/FoundWords";
 
 class FindVerbGame {
   constructor(game) {
     this.game = game;
+    this.manager = new GameManager(game);
 
     this.verbs = game.wordTypes.verbs;
     this.nouns = game.wordTypes.nouns;
     this.adjectives = game.wordTypes.adjectives;
+    this.challenge = `Find All ${this.verbs.length} Verbs`;
+    this.timer = new Timer(game);
 
     this.score = 0;
     this.foundWords = [];
 
-    this.data = this.getData();
-    console.log("VERB DATA:", this.data);
+    this.blackboard = null;
+    this.progressBar = null;
+    this.messageBar = null;
+    this.playerInformation = null;
+    this.passageDisplay = null;
+    this.controlPanel = null;
+    this.foundWordsCont = null;
+
+    this.continueButton = null;
+    this.exitButton = null;
+    this.restartButton = null;
+
+    this.player = this.game.player;
+    this.hintUsed = 0;
+
+    this.gameOver = false;
+
+    this.timeUpKey = "Oops ! Times UP";
   }
 
   displayPassage() {
-    this.game.stage.canvas.style.cursor = "none";
+    console.log("Verbs", this.verbs);
+    //-----------------------------------
+    // Initializing RunTime Parameters
+    //-----------------------------------
+    this.manager.setGameTime(this.game.verbGameKey);
+    this.game.hasGameStarted = true; // Set game state flag explicitly
 
     //-----------------------------------
     // BOARD
     //-----------------------------------
-
     this.blackboard = new Blackboard(
       this.game,
-      1350,
-      760
+      this.game.width - 20,
+      this.game.height - 20,
     ).create();
 
     this.blackboard.center(this.game.stage);
     this.blackboard.addTo(this.game.stage);
-    // Add Back Button
-    new BackButton(
-      this.game,
-      this.blackboard
-    ).create();
 
     //-----------------------------------
-    // TITLE
+    // HEADER
     //-----------------------------------
+    this.progressBar = new ProgressBar(this.game, this.challenge);
+    const progressBarContainer = this.progressBar.create();
+    progressBarContainer.pos(this.blackboard.width - 300, 40);
+    progressBarContainer.addTo(this.blackboard);
 
-    const heading = new ZimLabel(
-      this.game,
-      "Search For All Verbs From The Passage"
-    ).createLabel();
-
-    heading.scale = 0.75;
-    heading.color = "white";
-
-    heading.pos(180, 20);
-    heading.addTo(this.blackboard);
-
-    //-----------------------------------
-    // SCORE
-    //-----------------------------------
-
-    const progressLabel = new ZimLabel(
-      this.game,
-      `Found 0 / ${this.verbs.length} Verbs`
-    ).createLabel();
-
-    progressLabel.scale = 0.65;
-    progressLabel.color = "#00ff88";
-
-    progressLabel.pos(
-      this.blackboard.width - 330,
-      20
-    );
-
-    progressLabel.addTo(this.blackboard);
+    this.playerInformation = new PlayerInformation(this.game);
+    const playerInfoCont = this.playerInformation.create();
+    playerInfoCont.pos(this.blackboard.width - 880, 20);
+    playerInfoCont.addTo(this.game.stage);
 
     //-----------------------------------
     // MESSAGE BAR
     //-----------------------------------
+    this.messageBar = new MessageBar(this.game);
 
-    const messageBar = new this.game.zim.Rectangle({
-      width: this.blackboard.width - 80,
-      height: 55,
-      color: "#274527",
-      corner: 8,
-    });
+    this.messageBar.onContinue = () => {
+      this.gameOver = true;
+      this.timer.stop(); // Clear out loop strictly
+      this.game.hasGameStarted = false;
+      this.game.stage.removeAllChildren();
+      this.game.startAdjectiveGame();
+      this.foundWordsCont.reset();
+      this.game.isInputLocked = false;
+    };
 
-    messageBar.pos(40, 70);
-    messageBar.addTo(this.blackboard);
+    this.messageBar.onExit = () => {
+      this.gameOver = true;
+      this.timer.stop(); // Clear out loop strictly
+      this.foundWordsCont.reset();
+      this.game.hasGameStarted = false;
+      this.game.stage.removeAllChildren();
+      this.game.isInputLocked = false;
+      this.game.start();
+    };
 
-    const messageLabel = new this.game.zim.Label({
-      text: "Find all 15 verbs",
-      size: 28,
-      color: "#FFD700",
-    });
+    this.messageBar.onRestart = () => {
+      console.log("Restart Triggered");
+      this.gameOver = false;
+      this.timer.stop(); // Completely clear loop state first
 
-    messageLabel.pos(60, 84);
-    messageLabel.addTo(this.blackboard);
+      this.foundWordsCont.reset();
+      this.foundWords = [];
+      this.score = 0;
 
+      this.game.hasGameStarted = false;
+      this.game.TOTAL_SCORE = 0;
+      this.game.isInputLocked = false;
+
+      this.game.stage.removeAllChildren();
+      this.displayPassage();
+    };
+
+    //-----------------------------------
+    // Control Panel Configuration
+    //-----------------------------------
+    this.controlPanel = new ControlPanel(this.game);
+    const controlPanelCont = this.controlPanel.create();
+    controlPanelCont.pos(this.blackboard.width - 1225, 20);
+    controlPanelCont.addTo(this.blackboard);
+
+    this.controlPanel.onBackClicked = () => {
+      this.gameOver = true;
+      this.timer.stop();
+      this.game.hasGameStarted = false;
+      this.game.stage.removeAllChildren();
+      this.game.start();
+    };
+
+    this.controlPanel.onNextClicked = () => {
+      this.gameOver = true;
+      this.timer.stop();
+      this.game.hasGameStarted = false;
+      this.game.stage.removeAllChildren();
+      this.game.startAdjectiveGame();
+    };
+
+    this.controlPanel.hintClicked = () => {
+      if (this.passageDisplay && this.passageDisplay.wordLabels) {
+        this.passageDisplay.wordLabels.forEach((wordObj) => {
+          if (this.verbs.includes(wordObj.text)) {
+            if (!this.foundWords.includes(wordObj.text)) {
+              wordObj.instance.setColor("green");
+              this.game.isInputLocked = true;
+            }
+          }
+        });
+        this.game.stage.update();
+      }
+    };
+
+    this.controlPanel.onHintExpired = () => {
+      if (this.passageDisplay && this.passageDisplay.wordLabels) {
+        this.passageDisplay.wordLabels.forEach((wordObj) => {
+          if (this.verbs.includes(wordObj.text)) {
+            if (!this.foundWords.includes(wordObj.text)) {
+              wordObj.instance.setColor("white");
+            }
+          }
+        });
+        this.game.stage.update();
+      }
+    };
     //-----------------------------------
     // FOUND VERBS BOX
     //-----------------------------------
+    this.foundWordsCont = new FoundContainer(this.game, this.game.verbGameKey);
+    const foundWordsContainer = this.foundWordsCont.update();
 
-    const foundBox = new this.game.zim.Rectangle({
-      width: this.blackboard.width - 80,
-      height: 160,
-      color: "#274527",
-      corner: 8,
-    });
+    this.foundWordsCont.pos(40, 500);
+    this.foundWordsCont.addTo(this.blackboard);
 
-    foundBox.pos(
-      40,
-      this.blackboard.height - 190
+    //-----------------------------------
+    // Timer Setup & Safe Callbacks
+    //-----------------------------------
+    this.timer.minutes = this.game.gameTime;
+
+    this.timer.start(
+      ({ minutes, seconds }) => {
+        // Guard checking if game has wrapped up or changed context
+        if (this.gameOver || !this.game.hasGameStarted) {
+          return;
+        }
+        this.progressBar.setTime(minutes, seconds);
+      },
+
+      () => {
+        console.log("TIMEOUT CALLBACK");
+        // State Guard to block popups firing if already won/exited
+        if (this.gameOver || !this.game.hasGameStarted) {
+          return;
+        }
+        this.gameOver = true;
+        this.game.isInputLocked = true;
+        this.progressBar.showTimesUp();
+        this.game.TOTAL_SCORE += this.score;
+        this.playerInformation.update(this.score);
+
+        this.messageBar.showTimeOverMessage(this.timeUpKey);
+        emit("hint", { text: this.timeUpKey });
+
+        this.game.stage.update();
+      },
     );
 
-    foundBox.addTo(this.blackboard);
-
-    const foundTitle = new this.game.zim.Label({
-      text: "Found Verbs",
-      size: 30,
-      color: "#00ff88",
-    });
-
-    foundTitle.pos(
-      60,
-      this.blackboard.height - 180
-    );
-
-    foundTitle.addTo(this.blackboard);
-
-    const foundWordsLabel = new this.game.zim.Label({
-      text: "",
-      size: 24,
-      color: "white",
-      align: "left",
-      lineWidth: this.blackboard.width - 140,
-    });
-
-    foundWordsLabel.pos(
-      60,
-      this.blackboard.height - 130
-    );
-
-    foundWordsLabel.addTo(this.blackboard);
-
     //-----------------------------------
-    // STORY
+    // DISPLAYING PASSAGE AND HANDLING GAME LOGIC
     //-----------------------------------
+    if (this.passageDisplay) {
+      this.passageDisplay.destroy();
+    }
+    this.passageDisplay = new PassageDisplay(this.game, this.blackboard);
+    const passageDisplayCont = this.passageDisplay.displayPassage(
+      (cleanWord, label) => {
+        if (this.game.isInputLocked) {
+          return;
+        }
 
-    const margin = 60;
-
-    let x = margin;
-    let y = 160;
-
-    const lineHeight = 42;
-
-    const maxWidth =
-      this.blackboard.width - 80;
-    
-
-    //-----------------------------------
-    // WORDS
-    //-----------------------------------
-
-    this.data.forEach((word) => {
-      const label = new this.game.zim.Label({
-        text: word,
-        size: 32,
-        color: "white",
-      });
-
-      if (
-        x + label.width >
-        maxWidth
-      ) {
-        x = margin;
-        y += lineHeight;
-      }
-
-      label.pos(x, y);
-
-      label.addTo(this.blackboard);
-
-      x += label.width + 14;
-
-      //-----------------------------------
-      // CLICK
-      //-----------------------------------
-
-      label.tap(() => {
-        const cleanWord =
-          word
-            .toLowerCase()
-            .replace(/[^\w']/g, "");
-          console.log("CLICKED:", cleanWord);
-        //-----------------------------------
-        // CORRECT VERB
-        //-----------------------------------
-
-        if (
-          this.verbs.includes(cleanWord)
-        ) {
-
-          if (
-            this.foundWords.includes(cleanWord)
-          ) {
-            messageLabel.text =
-              `${cleanWord} already found`;
-
+        if (this.verbs.includes(cleanWord)) {
+          if (this.foundWords.includes(cleanWord)) {
             this.game.stage.update();
             return;
           }
 
-          // Prevent this label from firing again
           label.mouseEnabled = false;
+          label.cursor = "default";
 
-          this.foundWords.push(
-            cleanWord
+          this.foundWords.push(cleanWord);
+          this.hintUsed = this.controlPanel.hintCounter;
+          const pointsEarned = this.manager.setScore(
+            this.game.verbGameKey,
+            this.foundWords.length,
+            this.hintUsed,
           );
-          console.log("FOUND =", this.foundWords);
 
-          this.score++;
-          console.log("SCORE =", this.score);
-          label.color = "#00ff88";
+          this.score += pointsEarned;
+          this.playerInformation.update(this.score);
+          this.progressBar.setFound(this.foundWords.length);
 
-          progressLabel.text =
-            `Found ${this.score}/${this.verbs.length} Verbs`;
-
-          messageLabel.text =
-            `Great! "${cleanWord}" is a verb`;
-
-          foundWordsLabel.text =
-            this.foundWords.join(", ");
+          label.setColor("#00ff88");
+          this.foundWordsCont.addWord(cleanWord);
 
           emit("correct");
-
-          this.checkWin(
-            messageLabel
-          );
-        }
-
-        //-----------------------------------
-        // NOUN
-        //-----------------------------------
-
-        else if (
-          this.nouns.includes(cleanWord)
-        ) {
-          label.color = "red";
-
-          messageLabel.text =
-            `Oops! "${cleanWord}" is a noun`;
-
-          emit("wrong");
-        }
-
-        //-----------------------------------
-        // ADJECTIVE
-        //-----------------------------------
-
-        else if (
-          this.adjectives.includes(cleanWord)
-        ) {
-          label.color = "orange";
-
-          messageLabel.text =
-            `Oops! "${cleanWord}" is an adjective`;
-
-          emit("wrong");
-        }
-
-        //-----------------------------------
-        // OTHER
-        //-----------------------------------
-
-        else {
-          label.color = "#ff6666";
-
-          messageLabel.text =
-            `"${cleanWord}" is not a verb`;
-
-          emit("wrong");
+          this.checkWin();
+        } else if (this.nouns.includes(cleanWord)) {
+          label.setColor("red");
+          const definition = this.manager.defineNoun();
+          emit("hint", {
+            text: `Oops! "${cleanWord}" is a Noun. ${definition}`,
+          });
+        } else if (this.adjectives.includes(cleanWord)) {
+          label.setColor("orange");
+          const definition = this.manager.defineAdjective();
+          emit("hint", {
+            text: `Oops! "${cleanWord}" is an ADJECTIVE. ${definition}`,
+          });
         }
 
         this.game.stage.update();
-      });
-    });
-
-    //-----------------------------------
-    // CHALK
-    //-----------------------------------
-
-    new Chalk(this.game).show();
+      },
+    );
+    passageDisplayCont.pos(50, 150);
+    passageDisplayCont.addTo(this.blackboard);
 
     this.game.stage.update();
-
     return this.blackboard;
   }
 
   //-----------------------------------
   // WIN
   //-----------------------------------
-
   checkWin() {
-    
+    if (this.foundWords.length === this.verbs.length) {
+      this.gameOver = true;
+      this.timer.stop(); // Stop the loop ticking down inside the code immediately
+
+      this.game.isInputLocked = true;
+
+      const elapsedMs = this.timer.getElapsedTime();
+      const minutes = Math.floor(elapsedMs / 60000);
+      const seconds = Math.floor((elapsedMs % 60000) / 1000);
+
+      const acquiredTotalScore = this.manager.setGameTotal(
+        this.foundWords.length,
+        elapsedMs,
+        this.score,
+      );
+      this.game.TOTAL_SCORE += acquiredTotalScore;
+
+      const earnedCoins = this.manager.assignCoins(acquiredTotalScore);
+      this.game.EARNED_COINS += earnedCoins;
+
+      this.playerInformation.update(this.score);
+      const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
+
+      this.messageBar.showWinningMessage(this.game.verbGameKey, completionTime);
+      this.game.hasGameStarted = false;
       emit("complete");
-
-    if (
-      this.foundWords.length ===
-      this.verbs.length
-    ) {
-
-      const modal = document.createElement("div");
-
-      modal.innerHTML = `
-        <div style="
-          position:fixed;
-          top:0;
-          left:0;
-          width:100%;
-          height:100%;
-          background:rgba(0,0,0,0.4);
-          display:flex;
-          justify-content:center;
-          align-items:center;
-          z-index:99999;
-        ">
-          <div style="
-            background:#FFF8F0;
-            padding:30px;
-            border-radius:20px;
-            border:4px solid #E9D8A6;
-            text-align:center;
-            min-width:400px;
-            box-shadow:0 8px 20px rgba(0,0,0,.25);
-          ">
-
-            <h1 style="
-              color:#7B2CBF;
-              margin-bottom:10px;
-              font-size:42px;
-            ">
-              🎉 Great Job!
-            </h1>
-
-            <p style="
-              font-size:24px;
-              margin-bottom:25px;
-            ">
-              You found all verbs!
-            </p>
-
-            <button
-              id="continueBtn"
-              style="
-                background:#9D6EFF;
-                color:white;
-                border:none;
-                padding:14px 26px;
-                border-radius:12px;
-                cursor:pointer;
-                margin-right:12px;
-                font-size:18px;
-              "
-            >
-              Continue to Adjectives
-            </button>
-
-            <button
-              id="exitBtn"
-              style="
-                background:#FF8A80;
-                color:white;
-                border:none;
-                padding:14px 26px;
-                border-radius:12px;
-                cursor:pointer;
-                font-size:18px;
-              "
-            >
-              Exit Game
-            </button>
-
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-
-      //-----------------------------------
-      // CONTINUE
-      //-----------------------------------
-
-      document.getElementById("continueBtn").onclick = () => {
-
-        modal.remove();
-
-        this.blackboard.removeFrom();
-
-        this.game.startAdjectiveGame();
-
-        this.game.stage.update();
-      };
-
-      //-----------------------------------
-      // EXIT
-      //-----------------------------------
-
-      document.getElementById("exitBtn").onclick = () => {
-
-        modal.remove();
-
-        this.game.stage.removeAllChildren();
-
-        this.game.start();
-
-        this.game.stage.update();
-      };
     }
-  }
-
-  //-----------------------------------
-  // DATA
-  //-----------------------------------
-
-  getData() {
-    return (
-      this.game.storyData.story.match(/\S+/g) || []
-    );
   }
 }
 
