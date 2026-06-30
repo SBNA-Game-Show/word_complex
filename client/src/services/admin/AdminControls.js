@@ -74,19 +74,13 @@ export const downloadStory = (story) => {
 
 /**
  * Add new story
-  */
+ */
 export const addNewStory = async (storyId) => {
   try {
     const response = await fetch(
-      `${API_BASE}/addNew`,
+      `${API_BASE}/addNew?story_id=${encodeURIComponent(storyId)}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          storyId,
-        }),
       }
     );
 
@@ -132,4 +126,23 @@ export const writeMeta = async () => {
     console.error("Failed to write metadata:", error);
     throw error;
   }
+};
+export const uploadStory = async (file, language) => {
+  const formData = new FormData();
+
+  formData.append("file", file);
+  formData.append("language", language);
+
+  const response = await fetch(`${API_BASE}/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Upload failed");
+  }
+
+  return data;
 };
