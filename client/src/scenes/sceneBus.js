@@ -2,7 +2,7 @@
 // --------
 // Tiny module-level pub/sub used to bridge the isolated ZIM canvas (rendered
 // inside createZimGame, which passes no props/callbacks) to the surrounding
-// React scene. The SentenceBuilder game emits feedback events here; GameScene
+// React scene. The PassageReconstruction game emits feedback events here; GameScene
 // subscribes and reacts by having the helper character "say" something.
 //
 // Intentionally minimal and framework-agnostic so any future scene-based game

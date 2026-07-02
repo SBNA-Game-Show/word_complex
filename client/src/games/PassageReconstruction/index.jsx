@@ -6,6 +6,7 @@ import { createHintButton } from "../shared/hintButton";
 import { createCountdown } from "../shared/countdownPolicy";
 
 const zimFont = "Fredoka";
+const sanskritFont = "Nirmala UI";
 
 // Meadow / storybook-sky palette (matches passage-reconstruction.png):
 //   sky blues, soft meadow greens, sandy "path stone" cream, lantern gold.
@@ -39,6 +40,8 @@ export default createZimGame({
     let attemptsLeft = 3;
     let checks = 0;
     let correctChecks = 0;
+    let currentLanguage = "english";
+    let isStarting = false;
     let feedbackActive = false; // blocks checkAnswer while a feedback popup is showing
     // A wrong "Check" costs points (floored at 0, like the hint penalty) on top of
     // burning an attempt, so the final score reflects accuracy.
@@ -88,6 +91,7 @@ export default createZimGame({
     let layoutCache = { round: -1, layout: null };
 
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const contentFont = () => currentLanguage === "sanskrit" ? sanskritFont : zimFont;
 
     function addLabel(text, size, color, x, y, align = "left", container = stage) {
       const label = new zim.Label(text, size, zimFont, color);
@@ -139,6 +143,113 @@ export default createZimGame({
           if (countdown.expired()) endByTimeout();
         },
       });
+    }
+
+    function resetSessionState() {
+      if (timerInterval) {
+        timerInterval.clear();
+        timerInterval = null;
+      }
+      rounds = [];
+      roundIndex = 0;
+      score = 0;
+      attemptsLeft = 3;
+      checks = 0;
+      correctChecks = 0;
+      isStarting = false;
+      feedbackActive = false;
+      gameOver = false;
+      timerLabel = null;
+      hintButton = null;
+      hintedSlots.clear();
+      tiles.length = 0;
+      zones.length = 0;
+      layoutCache = { round: -1, layout: null };
+      countdown.reset();
+      hintPolicy.reset();
+    }
+
+    function makeLanguageButton({ language, label, detail, x }) {
+      const isSanskrit = language === "sanskrit";
+      const buttonLabel = new zim.Label({
+        text: label,
+        size: isSanskrit ? 25 : 24,
+        font: isSanskrit ? sanskritFont : zimFont,
+        color: "#ffffff",
+        align: "center",
+        valign: "center",
+        bold: true,
+      });
+      const button = new zim.Button({
+        width: 210,
+        height: 62,
+        label: buttonLabel,
+        backgroundColor: isSanskrit ? "#5a9a4f" : palette.goldDeep,
+        rollBackgroundColor: isSanskrit ? "#6aae5d" : palette.gold,
+        downBackgroundColor: isSanskrit ? "#4d8a44" : "#b58c33",
+        color: "#ffffff",
+        corner: 24,
+      }).addTo(stage).loc(x, 395);
+
+      button.tap(() => loadAndStart(language));
+
+      new zim.Label({
+        text: detail,
+        size: isSanskrit ? 18 : 17,
+        font: isSanskrit ? sanskritFont : zimFont,
+        color: palette.inkSoft,
+        align: "center",
+        valign: "top",
+        lineWidth: 230,
+      }).addTo(stage).loc(x + 105, 474);
+    }
+
+    function showLanguagePicker() {
+      if (disposed) return;
+      resetSessionState();
+      stage.removeAllChildren();
+      makeBackground();
+
+      const panelW = 700;
+      const panelH = 360;
+      const panelX = (W - panelW) / 2;
+      const panelY = 170;
+      new zim.Rectangle(panelW, panelH, "rgba(255,255,255,.84)", palette.goldDeep, 4, 28)
+        .addTo(stage).loc(panelX, panelY);
+
+      new zim.Label({
+        text: "Passage Reconstruction",
+        size: 42,
+        font: zimFont,
+        color: palette.ink,
+        align: "center",
+        valign: "top",
+        bold: true,
+      }).addTo(stage).loc(W / 2, 218);
+
+      new zim.Label({
+        text: "Choose a language",
+        size: 26,
+        font: zimFont,
+        color: palette.inkSoft,
+        align: "center",
+        valign: "top",
+      }).addTo(stage).loc(W / 2, 286);
+
+      makeLanguageButton({
+        language: "english",
+        label: "English",
+        detail: "Rebuild the story sentence in English.",
+        x: W / 2 - 245,
+      });
+      makeLanguageButton({
+        language: "sanskrit",
+        label: "संस्कृतम्",
+        detail: "देवनागरी वाक्यं पुनर्निर्माणं कुरु।",
+        x: W / 2 + 35,
+      });
+
+      stage.update();
     }
 
     // Time ran out: end the game on the spot with the timed-out results screen.
@@ -275,7 +386,7 @@ export default createZimGame({
       const label = new zim.Label({
         text,
         size: TILE_FONT,
-        font: zimFont,
+        font: contentFont(),
         color: palette.ink,
         align: "center",
         valign: "center",
@@ -350,7 +461,7 @@ export default createZimGame({
       const probe = new zim.Label({
         text,
         size: TILE_FONT,
-        font: zimFont,
+        font: contentFont(),
         bold: true,
         lineWidth: TILE_WRAP
       });
@@ -543,8 +654,8 @@ export default createZimGame({
       // The sentence — large and clear
       new zim.Label({
         text: rounds[roundIndex].sentence,
-        size: 30,
-        font: zimFont,
+        size: currentLanguage === "sanskrit" ? 28 : 30,
+        font: contentFont(),
         color: palette.ink,
         align: "center",
         valign: "center",
@@ -826,32 +937,34 @@ export default createZimGame({
         color: "#ffffff",
         corner: 20
       }).loc(455, 456).addTo(stage);
-      again.on("click", () => {
+      again.tap(() => {
         if (disposed) return;
-        roundIndex = 0;
-        score = 0;
-        attemptsLeft = 3;
-        checks = 0;
-        correctChecks = 0;
-        gameOver = false;
-        countdown.reset();
-        startTimer();
-        showSentencePreview();
+        showLanguagePicker();
       });
       stage.update();
     }
 
-    async function loadAndStart() {
+    async function loadAndStart(language = "english") {
       if (disposed) return;
+      if (isStarting) return;
+      currentLanguage = language;
+      resetSessionState();
+      isStarting = true;
       stage.removeAllChildren();
-      new zim.Label("Loading story...", 28, zimFont, "#073b49").addTo(stage).center(stage);
+      new zim.Label(
+        `Loading ${language === "sanskrit" ? "Sanskrit" : "English"} story...`,
+        28,
+        language === "sanskrit" ? sanskritFont : zimFont,
+        "#073b49"
+      ).addTo(stage).center(stage);
       stage.update();
 
-      const response = await getPassageReconstructionGame();
+      const response = await getPassageReconstructionGame(language);
 
       if (disposed) return;
 
       if (!response || !response.data || !response.data.rounds) {
+        isStarting = false;
         stage.removeAllChildren();
         new zim.Label("Failed to load story. Please refresh.", 22, zimFont, "#8a3a2d")
           .addTo(stage).center(stage);
@@ -865,7 +978,7 @@ export default createZimGame({
       showSentencePreview();
     }
 
-    loadAndStart();
+    showLanguagePicker();
 
     return () => {
       disposed = true;
