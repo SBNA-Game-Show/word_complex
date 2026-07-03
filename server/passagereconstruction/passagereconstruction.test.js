@@ -123,7 +123,7 @@ describe("Passage Reconstruction Route + Controller", () => {
     retrieveStoryById.mockResolvedValue(mockStory);
 
     const response = await request(app)
-      .get("/api/v1/passageReconstruct/game")
+      .get("/api/v1/passageReconstruct/game?storyId=test-id")
       .expect(200);
 
     expect(response.body.success).toBe(true);
@@ -131,11 +131,20 @@ describe("Passage Reconstruction Route + Controller", () => {
     expect(response.body.data.rounds).toHaveLength(3);
   });
 
+  it("GET /api/v1/passageReconstruct/game returns 400 when storyId is missing", async () => {
+    const response = await request(app)
+      .get("/api/v1/passageReconstruct/game")
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(retrieveStoryById).not.toHaveBeenCalled();
+  });
+
   it("GET /api/v1/passageReconstruct/game returns 500 when service throws", async () => {
     retrieveStoryById.mockRejectedValue(new Error("DB connection failed"));
 
     const response = await request(app)
-      .get("/api/v1/passageReconstruct/game")
+      .get("/api/v1/passageReconstruct/game?storyId=test-id")
       .expect(500);
 
     expect(response.body.success).toBe(false);

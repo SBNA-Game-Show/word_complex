@@ -26,6 +26,7 @@ describe("Fill in the Blank Controller Tests", () => {
 
     const req = {
       query: {
+        storyId: "story123",
         difficulty: "easy",
         wordTypes: "NOUN",
         language: "english",
@@ -54,11 +55,24 @@ describe("Fill in the Blank Controller Tests", () => {
     );
   });
 
+  it("should return 400 when storyId is missing", async () => {
+    const req = { query: { difficulty: "easy" } };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    await initializeGame(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(retrieveStoryById).not.toHaveBeenCalled();
+  });
+
   it("should return 500 when retrieveStoryById throws an error", async () => {
     retrieveStoryById.mockRejectedValue(new Error("Database error"));
 
     const req = {
-      query: {},
+      query: { storyId: "story123" },
     };
 
     const res = {

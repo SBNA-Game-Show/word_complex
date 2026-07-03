@@ -6,6 +6,12 @@ import GameScreen from "./components/GameScreen";
 import HowToPlay from "./components/HowToPlay";
 import AboutPage from "./components/AboutPage";
 import CharacterSelect from "./components/CharacterSelect";
+import StoryPicker from "./storyPicker/StoryPicker";
+import {
+  getSelectedStoryId,
+  setSelectedStoryId,
+  clearSelectedStoryId,
+} from "./storyPicker/activeStory";
 import { LeaderboardPage } from "./leaderboard";
 import GameScene from "./scenes/GameScene";
 import { getSceneConfig } from "./scenes/sceneConfig";
@@ -30,6 +36,12 @@ function AuthenticatedApp() {
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem(CHARACTER_STORAGE_KEY);
   });
+  // Chosen story for this session. Not persisted — the picker gates every login,
+  // so a fresh load starts null and the player picks again. Mirrored into the
+  // activeStory store so the per-game fetch services can read it at request time.
+  const [selectedStoryId, setSelectedStoryIdState] = useState(() =>
+    getSelectedStoryId(),
+  );
   const [transitionPhase, setTransitionPhase] = useState("idle");
   // "idle" while on the menu, "swiping" during the menu swipe-out before a
   // scene-based game mounts. Used to disable launch buttons and drive the swipe.
@@ -42,8 +54,19 @@ function AuthenticatedApp() {
   useEffect(() => {
     if (!isAuthenticated) {
       setScreen("launcher");
+      // Clear the session story on logout so the next login re-gates the picker.
+      clearSelectedStoryId();
+      setSelectedStoryIdState(null);
     }
   }, [isAuthenticated]);
+
+  // Commit a story pick: update the shared store (read by game services) and the
+  // React state (drives the gate/UI), then head to the launcher.
+  function chooseStory(storyId) {
+    setSelectedStoryId(storyId);
+    setSelectedStoryIdState(storyId);
+    setScreen("launcher");
+  }
 
   function openGame(gameId) {
     setActiveGameId(gameId);
@@ -106,6 +129,16 @@ function AuthenticatedApp() {
         </div>
       ) : !isAuthenticated ? (
         <LoginPage />
+      ) : !selectedStoryId ? (
+        // Gate: every session must pick a story before reaching the launcher.
+        <StoryPicker onConfirm={chooseStory} />
+      ) : screen === "story" ? (
+        // Re-pick opened from the launcher — has a Back button.
+        <StoryPicker
+          currentStoryId={selectedStoryId}
+          onConfirm={chooseStory}
+          onBack={() => setScreen("launcher")}
+        />
       ) : screen === "scene" ? (
         <GameScene
           gameId={activeGameId}
@@ -118,6 +151,7 @@ function AuthenticatedApp() {
           onAbout={() => setScreen("about")}
           onHowToPlay={openHowToPlay}
           onChooseCharacter={openCharacters}
+          onChooseStory={() => setScreen("story")}
           onLeaderboard={() => setScreen("leaderboard")}
           isZooming={transitionPhase === "zoom-in"}
         />
