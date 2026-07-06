@@ -123,6 +123,8 @@ export default createZimGame({
       sub: "#8892b0",
     };
 
+    const SHORTCUT_BLUE = "#1a7a99";
+
     // 6 pair colors — each pair gets its own identity
     const PC = [
       "#ff6fb5",
@@ -1860,6 +1862,44 @@ export default createZimGame({
       return cloud;
     }
 
+    function drawShortcutStrip({
+      text,
+      x,
+      y,
+      width = 620,
+      height = 30,
+      accent = C.grape,
+    }) {
+      const strip = new zim.Container().addTo(stage).loc(x, y);
+      strip.mouseChildren = false;
+
+      new zim.Rectangle({
+        width,
+        height,
+        color: "rgba(255,255,255,0.72)",
+        borderColor: rgba(accent, 0.22),
+        borderWidth: 1.5,
+        corner: height / 2,
+      }).addTo(strip);
+
+      const label = new zim.Label({
+        text,
+        size: 12,
+        font: FONT,
+        color: SHORTCUT_BLUE,
+        align: "center",
+        valign: "center",
+        bold: true,
+        lineWidth: width - 24,
+      })
+        .addTo(strip)
+        .loc(width / 2, height / 2);
+
+      label.alpha = 0.86;
+
+      return strip;
+    }
+
     function drawKidButton({
       x,
       y,
@@ -2282,6 +2322,14 @@ export default createZimGame({
           .loc(108, y + 28);
       });
 
+      drawShortcutStrip({
+        text: "Keyboard: ? Help • Enter Continue • 1-3 Challenge • P Practice • T Timed • H Hint • Esc Back",
+        x: W / 2 - 360,
+        y: 540,
+        width: 720,
+        accent: C.grape,
+      });
+
       drawKidButton({
         x: W / 2 - 280,
         y: 580,
@@ -2416,6 +2464,16 @@ export default createZimGame({
           ? 644
           : 614
         : 596;
+
+      drawShortcutStrip({
+        text: isTimedMode()
+          ? "Shortcuts: 1-3 Challenge • P Practice • T Timed • C Custom • Enter Start • Esc Home"
+          : "Shortcuts: 1-3 Challenge • P Practice • T Timed • Enter Start • Esc Home",
+        x: W / 2 - 350,
+        y: actionY - 40,
+        width: 700,
+        accent: isTimedMode() ? C.tangerine : active.accent,
+      });
 
       drawKidButton({
         x: W / 2 - 270,
@@ -2804,6 +2862,24 @@ export default createZimGame({
         .addTo(stage)
         .loc(W / 2, barY + 14);
 
+      const gameplayShortcutText = isTimedMode()
+        ? "H Hint • R Retry • S Skip • Esc Exit"
+        : "H Hint • R Retry • S Next • F Finish • Esc Exit";
+
+      const gameplayShortcutLabel = new zim.Label({
+        text: gameplayShortcutText,
+        size: 11,
+        font: FONT,
+        color: SHORTCUT_BLUE,
+        align: "center",
+        valign: "center",
+        bold: true,
+      })
+        .addTo(stage)
+        .loc(W / 2, barY + 50);
+
+      gameplayShortcutLabel.alpha = 0.72;
+
       // Hint button (right side)
       const hintBtn = new zim.Container().addTo(stage).loc(W - 140, barY + 11);
       hintBtn.mouseChildren = false;
@@ -2816,7 +2892,7 @@ export default createZimGame({
         corner: 19,
       }).addTo(hintBtn);
       new zim.Label({
-        text: "💡 Hint",
+        text: "💡 H Hint",
         size: 16,
         font: FONT,
         color: "#3949ab",
@@ -2841,7 +2917,7 @@ export default createZimGame({
         corner: 19,
       }).addTo(skipBtn);
       new zim.Label({
-        text: isTimedMode() ? "⏭ Skip" : "⏭ Next",
+        text: isTimedMode() ? "S Skip" : "S Next",
         size: 16,
         font: FONT,
         color: "#3949ab",
