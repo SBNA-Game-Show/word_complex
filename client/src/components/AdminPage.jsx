@@ -1,97 +1,245 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   getAllStories,
   getAllTokenizedStories,
   addNewStory,
-  writeMeta, uploadStory,
+  writeMeta,
+  uploadStory,
+  getUnusedStories,
 } from "../services/admin/AdminControls";
 
 export default function AdminPage() {
-  const [stories, setStories] = useState([]);
+  // -------------------------------
+  // Story Sources
+  // -------------------------------
+  const [learnStories, setLearnStories] = useState([]);
+  const [sanskritStories, setSanskritStories] = useState([]);
+
+  const [learnLoaded, setLearnLoaded] = useState(false);
+  const [sanskritLoaded, setSanskritLoaded] = useState(false);
+
+  const [learnExpanded, setLearnExpanded] = useState(false);
+  const [sanskritExpanded, setSanskritExpanded] = useState(false);
+  // -------------------------------
+  // Existing
+  // -------------------------------
   const [tokenizedStories, setTokenizedStories] = useState([]);
   const [activeView, setActiveView] = useState("available");
-
-  const [storyId, setStoryId] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
-  const [language, setLanguage] = useState("english");
-  const allStories = stories.flatMap(
-    (collection) => collection.story_description || []
-  );
+  
+  async function loadLearnStories() {
 
-  useEffect(() => {
-    loadStories();
-  }, []);
+    if (learnLoaded) {
+        return;
+    }
 
-  async function loadStories() {
     setLoading(true);
 
     try {
-      const response = await getAllStories();
 
-      console.log("Stories Response:", response);
+        const response = await getAllStories();
 
-      setStories(response.data || []);
+        const stories =
+            (response.data || []).flatMap(
+                (collection) =>
+                    collection.story_description || []
+            );
 
-      setActiveView("available");
-    } finally {
-      setLoading(false);
-    }
-  }
+        setLearnStories(stories);
 
-  async function handleAddStory() {
-    if (!storyId.trim()) {
-      alert("Enter a Story ID");
-      return;
-    }
+        setLearnLoaded(true);
 
-    try {
-      await addNewStory(storyId);
-
-      alert("Story added successfully");
-
-      setStoryId("");
-
-      loadStories();
     } catch (error) {
-      alert("Failed to add story");
-    }
-  }
 
-  async function handleWriteMeta() {
-    try {
-        const result = await writeMeta();
-
-        alert(
-        result?.message ||
-        "Meta Data downloaded successfully"
-        );
-    } catch (error) {
         console.error(error);
 
-        alert(
-        error?.message ||
-        "Internal server error"
-        );
+        alert("Failed to load LearnSanskrit stories");
+
+    } finally {
+
+        setLoading(false);
+
     }
+
+    }
+    async function loadSanskritStories() {
+
+        if (sanskritLoaded) {
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+
+            const response = await getUnusedStories();
+
+            setSanskritStories(response.data || []);
+
+            setSanskritLoaded(true);
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert("Failed to load Sanskrit stories");
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    }
+    async function refreshStories() {
+
+    setLearnLoaded(false);
+
+    setSanskritLoaded(false);
+
+    setLearnStories([]);
+
+    setSanskritStories([]);
+
+    if (learnExpanded) {
+
+        await loadLearnStories();
+
+    }
+
+    if (sanskritExpanded) {
+
+        await loadSanskritStories();
+
+    }
+
+}
+async function toggleLearnStories() {
+
+    const next = !learnExpanded;
+
+    setLearnExpanded(next);
+
+    if (next) {
+
+        await loadLearnStories();
+
+    }
+
+}
+async function toggleSanskritStories() {
+
+    const next = !sanskritExpanded;
+
+    setSanskritExpanded(next);
+
+    if (next) {
+
+        await loadSanskritStories();
+
+    }
+
+}
+  async function handleDownloadLearnStory(story) {
+
+    try {
+
+        const result = await addNewStory(story._id);
+
+        alert(
+
+            result?.data?.message ||
+
+            result?.message ||
+
+            "Story downloaded successfully"
+
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Failed to download story");
+
+    }
+
+}
+async function handleDownloadSanskritStory(story) {
+
+    try {
+
+        const result = await addNewStory(story._id);
+
+        alert(
+
+            result?.data?.message ||
+
+            result?.message ||
+
+            "Story downloaded successfully"
+
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Failed to download story");
+
+    }
+
+}
+  async function handleWriteMeta() {
+
+        try {
+
+            setLoading(true);
+
+            const result = await writeMeta();
+
+            alert(
+
+                result.message ||
+
+                "Metadata generated successfully."
+
+            );
+
+        }
+
+        catch(error){
+
+            console.error(error);
+
+            alert("Metadata generation failed.");
+
+        }
+
+        finally{
+
+            setLoading(false);
+
+        }
+
     }
     async function handleUpload() {
         if (!uploadFile) {
             alert("Please choose a file.");
             return;
         }
-
         try {
             setLoading(true);
 
-            const result = await uploadStory(uploadFile, language);
+            const result = await uploadStory(uploadFile);
 
             alert(result.message);
 
             setUploadFile(null);
 
-            loadStories();
+            await refreshStories();
         } catch (error) {
             alert(error.message || "Upload failed");
         } finally {
@@ -116,24 +264,7 @@ export default function AdminPage() {
     }
   }
 
-  async function handleUseStory(story) {
-    const storyId = story._id;
-
-    try {
-      const result = await addNewStory(storyId);
-
-      alert(
-        result?.data?.message ||
-        result?.message ||
-        "Story downloaded successfully"
-      );
-
-      loadStories();
-    } catch (error) {
-      console.error(error);
-      alert("Failed to process story");
-    }
-  }
+  
   async function handleUseTokenizedStory(story) {
     console.log("Using tokenized story:", story);
 
@@ -155,6 +286,29 @@ export default function AdminPage() {
     minWidth: "220px",
     boxShadow: "0 4px 12px rgba(248,165,60,0.3)",
     };
+    async function handleRefresh() {
+
+    // Collapse both sections
+    setLearnExpanded(false);
+    setSanskritExpanded(false);
+
+    // Clear loaded data
+    setLearnStories([]);
+    setSanskritStories([]);
+
+    // Mark them as not loaded
+    setLearnLoaded(false);
+    setSanskritLoaded(false);
+
+    // Return to Available Stories page
+    setActiveView("available");
+
+    // Clear upload selection
+    setUploadFile(null);
+
+    // Clear tokenized stories
+    setTokenizedStories([]);
+}
   return (
     <div
       style={{
@@ -187,6 +341,27 @@ export default function AdminPage() {
         </h1>
 
         <hr />
+        {
+            loading && (
+
+            <div
+            style={{
+            background:"#fff7e7",
+            border:"1px solid #f8a53c",
+            padding:"15px",
+            borderRadius:"12px",
+            marginBottom:"20px",
+            fontWeight:"700",
+            color:"#1f2b6b",
+            }}
+            >
+
+            Loading...
+
+            </div>
+
+            )
+            }
 
         <div
             style={{
@@ -197,34 +372,6 @@ export default function AdminPage() {
                 alignItems: "center",
             }}
             >
-            <input
-                type="text"
-                placeholder="Story ID"
-                value={storyId}
-                onChange={(e) => setStoryId(e.target.value)}
-                style={{
-                padding: "14px 16px",
-                borderRadius: "12px",
-                border: "1px solid #ddd",
-                minWidth: "250px",
-                fontSize: "15px",
-                }}
-            />
-
-            <button
-                onClick={handleAddStory}
-                style={actionButtonStyle}
-            >
-                Add New Story
-            </button>
-
-            {/* <button
-                onClick={handleWriteMeta}
-                style={actionButtonStyle}
-            >
-                Write Meta
-            </button> */}
-
             <button
                 onClick={handleGetTokenizedStories}
                 style={actionButtonStyle}
@@ -233,7 +380,7 @@ export default function AdminPage() {
             </button>
 
             <button
-                onClick={loadStories}
+                onClick={handleRefresh}
                 style={actionButtonStyle}
             >
                 Refresh
@@ -241,133 +388,349 @@ export default function AdminPage() {
         </div>
 
         {activeView === "available" ? (
-            <>
-                <h2
-                style={{
-                    fontSize: "34px",
-                    color: "#1f2b6b",
-                    marginBottom: "24px",
-                }}
-                >
-                Available Stories ({allStories.length})
-                </h2>
-                 {/* ---------- Upload Story Section ---------- */}
-
-                <div
-                    style={{
-                        background: "white",
-                        borderRadius: "18px",
-                        padding: "24px",
-                        marginBottom: "30px",
-                        boxShadow: "0 2px 10px rgba(0,0,0,.08)",
-                    }}
-                >
-                    <h3
+<>
+                    <h2
                         style={{
+                            fontSize: "34px",
                             color: "#1f2b6b",
-                            marginTop: 0,
-                            marginBottom: "20px",
+                            marginBottom: "24px",
                         }}
                     >
-                        Upload Asset
-                    </h3>
+                        Available Stories
+                    </h2>
+
+                    {/* Upload Asset */}
 
                     <div
-                        style={{
-                            display: "flex",
-                            gap: "20px",
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                        }}
-                    >
-                        <input
-                            type="file"
-                            accept=".pdf,.json,.txt,.doc,.docx,image/*"
-                            onChange={(e) => setUploadFile(e.target.files[0])}
-                        />
-
-                        <select
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value)}
-                            style={{
-                                padding: "12px",
-                                borderRadius: "10px",
-                                fontSize: "15px",
-                            }}
-                        >
-                            <option value="english">English</option>
-                            <option value="sanskrit">Sanskrit</option>
-                        </select>
-
-                        <button
-                            onClick={handleUpload}
-                            style={actionButtonStyle}
-                        >
-                            Upload
-                        </button>
-                    </div>
-                </div>
-                {loading ? (
-                <p>Loading...</p>
-                ) : (
-                <div
-                    style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
-                    gap: "18px",
-                    }}
-                >
-                    {allStories.map((story) => (
-                    <div
-                        key={story._id}
                         style={{
                             background: "white",
-                            borderRadius: "16px",
-                            padding: "18px",
-                            boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+                            borderRadius: "18px",
+                            padding: "24px",
+                            marginBottom: "35px",
+                            boxShadow: "0 2px 10px rgba(0,0,0,.08)",
                         }}
                     >
-                        <details>
-                            <summary
-                                style={{
-                                    cursor: "pointer",
-                                    fontWeight: "700",
-                                    color: "#1f2b6b",
-                                    fontSize: "17px",
-                                }}
-                            >
-                                {story.storyTitle}
-                            </summary>
 
-                            <div
-                                style={{
-                                    display: "flex",
-                                    gap: "12px",
-                                    marginTop: "16px",
-                                    flexWrap: "wrap",
-                                }}
-                            >
-                                <button
-                                    onClick={() => handleUseStory(story)}
-                                    style={actionButtonStyle}
-                                >
-                                    Download Story
-                                </button>
+                        <h3
+                            style={{
+                                color: "#1f2b6b",
+                                marginTop: 0,
+                                marginBottom: "20px",
+                            }}
+                        >
+                            Upload Asset
+                        </h3>
 
-                                <button
-                                    onClick={handleWriteMeta}
-                                    style={actionButtonStyle}
-                                >
-                                    Write Metadata
-                                </button>
-                            </div>
-                        </details>
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "20px",
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <input
+                                type="file"
+                                accept=".pdf,.json,.txt,.doc,.docx,image/*"
+                                onChange={(e) => setUploadFile(e.target.files[0])}
+                            />
+                            <button
+                                onClick={handleUpload}
+                                style={actionButtonStyle}
+                            >
+                                Upload
+                            </button>
+                        </div>
                     </div>
-                    ))}
-                </div>
-                )}
-            </>
-        ) : (
+
+                    {/* Learn Sanskrit Section */}
+
+                    <div
+                        style={{
+                            background:"white",
+                            borderRadius:"18px",
+                            marginBottom:"24px",
+                            padding:"20px",
+                            boxShadow:"0 2px 10px rgba(0,0,0,.08)",
+                        }}
+                    >
+
+                        <div
+                            style={{
+                                display:"flex",
+                                justifyContent:"space-between",
+                                alignItems:"center",
+                                cursor:"pointer",
+                            }}
+                            onClick={toggleLearnStories}
+                        >
+
+                            <h3
+                                style={{
+                                    margin: 0,
+                                    color: "#1f2b6b",
+                                    fontSize: "20px",
+                                    fontWeight: "700",
+                                }}
+                                >
+                                {learnExpanded ? "▼" : "▶"} Stories from LearnSanskrit.cc{" "}
+                                {learnLoaded && (
+                                    <span
+                                    style={{
+                                        color: "#666",
+                                        fontWeight: "600",
+                                    }}
+                                    >
+                                    ({learnStories.length} stories)
+                                    </span>
+                                )}
+                                </h3>
+                        </div>
+                        {
+                            learnExpanded && (
+
+                                <>
+
+                                    <div
+                                        style={{
+                                            marginTop:"20px",
+                                            marginBottom:"20px",
+                                            display:"flex",
+                                            justifyContent:"center",
+                                        }}
+                                    >
+
+                                        <button
+                                            onClick={handleWriteMeta}
+                                            style={actionButtonStyle}
+                                        >
+                                            Write Metadata
+                                        </button>
+
+                                    </div>
+
+                                    {
+
+                                        loading && !learnLoaded ? (
+
+                                            <p>Loading stories...</p>
+
+                                        ) : (
+
+                                            <div
+                                                style={{
+                                                    display: "grid",
+                                                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                                                    gap: "18px",
+                                                    width: "100%",
+                                                }}
+                                            >
+                                                {learnStories.map((story) => (
+                                                    <div
+                                                        key={story._id}
+                                                        style={{
+                                                            background: "white",
+                                                            border: "1px solid #e5e5e5",
+                                                            borderRadius: "14px",
+                                                            overflow: "hidden",
+                                                            width: "100%",
+                                                            boxShadow: "0 2px 8px rgba(0,0,0,.08)",
+                                                        }}
+                                                    >
+                                                        <details>
+                                                            <summary
+                                                                style={{
+                                                                    padding: "16px",
+                                                                    cursor: "pointer",
+                                                                    fontWeight: "700",
+                                                                    color: "#1f2b6b",
+                                                                    fontSize: "17px",
+                                                                    background: "#fafafa",
+                                                                }}
+                                                            >
+                                                                {story.storyTitle}
+                                                            </summary>
+
+                                                            <div
+                                                                style={{
+                                                                    padding: "18px",
+                                                                    display: "flex",
+                                                                    justifyContent: "center",
+                                                                }}
+                                                            >
+                                                                <button
+                                                                    onClick={() => handleDownloadLearnStory(story)}
+                                                                    style={actionButtonStyle}
+                                                                >
+                                                                    Download Story
+                                                                </button>
+                                                            </div>
+                                                        </details>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                        )
+
+                                    }
+
+                                </>
+
+                            )
+
+                        }
+
+                    </div>
+
+                    {/* Sanskrit Section */}
+
+                    <div
+                        style={{
+                            background:"white",
+                            borderRadius:"18px",
+                            padding:"20px",
+                            boxShadow:"0 2px 10px rgba(0,0,0,.08)",
+                        }}
+                    >
+
+                        <div
+                            style={{
+                                display:"flex",
+                                justifyContent:"space-between",
+                                alignItems:"center",
+                                cursor:"pointer",
+                            }}
+                            onClick={toggleSanskritStories}
+                        >
+                            <h3
+                                style={{
+                                    margin: 0,
+                                    color: "#1f2b6b",
+                                    fontSize: "20px",
+                                    fontWeight: "700",
+                                }}
+                                >
+                                {sanskritExpanded ? "▼" : "▶"} Stories from Sanskrit.Samskrutam.com{" "}
+                                {sanskritLoaded && (
+                                    <span
+                                    style={{
+                                        color: "#666",
+                                        fontWeight: "600",
+                                    }}
+                                    >
+                                    ({sanskritStories.length} stories)
+                                    </span>
+                                )}
+                            </h3>
+                        </div>
+                        {
+
+                            sanskritExpanded && (
+
+                                <>
+
+                                    <div
+                                        style={{
+                                            marginTop:"20px",
+                                            marginBottom:"20px",
+                                            display:"flex",
+                                            justifyContent:"center",
+                                        }}
+                                    >
+
+                                        <button
+                                            onClick={handleWriteMeta}
+                                            style={actionButtonStyle}
+                                        >
+                                            Write Metadata
+                                        </button>
+
+                                    </div>
+
+                                    {
+
+                                        loading && !sanskritLoaded ? (
+
+                                            <p>Loading stories...</p>
+
+                                        ) : (
+                                            <div
+                                                style={{
+                                                    display: "grid",
+                                                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                                                    gap: "18px",
+                                                    width: "100%",
+                                                }}
+                                            >
+                                                {sanskritStories.map((story) => (
+                                                    <div
+                                                        key={story._id}
+                                                        style={{
+                                                            background: "white",
+                                                            border: "1px solid #e5e5e5",
+                                                            borderRadius: "14px",
+                                                            overflow: "hidden",
+                                                            width: "100%",
+                                                            boxShadow: "0 2px 8px rgba(0,0,0,.08)",
+                                                        }}
+                                                    >
+                                                        <details>
+                                                          <summary
+                                                            style={{
+                                                                cursor: "pointer",
+                                                                fontWeight: "700",
+                                                                color: "#1f2b6b",
+                                                                fontSize: "16px",
+                                                                padding: "14px",
+                                                            }}
+                                                        >
+                                                            {story.english_title}
+
+                                                            <span
+                                                                style={{
+                                                                    float: "right",
+                                                                    color: "#666",
+                                                                    fontWeight: "500",
+                                                                    fontSize: "14px",
+                                                                }}
+                                                            >
+                                                                {story.sanskrit_title}
+                                                            </span>
+                                                        </summary>
+                                                            <div
+                                                                style={{
+                                                                    padding: "18px",
+                                                                    display: "flex",
+                                                                    justifyContent: "center",
+                                                                }}
+                                                            >
+                                                                <button
+                                                                    onClick={() => handleDownloadSanskritStory(story)}
+                                                                    style={actionButtonStyle}
+                                                                >
+                                                                    Download Story
+                                                                </button>
+                                                            </div>
+                                                        </details>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                        )
+
+                                    }
+
+                                </>
+
+                            )
+
+                        }
+
+                    </div>
+
+                </>
+
+                ) : (
         <>
         <h2
             style={{
