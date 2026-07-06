@@ -1,8 +1,9 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
-export const getPassageReconstructionGame = async () => {
+export const getPassageReconstructionGame = async (language = "english") => {
   try {
-    const response = await fetch(`${API_BASE}/passageReconstruct/game`);
+    const params = new URLSearchParams({ language });
+    const response = await fetch(`${API_BASE}/passageReconstruct/game?${params}`);
 
     if (!response.ok) {
       throw new Error(`Request failed: ${response.status}`);

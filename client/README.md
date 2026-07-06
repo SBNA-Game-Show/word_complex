@@ -15,7 +15,7 @@ src/
 ├── auth/           # Auth context and fake demo client
 ├── components/     # Shared UI components (launcher, login, video background, etc.)
 ├── games/          # Game implementations (ZimJS canvas)
-│   ├── SentenceBuilder/    # index.jsx — component + meta
+│   ├── PassageReconstruction/ # index.jsx — component + meta
 │   ├── ContextClozeQuest/  # index.jsx — component + meta
 │   ├── WordMatch/          # index.jsx — add yours here
 │   ├── WordHunt/           # index.jsx — add yours here
