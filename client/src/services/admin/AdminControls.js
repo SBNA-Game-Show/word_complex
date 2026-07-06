@@ -17,6 +17,36 @@ export const getAllStories = async () => {
     return [];
   }
 };
+/**
+ * Get all available stories from Sanskrit.Samskrutam.com
+ */
+export const getUnusedStories = async () => {
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE}/getUnused`
+        );
+
+        if (!response.ok) {
+            throw new Error(`Request failed: ${response.status}`);
+        }
+
+        return await response.json();
+
+    }
+    catch(error){
+
+        console.error(error);
+
+        return {
+            success:false,
+            data:[]
+        };
+
+    }
+
+};
 
 /**
  * Get all tokenized stories
@@ -127,19 +157,15 @@ export const writeMeta = async () => {
     throw error;
   }
 };
-export const uploadStory = async (file, language) => {
+export const uploadStory = async (file) => {
   const formData = new FormData();
 
   formData.append("file", file);
-  formData.append("language", language);
-
   const response = await fetch(`${API_BASE}/upload`, {
     method: "POST",
     body: formData,
   });
-
   const data = await response.json();
-
   if (!response.ok) {
     throw new Error(data.message || "Upload failed");
   }
