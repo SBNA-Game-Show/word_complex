@@ -9,7 +9,11 @@
  * active stories). Everything downstream depends only on getActiveStoryIds(), so
  * that swap can happen here without touching any callers.
  */
-
+//add react hook to store previous game state
+// change to game Id's
+// must publish storyId ->
+// i.e. do not forward game id's to the react component games, just forward the story id's
+// that are inside the game collection
 const ACTIVE_STORY_IDS = [
   "04e9ae48-5570-4cd0-8968-a2179353164b",
   "73a1ae3b-3c35-414b-8f9d-e4e241fe49e1",
