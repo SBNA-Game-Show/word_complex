@@ -1,19 +1,17 @@
 /**
  * activeStoriesConfig.js
  * ----------------------
- * Temporary source of truth for which stories players may choose from on the
- * story picker screen.
+ * FALLBACK + SEED ONLY (as of 2026-07-07). The live source of truth is the
+ * `storySets` collection, read via storySets/storySetsService.getActiveStoryIds()
+ * (admin write API: /api/v1/admin/storySets).
  *
- * For now this is a static list of story IDs. In a later phase this file will be
- * backed by a DB collection + an admin HTTP API (the admin page will set the
- * active stories). Everything downstream depends only on getActiveStoryIds(), so
- * that swap can happen here without touching any callers.
+ * This static list is used in exactly two places:
+ *   1. storySetsService falls back to it if the DB has no active set (or the
+ *      read fails), so the picker can never come up empty.
+ *   2. scripts/seedStorySets.js seeds the first story set from it.
+ *
+ * Do NOT import this from controllers — go through storySetsService.
  */
-//add react hook to store previous game state
-// change to game Id's
-// must publish storyId ->
-// i.e. do not forward game id's to the react component games, just forward the story id's
-// that are inside the game collection
 const ACTIVE_STORY_IDS = [
   "04e9ae48-5570-4cd0-8968-a2179353164b",
   "73a1ae3b-3c35-414b-8f9d-e4e241fe49e1",

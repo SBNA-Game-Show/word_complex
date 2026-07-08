@@ -1,4 +1,4 @@
-const { getActiveStoryIds } = require("../../activeStoriesConfig");
+const { getActiveStoryIds } = require("../../storySets/storySetsService");
 const {
   retrieveStoryById,
 } = require("../../raw-data-connect/retrieveTokenizedStoryById");
@@ -30,7 +30,7 @@ function resolveTitle(story) {
  */
 const getActiveStories = async (req, res) => {
   try {
-    const ids = getActiveStoryIds();
+    const ids = await getActiveStoryIds();
 
     const stories = await Promise.all(
       ids.map(async (storyId) => {

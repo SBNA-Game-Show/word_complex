@@ -5,13 +5,26 @@ jest.mock("../raw-data-connect/retrieveTokenizedStoryById", () => ({
   retrieveRandomStory: jest.fn(),
 }));
 
+// The controller now reads active ids from storySetsService (DB-backed).
+// Mock it so these tests stay pure route/controller tests with no Mongo.
+jest.mock("../storySets/storySetsService", () => ({
+  getActiveStoryIds: jest.fn(),
+}));
+
 const {
   retrieveStoryById,
 } = require("../raw-data-connect/retrieveTokenizedStoryById");
+const {
+  getActiveStoryIds: getActiveStoryIdsFromDb,
+} = require("../storySets/storySetsService");
 const { getActiveStoryIds } = require("../activeStoriesConfig");
 const app = require("../app");
 
 const ACTIVE_IDS = getActiveStoryIds();
+
+beforeEach(() => {
+  getActiveStoryIdsFromDb.mockResolvedValue([...ACTIVE_IDS]);
+});
 
 afterEach(() => {
   jest.clearAllMocks();
