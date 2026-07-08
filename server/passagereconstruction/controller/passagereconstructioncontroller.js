@@ -1,15 +1,22 @@
 const { getPassageReconstructionGame } = require("../service/passageReconstructionService");
 
-const STORY_ID = "64980961-31e5-4794-a104-54807f6e96d0";
-
-// Get the passage reconstruction game for a given story id and language
+// Get the passage reconstruction game for the player's chosen story + language
 const getGame = async (req, res) => {
   try {
-    // Get the game data from the service layer
-    const gameData = await getPassageReconstructionGame(
-      STORY_ID,
-      req.query.language
-    );
+    // Story is chosen per-player on the client and must be sent with each
+    // request. A missing storyId means a broken client/server contract — fail
+    // loudly rather than silently serving a default story. (No hardcoded
+    // fallback IDs — decided 2026-07-02.)
+    const { storyId, language } = req.query;
+
+    if (!storyId) {
+      return res.status(400).json({
+        success: false,
+        message: "storyId is required",
+      });
+    }
+
+    const gameData = await getPassageReconstructionGame(storyId, language);
 
     // If no game data is found, return a 404 error
     if (!gameData) {

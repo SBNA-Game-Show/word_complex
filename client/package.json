@@ -5,6 +5,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "optimize:images": "node scripts/optimize-images.mjs",
+    "test": "jest",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui"
@@ -18,7 +19,11 @@
     "zimjs": "^17.0.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
     "@playwright/test": "^1.60.0",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
     "sharp": "^0.33.5"
   }
 }
