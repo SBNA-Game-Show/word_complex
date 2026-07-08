@@ -19,7 +19,13 @@ const SUPPORTED_PAIR_COUNTS = new Set([4, 5, 6]);
 
 const leaderboardByPlayer = new Map();
 const submittedRounds = new Set();
-const MAX_LEADERBOARD_ENTRIES = 100;
+const MAX_LEADERBOARD_ENTRIES = 20;
+
+// Speed bonus: finishing under the reference time limit earns extra points.
+// bonus = (timeLimit - timeSeconds) * perSecond, floored at 0, and only when
+// at least one match is correct (an instant empty submit earns nothing).
+const ROUND_TIME_LIMIT_SECONDS = 90;
+const SPEED_BONUS_PER_SECOND = 0.5;
 
 function sanitizePlayerName(playerName) {
   const trimmed = String(playerName || "").trim();
@@ -51,13 +57,25 @@ function calculateSubmittedRoundStats({
   const accuracy =
     totalAttempts > 0 ? Math.round((correctMatches / totalAttempts) * 100) : 0;
 
-  const score = Math.max(
+  const baseScore = Math.max(
     0,
     correctMatches * 10 - safeHintsUsed * 2 - safeWrongAttempts * 5,
   );
 
+  const speedBonus =
+    correctMatches > 0
+      ? Math.round(
+          Math.max(0, ROUND_TIME_LIMIT_SECONDS - safeTimeSeconds) *
+            SPEED_BONUS_PER_SECOND,
+        )
+      : 0;
+
+  const score = baseScore + speedBonus;
+
   return {
     score,
+    baseScore,
+    speedBonus,
     correctMatches,
     hintsUsed: safeHintsUsed,
     wrongAttempts: safeWrongAttempts,
@@ -72,15 +90,18 @@ function getSortedLeaderboard(limit = 10) {
     Math.max(1, Number(limit) || 10),
   );
 
-  return [...leaderboardByPlayer.values()]
-    .sort((a, b) => {
-      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-      if (b.accuracyAverage !== a.accuracyAverage) {
-        return b.accuracyAverage - a.accuracyAverage;
-      }
-      return new Date(b.lastSubmittedAt) - new Date(a.lastSubmittedAt);
-    })
-    .slice(0, safeLimit);
+  const sorted = [...leaderboardByPlayer.values()].sort((a, b) => {
+    if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+    if (b.accuracyAverage !== a.accuracyAverage) {
+      return b.accuracyAverage - a.accuracyAverage;
+    }
+    return new Date(b.lastSubmittedAt) - new Date(a.lastSubmittedAt);
+  });
+
+  // Top N by score — everyone who submitted at least one round is eligible,
+  // whether they finished the full 4/5/6 session or left early. Incomplete
+  // sessions are still flagged via entry.sessionComplete for the UI.
+  return sorted.slice(0, safeLimit);
 }
 
 function buildPuzzle({ story, mode, pairCount }) {
@@ -229,6 +250,7 @@ const submitMeaningBridgeScore = async (req, res) => {
       timeSeconds = 0,
       hintsUsed = 0,
       wrongAttempts = 0,
+      pairCount = 0,
     } = req.body || {};
 
     const safeRoundId = String(roundId || "").trim();
@@ -280,10 +302,8 @@ const submitMeaningBridgeScore = async (req, res) => {
       totalTimeSeconds: 0,
       accuracyAverage: 0,
       bestRoundScore: 0,
-      lastSubmittedUsed: 0,
-      totalTimeSeconds: 0,
-      accuracyAverage: 0,
-      bestRoundScore: 0,
+      completedPairCounts: [],
+      sessionComplete: false,
       lastSubmittedAt: null,
     };
 
@@ -298,6 +318,22 @@ const submitMeaningBridgeScore = async (req, res) => {
       existing.bestRoundScore,
       roundStats.score,
     );
+
+    // Session completion: a full session = one submitted round each at 4, 5
+    // and 6 pairs. The flag is sticky once earned.
+    const safePairCount = Number(pairCount) || 0;
+    const priorPairCounts = Array.isArray(existing.completedPairCounts)
+      ? existing.completedPairCounts
+      : [];
+    existing.completedPairCounts = [
+      ...new Set([...priorPairCounts, safePairCount]),
+    ].filter((n) => SUPPORTED_PAIR_COUNTS.has(n));
+    existing.sessionComplete =
+      existing.sessionComplete ||
+      [...SUPPORTED_PAIR_COUNTS].every((n) =>
+        existing.completedPairCounts.includes(n),
+      );
+
     existing.lastSubmittedAt = new Date().toISOString();
 
     const totalAttempts =
@@ -316,6 +352,8 @@ const submitMeaningBridgeScore = async (req, res) => {
       ok: true,
       message: "Score saved! Great bridge building.",
       score: roundStats.score,
+      baseScore: roundStats.baseScore,
+      speedBonus: roundStats.speedBonus,
       entry: existing,
       scores: getSortedLeaderboard(10),
     });
@@ -351,5 +389,6 @@ module.exports = {
   getMeaningBridgeHealth,
   generateMeaningBridgeRound,
   submitMeaningBridgeScore,
+  // exported for scoring: see calculateSubmittedRoundStats (speed bonus)
   getMeaningBridgeLeaderboard,
 };
