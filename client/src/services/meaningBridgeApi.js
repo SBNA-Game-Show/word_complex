@@ -55,6 +55,7 @@ export async function submitMeaningBridgeScore({
   timeSeconds,
   hintsUsed,
   wrongAttempts,
+  pairCount,
 }) {
   const response = await fetchWithTimeout(`${API_BASE}/meaningBridge/submit`, {
     method: "POST",
@@ -66,6 +67,7 @@ export async function submitMeaningBridgeScore({
       timeSeconds,
       hintsUsed,
       wrongAttempts,
+      pairCount,
     }),
   });
 

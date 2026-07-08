@@ -8,7 +8,13 @@ import {
 
 const PAIR_COUNTS = [4, 5, 6];
 
+// One session = exactly one round per pair count (4 → 5 → 6).
+const ROUNDS_PER_SESSION = PAIR_COUNTS.length;
+
+// Every round has an enforced countdown; when it hits 0 the round auto-ends
+// and whatever was matched is kept. Matches the server's speed-bonus math.
 const TIMED_CHALLENGE_SECONDS = 90;
+const ROUND_SECONDS = TIMED_CHALLENGE_SECONDS;
 
 const CUSTOM_TIMER_PRESET = "custom";
 const MAX_CUSTOM_TIMER_MINUTES = 60;
@@ -739,11 +745,7 @@ export default createZimGame({
     }
 
     function getPlayButtonLabel() {
-      if (!isTimedMode()) {
-        return "Play Now →";
-      }
-
-      return `Start ${formatSeconds(getSelectedTimerSeconds())} →`;
+      return `Play 3 Rounds (${formatSeconds(ROUND_SECONDS)} each) →`;
     }
 
     function setPlayMode(nextMode) {
@@ -864,11 +866,7 @@ export default createZimGame({
     }
 
     function getSessionStatusText() {
-      if (isTimedMode()) {
-        return `⏱ ${formatSeconds(timedSecondsLeft)}`;
-      }
-
-      return `Practice • Puzzle ${roundIndex + 1}`;
+      return `⏱ ${formatSeconds(timedSecondsLeft)} • Round ${Math.min(roundIndex + 1, ROUNDS_PER_SESSION)}/${ROUNDS_PER_SESSION}`;
     }
 
     function stopTimedTimer() {
@@ -886,35 +884,29 @@ export default createZimGame({
         return;
       }
 
-      if (!isTimedMode()) {
-        return;
-      }
-
       timedSecondsLeft = Math.max(
         0,
         Math.ceil((timedEndsAt - Date.now()) / 1000),
       );
 
       if (timerLabel) {
-        timerLabel.text = `⏱ ${formatSeconds(timedSecondsLeft)}`;
+        timerLabel.text = getSessionStatusText();
         publishDebugState();
         stage.update();
       }
 
-      if (
-        timedSecondsLeft <= 0 &&
-        ["loading", "gameplay", "round-complete"].includes(screen)
-      ) {
+      if (timedSecondsLeft <= 0 && screen === "gameplay") {
         stopTimedTimer();
-        showFinalScore();
+        handleRoundTimeout();
       }
     }
 
-    function startTimedSession() {
+    // Every round gets its own enforced countdown, regardless of play mode.
+    function startRoundCountdown() {
       if (disposed) return;
       stopTimedTimer();
 
-      timedSecondsTotal = getSelectedTimerSeconds();
+      timedSecondsTotal = ROUND_SECONDS;
       timedSecondsLeft = timedSecondsTotal;
       timedEndsAt = Date.now() + timedSecondsTotal * 1000;
 
@@ -931,16 +923,11 @@ export default createZimGame({
       currentMode = activeChallenge.mode;
       playMode = selectedPlayMode;
 
-      if (isTimedMode()) {
-        startTimedSession();
-      }
-
       loadRound();
     }
 
     function finishPracticeSession() {
-      stopTimedTimer();
-      showFinalScore();
+      finishSession();
     }
 
     function getAuthDisplayName() {
@@ -1295,13 +1282,56 @@ export default createZimGame({
       loadRound();
     }
 
+    function isFinalRound() {
+      return roundIndex >= ROUNDS_PER_SESSION - 1;
+    }
+
+    // Session over (all 3 rounds played, timed out, or player left):
+    // auto-save what was completed and show the final screen with Play Again.
+    function finishSession() {
+      stopTimedTimer();
+
+      if (completedRoundSubmissions.length > 0) {
+        submitCompletedSessionScore();
+        return;
+      }
+
+      showFinalScore();
+    }
+
     function skipCurrentRound() {
       totalScore = roundStartScore;
+
+      if (isFinalRound()) {
+        finishSession();
+        return;
+      }
+
       roundIndex += 1;
       loadRound();
     }
 
     function advanceAfterRoundComplete() {
+      if (isFinalRound()) {
+        finishSession();
+        return;
+      }
+
+      roundIndex += 1;
+      loadRound();
+    }
+
+    // Round countdown hit 0: keep whatever was matched, then move on.
+    function handleRoundTimeout() {
+      if (disposed) return;
+
+      snapshotCompletedRoundForSubmit();
+
+      if (isFinalRound()) {
+        finishSession();
+        return;
+      }
+
       roundIndex += 1;
       loadRound();
     }
@@ -1402,7 +1432,7 @@ export default createZimGame({
         .loc(stripW / 2, 32);
     }
 
-    function buildSubmittedResultSummary(serverResult = null) {
+    function buildSubmittedResultSummary(serverResult = null, serverTotals = null) {
       const rounds = completedRoundSubmissions || [];
 
       const correctMatches = rounds.reduce(
@@ -1441,7 +1471,13 @@ export default createZimGame({
           : 0;
 
       return {
-        score: totalScore,
+        // The server-computed score (base + speed bonus) is authoritative;
+        // fall back to the local total only if the server sent nothing back.
+        score:
+          typeof serverTotals?.score === "number"
+            ? serverTotals.score
+            : totalScore,
+        speedBonus: Number(serverTotals?.speedBonus) || 0,
         accuracy,
         correctMatches,
         totalPairs,
@@ -1476,7 +1512,10 @@ export default createZimGame({
       }).addTo(panel);
 
       new zim.Label({
-        text: "Saved Result",
+        text:
+          summary.speedBonus > 0
+            ? `Saved Result • ⭐ ${summary.score} pts (incl. +${summary.speedBonus} speed bonus)`
+            : `Saved Result • ⭐ ${summary.score} pts`,
         size: 13,
         font: FONT,
         color: "#3a7a3a",
@@ -1591,6 +1630,9 @@ export default createZimGame({
 
       try {
         let latestResult = null;
+        let serverSessionScore = 0;
+        let serverSessionSpeedBonus = 0;
+        let serverRoundsCounted = 0;
 
         for (const round of completedRoundSubmissions) {
           if (submittedRoundIds.has(round.roundId)) {
@@ -1604,12 +1646,26 @@ export default createZimGame({
             timeSeconds: round.timeSeconds,
             hintsUsed: round.hintsUsed,
             wrongAttempts: round.wrongAttempts,
+            pairCount: round.pairCount,
           });
+
+          // Sum the authoritative per-round scores the server returns
+          // (duplicate submissions come back without a score — skip those).
+          if (typeof latestResult?.score === "number") {
+            serverSessionScore += latestResult.score;
+            serverSessionSpeedBonus += Number(latestResult.speedBonus) || 0;
+            serverRoundsCounted += 1;
+          }
 
           submittedRoundIds.add(round.roundId);
         }
 
-        submittedResultSummary = buildSubmittedResultSummary(latestResult);
+        submittedResultSummary = buildSubmittedResultSummary(
+          latestResult,
+          serverRoundsCounted > 0
+            ? { score: serverSessionScore, speedBonus: serverSessionSpeedBonus }
+            : null,
+        );
 
         scoreSubmitMessage =
           submittedResultSummary.message ||
@@ -1755,7 +1811,10 @@ export default createZimGame({
         .loc(W / 2, modalY + 62);
 
       new zim.Label({
-        text: "Your current puzzle progress will be cleared.",
+        text:
+          completedRoundSubmissions.length > 0
+            ? "Rounds you finished will be saved to the leaderboard."
+            : "Your current puzzle progress will be cleared.",
         size: 18,
         font: FONT,
         color: C.sub,
@@ -1783,9 +1842,19 @@ export default createZimGame({
         y: modalY + 168,
         width: 220,
         height: 52,
-        label: "Exit to Menu",
+        label:
+          completedRoundSubmissions.length > 0 ? "Save & Leave" : "Exit to Menu",
         color: C.tangerine,
-        onClick: returnToMainMenu,
+        onClick: () => {
+          stopTimedTimer();
+
+          if (completedRoundSubmissions.length > 0) {
+            finishSession();
+            return;
+          }
+
+          returnToMainMenu();
+        },
       });
 
       safeUpdate();
@@ -1806,7 +1875,8 @@ export default createZimGame({
       roundStartScore = 0;
       completedPuzzles = 0;
 
-      timedSecondsLeft = timedSecondsTotal;
+      timedSecondsTotal = ROUND_SECONDS;
+      timedSecondsLeft = ROUND_SECONDS;
       timedEndsAt = 0;
 
       puzzle = null;
@@ -2440,39 +2510,38 @@ export default createZimGame({
         .addTo(preview)
         .loc(28, 39);
 
-      drawPlayModeToggle({
-        x: W / 2 - 296,
-        y: 424,
-      });
+      // Every session is the same format now: 3 rounds (4 → 5 → 6 pairs),
+      // 90 seconds each — so no play-mode toggle or timer presets.
+      const sessionInfo = new zim.Container().addTo(stage).loc(W / 2 - 296, 440);
+      sessionInfo.mouseChildren = false;
+      new zim.Rectangle({
+        width: 592,
+        height: 64,
+        color: "rgba(255,255,255,0.88)",
+        borderColor: rgba(C.tangerine, 0.45),
+        borderWidth: 2,
+        corner: 22,
+      }).addTo(sessionInfo);
+      new zim.Label({
+        text: `⏱️ 3 rounds: 4, 5, then 6 pairs — ${formatSeconds(ROUND_SECONDS)} on the clock for each. Finish all 3 to claim your leaderboard spot!`,
+        size: 15,
+        font: FONT,
+        color: C.ink,
+        lineWidth: 540,
+        align: "center",
+        bold: true,
+      })
+        .addTo(sessionInfo)
+        .loc(296, 18);
 
-      if (isTimedMode()) {
-        drawTimerOptionsSection({
-          x: W / 2 - 198,
-          y: 500,
-        });
-
-        if (isCustomTimerSelected()) {
-          drawCustomTimerEditor({
-            x: W / 2 - 235,
-            y: 552,
-          });
-        }
-      }
-
-      const actionY = isTimedMode()
-        ? isCustomTimerSelected()
-          ? 644
-          : 614
-        : 596;
+      const actionY = 596;
 
       drawShortcutStrip({
-        text: isTimedMode()
-          ? "Shortcuts: 1-3 Challenge • P Practice • T Timed • C Custom • Enter Start • Esc Home"
-          : "Shortcuts: 1-3 Challenge • P Practice • T Timed • Enter Start • Esc Home",
+        text: "Shortcuts: 1-3 Challenge • Enter Start • Esc Home",
         x: W / 2 - 350,
         y: actionY - 40,
         width: 700,
-        accent: isTimedMode() ? C.tangerine : active.accent,
+        accent: active.accent,
       });
 
       drawKidButton({
@@ -3049,6 +3118,7 @@ export default createZimGame({
       screen = "loading";
       errorMessage = "";
       roundStartScore = totalScore;
+      stopTimedTimer(); // countdown starts fresh once the puzzle is on screen
       showLoading();
 
       try {
@@ -3075,6 +3145,7 @@ export default createZimGame({
         screen = "gameplay";
 
         renderGame();
+        startRoundCountdown();
       } catch (error) {
         if (disposed) return;
 
@@ -3191,6 +3262,7 @@ export default createZimGame({
 
         if (Object.keys(matches).length === puzzle.leftItems.length) {
           completedPuzzles += 1;
+          stopTimedTimer(); // clock only runs while actively matching
           snapshotCompletedRoundForSubmit();
           renderGame();
           scheduleTimeout(showRoundComplete, 700);
@@ -3304,38 +3376,41 @@ export default createZimGame({
 
       drawPuzzleResultStrip(cx, mY + 204);
 
-      const btn = new zim.Button({
-        width: isTimedMode() ? 220 : 190,
-        height: 48,
-        label: "Next Puzzle →",
-        backgroundColor: C.tangerine,
-        rollBackgroundColor: "#e88030",
-        color: C.white,
-        corner: 24,
-      })
-        .addTo(stage)
-        .loc(isTimedMode() ? cx - 110 : cx - 200, mY + mH - 60);
-      btn.label.size = 20;
-      btn.label.font = FONT;
-      btn.on("click", advanceAfterRoundComplete);
+      const isLastRound = isFinalRound();
 
-      if (!isTimedMode()) {
+      if (!isLastRound) {
+        // Players may leave mid-session; finished rounds still get saved.
         const finishBtn = new zim.Button({
-          width: 190,
+          width: 200,
           height: 48,
-          label: "See Results",
+          label: "Save & Finish",
           backgroundColor: C.grape,
           rollBackgroundColor: "#7a50e0",
           color: C.white,
           corner: 24,
         })
           .addTo(stage)
-          .loc(cx + 10, mY + mH - 60);
+          .loc(cx - 225, mY + mH - 60);
 
         finishBtn.label.size = 20;
         finishBtn.label.font = FONT;
-        finishBtn.on("click", finishPracticeSession);
+        finishBtn.on("click", finishSession);
       }
+
+      const btn = new zim.Button({
+        width: 220,
+        height: 48,
+        label: isLastRound ? "See Final Results →" : "Next Puzzle →",
+        backgroundColor: C.tangerine,
+        rollBackgroundColor: "#e88030",
+        color: C.white,
+        corner: 24,
+      })
+        .addTo(stage)
+        .loc(isLastRound ? cx - 110 : cx + 5, mY + mH - 60);
+      btn.label.size = 20;
+      btn.label.font = FONT;
+      btn.on("click", advanceAfterRoundComplete);
 
       safeUpdate();
     }
@@ -3420,8 +3495,8 @@ export default createZimGame({
           .addTo(panel)
           .loc(340, 190);
       } else {
-        leaderboard.slice(0, 8).forEach((player, index) => {
-          const y = 32 + index * 42;
+        leaderboard.slice(0, 10).forEach((player, index) => {
+          const y = 20 + index * 34;
           const rank = index + 1;
           const medal =
             rank === 1
@@ -3434,7 +3509,7 @@ export default createZimGame({
 
           new zim.Label({
             text: medal,
-            size: 20,
+            size: 17,
             font: FONT,
             color: C.ink,
             align: "center",
@@ -3442,30 +3517,30 @@ export default createZimGame({
             bold: true,
           })
             .addTo(panel)
-            .loc(54, y + 16);
+            .loc(54, y + 13);
 
           new zim.Label({
             text: player.playerName || "Bridge Builder",
-            size: 18,
+            size: 15,
             font: FONT,
             color: C.ink,
             bold: true,
           })
             .addTo(panel)
-            .loc(94, y + 4);
+            .loc(94, y + 2);
 
           new zim.Label({
-            text: `${player.roundsPlayed || 0} rounds • ${player.accuracyAverage || 0}% accuracy`,
-            size: 12,
+            text: `${player.roundsPlayed || 0} rounds • ${player.accuracyAverage || 0}% accuracy${player.sessionComplete ? "" : " • ⏳ session in progress"}`,
+            size: 10,
             font: FONT,
             color: C.sub,
           })
             .addTo(panel)
-            .loc(94, y + 26);
+            .loc(94, y + 21);
 
           new zim.Label({
             text: `⭐ ${player.totalScore || 0}`,
-            size: 17,
+            size: 15,
             font: FONT,
             color: "#7a5800",
             align: "right",
@@ -3473,7 +3548,7 @@ export default createZimGame({
             bold: true,
           })
             .addTo(panel)
-            .loc(610, y + 17);
+            .loc(610, y + 13);
         });
       }
 
@@ -3619,12 +3694,14 @@ export default createZimGame({
       const cx = mX + mW / 2;
 
       // Title — varies by outcome
-      const titleText = isTimedMode()
-        ? "Time's up! ⏱️"
-        : isLowScore
-          ? "Don't give up! 😔"
-          : isNewBest
-            ? "🥇 New Best!"
+      const sessionCompleted =
+        completedRoundSubmissions.length >= ROUNDS_PER_SESSION;
+      const titleText = isLowScore
+        ? "Don't give up! 😔"
+        : isNewBest
+          ? "🥇 New Best!"
+          : sessionCompleted
+            ? "Session complete! 🌉"
             : "You finished! ⭐";
       new zim.Label({
         text: titleText,
