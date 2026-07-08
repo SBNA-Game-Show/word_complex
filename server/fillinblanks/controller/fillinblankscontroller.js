@@ -10,7 +10,17 @@ const {
 
 async function initializeGame(req, res) {
   try {
-    const storyId = "73a1ae3b-3c35-414b-8f9d-e4e241fe49e1";
+    // Story is chosen per-player on the client and must be sent with each
+    // request. A missing storyId means a broken client/server contract — fail
+    // loudly rather than silently serving a default story.
+    const { storyId } = req.query;
+
+    if (!storyId) {
+      return res.status(400).json({
+        success: false,
+        message: "storyId is required",
+      });
+    }
 
     const story = await retrieveStoryById(storyId);
 

@@ -47,7 +47,7 @@ describe("Meaning Bridge API routes", () => {
   it("should generate a puzzle round", async () => {
     const response = await request(app)
       .post("/api/v1/meaningBridge/generate")
-      .send({ mode: "word-to-synonym", pairCount: 4 })
+      .send({ mode: "word-to-synonym", pairCount: 4, storyId: MOCK_STORY._id })
       .expect(200);
 
     expect(response.body).toMatchObject({ success: true, ok: true });
@@ -57,6 +57,15 @@ describe("Meaning Bridge API routes", () => {
     expect(response.body.puzzle.rightItems).toHaveLength(4);
     expect(Object.keys(response.body.puzzle.answerKey)).toHaveLength(4);
     expect(response.body.passage.title).toBeTruthy();
+  });
+
+  it("should reject a missing storyId", async () => {
+    const response = await request(app)
+      .post("/api/v1/meaningBridge/generate")
+      .send({ mode: "word-to-synonym", pairCount: 4 })
+      .expect(400);
+
+    expect(response.body).toMatchObject({ success: false, ok: false });
   });
 
   it("should reject an unsupported mode", async () => {

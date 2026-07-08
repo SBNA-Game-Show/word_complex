@@ -7,8 +7,6 @@ const {
   retrieveStoryById,
 } = require("../../raw-data-connect/retrieveTokenizedStoryById");
 
-const HARDCODED_STORY_ID = "73a1ae3b-3c35-414b-8f9d-e4e241fe49e1";
-
 const SUPPORTED_MODES = new Set([
   "word-to-synonym",
   "word-to-antonym",
@@ -130,7 +128,6 @@ async function getMeaningBridgeCandidateStories({
 } = {}) {
   const storyIds = [];
   if (requestedStoryId) storyIds.push(requestedStoryId);
-  if (!storyIds.includes(HARDCODED_STORY_ID)) storyIds.push(HARDCODED_STORY_ID);
 
   const stories = [];
   for (const storyId of storyIds) {
@@ -199,6 +196,17 @@ const generateMeaningBridgeRound = async (req, res) => {
         success: false,
         ok: false,
         error: "Unsupported pair count. Use 4, 5, or 6.",
+      });
+    }
+
+    // Story is chosen per-player on the client and must be sent with each
+    // request. A missing storyId means a broken client/server contract — fail
+    // loudly rather than silently serving a default story.
+    if (!storyId) {
+      return res.status(400).json({
+        success: false,
+        ok: false,
+        error: "storyId is required.",
       });
     }
 

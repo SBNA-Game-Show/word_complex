@@ -1,3 +1,5 @@
+import { getSelectedStoryId } from "../storyPicker/activeStory";
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 const REQUEST_TIMEOUT_MS = 10000;
 
@@ -41,7 +43,7 @@ export async function fetchMeaningBridgeRound(mode, pairCount) {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode, pairCount }),
+      body: JSON.stringify({ mode, pairCount, storyId: getSelectedStoryId() }),
     },
   );
 
