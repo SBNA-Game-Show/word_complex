@@ -1,3 +1,5 @@
+import { getSelectedStoryId } from "../storyPicker/activeStory";
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 async function readJsonResponse(response, fallbackMessage) {
@@ -16,6 +18,11 @@ export async function getFillInBlanks(options = {}) {
     wordTypes: options.wordTypes || "NOUN",
     difficulty: options.difficulty || "easy",
   });
+
+  const storyId = options.storyId || getSelectedStoryId();
+  if (storyId) {
+    params.set("storyId", storyId);
+  }
 
   const response = await fetch(`${API_BASE}/fillInBlanks?${params}`);
 

@@ -8,6 +8,7 @@ export default function Launcher({
   onAbout,
   onHowToPlay,
   onChooseCharacter,
+  onChooseStory,
   onLeaderboard,
   isZooming = false,
   isLaunching = false,
@@ -86,6 +87,15 @@ export default function Launcher({
             >
               Choose character
             </button>
+            {onChooseStory && (
+              <button
+                className="btn-ghost"
+                type="button"
+                onClick={onChooseStory}
+              >
+                Change story
+              </button>
+            )}
             <button className="btn-ghost" type="button" onClick={onAbout}>
               About
             </button>

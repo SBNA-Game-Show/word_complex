@@ -2,7 +2,7 @@
 
 This is a guide for wiring the hint system into **any** of our games — matching, fill-in-the-
 blank, find-the-word, synonyms, adjectives, whatever your group is building. It already works in
-Passage Reconstruction (`SentenceBuilder`), which is the reference implementation. The whole
+Passage Reconstruction (`PassageReconstruction`), which is the reference implementation. The whole
 point of how it's built is that you only write **one small function** for your game; everything
 else is shared code you plug into.
 
@@ -100,7 +100,7 @@ consistent, and you'd call `stage.update()` at the end to redraw. For most games
 them is enough.
 
 A couple of things in that snippet are **yours, not the hint system's**: `feedbackActive` is just
-SentenceBuilder's flag for "a result popup is on screen right now," and `score` is its own score
+PassageReconstruction's flag for "a result popup is on screen right now," and `score` is its own score
 variable. Use whatever your game calls these — or drop the `feedbackActive` line entirely if your
 game has no such state. The only lines that *must* be there are the `hintPolicy` calls, the
 `hintButton.refresh()`, and the `emit("hint", …)`.
@@ -296,7 +296,7 @@ Five steps, and only step 3 is real thinking. To sanity-check, run the game and 
 - A new round refills the count; hitting Reset does not.
 - Clicking Hint when there's nothing useful to say doesn't cost anything.
 
-If you get stuck, open `client/src/games/SentenceBuilder/index.jsx` and search for `applyHint`,
+If you get stuck, open `client/src/games/PassageReconstruction/index.jsx` and search for `applyHint`,
 `hintPolicy`, and `createHintButton` — it's all wired up there to copy from.
 
 ## Quick reference

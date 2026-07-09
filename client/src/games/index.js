@@ -10,9 +10,9 @@
 // To mark a game as coming soon (no component yet), add an entry without Component.
 // The launcher locks it automatically. No status flag needed.
 
-import SentenceBuilder, {
-  meta as sentenceBuilderMeta,
-} from "./SentenceBuilder";
+import PassageReconstruction, {
+  meta as passageReconstructionMeta,
+} from "./PassageReconstruction";
 import MeaningBridge, {
   meta as meaningBridgeMeta,
 } from "./MeaningBridge";
@@ -22,7 +22,7 @@ import ContextClozeQuest, {
 import WordHunt, { meta as wordHuntMeta } from "./WordHunt";
 
 export const games = [
-  { ...sentenceBuilderMeta,     Component: SentenceBuilder },
+  { ...passageReconstructionMeta, Component: PassageReconstruction },
   { ...meaningBridgeMeta,       Component: MeaningBridge },
   { ...contextClozeQuestMeta,   Component: ContextClozeQuest },
   { ...wordHuntMeta,            Component: WordHunt },

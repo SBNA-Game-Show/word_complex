@@ -6,6 +6,7 @@ import MessageBar from "./UI/MessageBar";
 import GameManger from "./utils/GameManager";
 
 import GameServiceManager from "./utils/GameServiceManager";
+import { getSelectedStoryId } from "../../storyPicker/activeStory";
 
 class Game {
   constructor(setup) {
@@ -36,7 +37,8 @@ class Game {
     this.adjGameKey = "Adjective";
 
     // game logic variables
-    this.currentStoryId = "04e9ae48-5570-4cd0-8968-a2179353164b";
+    // Story is whatever the player chose on the picker this session.
+    this.currentStoryId = getSelectedStoryId();
     this.gameTime = 0;
     this.isInputLocked = false;
 

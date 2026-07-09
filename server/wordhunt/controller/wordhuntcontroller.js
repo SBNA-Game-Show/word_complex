@@ -4,7 +4,14 @@ const findNounVerbAndAdjSanskrit = require("../service/findNounsVerbsAndAdjectiv
 const findPOSEnglish = async (req, res) => {
   try {
     const { storyId } = req.query;
-    console.log("BACKEND CALLED ");
+
+    if (!storyId) {
+      return res.status(400).json({
+        success: false,
+        message: "storyId is required",
+      });
+    }
+
     const story = await findNounVerbAndAdjEnglish(storyId);
 
     if (!story) {
@@ -29,6 +36,13 @@ const findPOSEnglish = async (req, res) => {
 const findPOSSanskrit = async (req, res) => {
   try {
     const { storyId } = req.query;
+
+    if (!storyId) {
+      return res.status(400).json({
+        success: false,
+        message: "storyId is required",
+      });
+    }
 
     const story = await findNounVerbAndAdjSanskrit(storyId);
 
