@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import {
   getAllStories,
@@ -8,6 +8,13 @@ import {
   uploadStory,
   getUnusedStories,
 } from "../services/admin/AdminControls";
+// imports from StorySetService
+import {
+    getStorySets,
+    createStorySet,
+    activateStorySet,
+    deleteStorySet,
+} from "../services/admin/StorySetService";
 
 export default function AdminPage() {
   // -------------------------------
@@ -15,10 +22,8 @@ export default function AdminPage() {
   // -------------------------------
   const [learnStories, setLearnStories] = useState([]);
   const [sanskritStories, setSanskritStories] = useState([]);
-
   const [learnLoaded, setLearnLoaded] = useState(false);
   const [sanskritLoaded, setSanskritLoaded] = useState(false);
-
   const [learnExpanded, setLearnExpanded] = useState(false);
   const [sanskritExpanded, setSanskritExpanded] = useState(false);
   // -------------------------------
@@ -28,15 +33,17 @@ export default function AdminPage() {
   const [activeView, setActiveView] = useState("available");
   const [loading, setLoading] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
+  // Story Sets States
+  const [storySets, setStorySets] = useState([]);  
+  const [selectedStories, setSelectedStories] = useState([]);
+  const [storySetName, setStorySetName] = useState("");
+  const [storySetLoading, setStorySetLoading] = useState(false);
   
   async function loadLearnStories() {
-
     if (learnLoaded) {
         return;
     }
-
     setLoading(true);
-
     try {
 
         const response = await getAllStories();
@@ -46,11 +53,8 @@ export default function AdminPage() {
                 (collection) =>
                     collection.story_description || []
             );
-
         setLearnStories(stories);
-
         setLearnLoaded(true);
-
     } catch (error) {
 
         console.error(error);
@@ -249,13 +253,11 @@ async function handleDownloadSanskritStory(story) {
   async function handleGetTokenizedStories() {
     try {
       setLoading(true);
-
       const response = await getAllTokenizedStories();
-
       console.log("Tokenized Stories:", response);
-
       setTokenizedStories(response.data || []);
       console.log("First tokenized story:", response.data?.[0]);
+      await loadStorySets();
       setActiveView("tokenized");
     } catch (error) {
       alert("Failed to retrieve tokenized stories");
@@ -263,8 +265,85 @@ async function handleDownloadSanskritStory(story) {
       setLoading(false);
     }
   }
-
-  
+  async function loadStorySets() {
+        try {
+            setStorySetLoading(true);
+            const result = await getStorySets();
+            setStorySets(result.data || []);
+        }
+        catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+        finally {
+            setStorySetLoading(false);
+        }
+    }
+    function toggleStorySelection(storyId) {
+        setSelectedStories((previous) => {
+            if (previous.includes(storyId)) {
+                return previous.filter(id => id !== storyId);
+            }
+            if (previous.length >= 4) {
+                alert("You can only select up to 4 stories.");
+                return previous;
+            }
+            return [...previous, storyId];
+        });
+    }
+    async function handleCreateStorySet() {
+        if (!storySetName.trim()) {
+            alert("Please enter a Story Set name.");
+            return;
+        }
+        if (selectedStories.length === 0) {
+            alert("Please select at least one story.");
+            return;
+        }
+        try {
+            setStorySetLoading(true);
+            const created = await createStorySet(
+                storySetName,
+                selectedStories
+            );
+            await activateStorySet(created.data._id);
+            alert("Story Set created and activated.");
+            setStorySetName("");
+            setSelectedStories([]);
+            await loadStorySets();
+        }
+        catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+        finally {
+            setStorySetLoading(false);
+        }
+    }
+    async function handleActivateStorySet(setId) {
+        try {
+            await activateStorySet(setId);
+            await loadStorySets();
+            alert("Story Set activated.");
+        }
+        catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    } 
+    async function handleDeleteStorySet(setId) {
+        if (!window.confirm("Delete this Story Set?")) {
+            return;
+        }
+        try {
+            await deleteStorySet(setId);
+            await loadStorySets();
+        }
+        catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    }
   async function handleUseTokenizedStory(story) {
     console.log("Using tokenized story:", story);
 
@@ -287,28 +366,23 @@ async function handleDownloadSanskritStory(story) {
     boxShadow: "0 4px 12px rgba(248,165,60,0.3)",
     };
     async function handleRefresh() {
-
-    // Collapse both sections
-    setLearnExpanded(false);
-    setSanskritExpanded(false);
-
-    // Clear loaded data
-    setLearnStories([]);
-    setSanskritStories([]);
-
-    // Mark them as not loaded
-    setLearnLoaded(false);
-    setSanskritLoaded(false);
-
-    // Return to Available Stories page
-    setActiveView("available");
-
-    // Clear upload selection
-    setUploadFile(null);
-
-    // Clear tokenized stories
-    setTokenizedStories([]);
-}
+        setLearnExpanded(false);
+        setSanskritExpanded(false);
+        setLearnStories([]);
+        setSanskritStories([]);
+        setLearnLoaded(false);
+        setSanskritLoaded(false);
+        setActiveView("available");
+        setUploadFile(null);
+        setTokenizedStories([]);
+        // Story Set cleanup
+        setSelectedStories([]);
+        setStorySetName("");
+        setStorySets([]);
+    }
+  useEffect(() => {
+    loadStorySets();
+}, []);
   return (
     <div
       style={{
@@ -754,18 +828,27 @@ async function handleDownloadSanskritStory(story) {
             >
             {tokenizedStories.map((story) => (
                 <div
-                key={story._id}
-                style={{
-                    padding: "18px",
-                    background: "white",
-                    borderRadius: "16px",
-                    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-                }}
+                    key={story._id}
+                    style={{
+                        padding: "18px",
+                        background: selectedStories.includes(story._id)
+                            ? "#f3fff2"
+                            : "white",
+                        borderRadius: "16px",
+                        border: selectedStories.includes(story._id)
+                            ? "2px solid #3aa655"
+                            : "1px solid #e3e3e3",
+                        boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+                        transition: "all .2s ease",
+                    }}
                 >
                 <h3
                     style={{
-                    marginTop: 0,
-                    color: "#1f2b6b",
+                        marginTop: 0,
+                        marginBottom: "14px",
+                        color: "#1f2b6b",
+                        fontSize: "20px",
+                        lineHeight: "1.3",
                     }}
                 >
                     {story.storyTitle ||
@@ -778,49 +861,58 @@ async function handleDownloadSanskritStory(story) {
                     style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "10px",
+                        alignItems: "flex-start",
+                        marginBottom: "14px",
+                        gap: "16px",
                     }}
-                    >
-                    <p
+                >
+                    <div>
+                        <p
+                            style={{
+                                margin: 0,
+                                marginBottom: "8px",
+                            }}
+                        >
+                            <strong>Category:</strong> {story.category}
+                        </p>
+                    </div>
+                    <label
                         style={{
-                        margin: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
                         }}
                     >
-                        <strong>Category:</strong> {story.category}
-                    </p>
-
-                    <button
-                        onClick={() => handleUseTokenizedStory(story)}
-                        style={{
-                        background: "#3aa655",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "10px",
-                        padding: "8px 16px",
-                        cursor: "pointer",
-                        fontWeight: "700",
-                        fontSize: "14px",
-                        }}
-                    >
-                        Use Story
-                    </button>
+                        <input
+                            type="checkbox"
+                            checked={selectedStories.includes(story._id)}
+                            onChange={() => toggleStorySelection(story._id)}
+                        />
+                        Select
+                    </label>
                 </div>
-
-                <p>
-                    <strong>Actors:</strong> {story.actors?.join(", ")}
+                <p
+                    style={{
+                        marginTop: "14px",
+                        marginBottom: "16px",}}>
+                    <strong>Actors:</strong>
+                    {" "}
+                    {story.actors?.length
+                        ? story.actors.join(", ")
+                        : "None"}
                 </p>
-
                 <details>
                     <summary
-                    style={{
-                        cursor: "pointer",
-                        fontWeight: "600",
-                    }}
+                        style={{
+                            cursor: "pointer",
+                            fontWeight: "700",
+                            color: "#1f2b6b",}}
                     >
                     View English Text
                     </summary>
-
                     <p
                     style={{
                         marginTop: "10px",
@@ -833,11 +925,339 @@ async function handleDownloadSanskritStory(story) {
                 </details>
                 </div>
             ))}
-            </div>
+            </div>                                    
         )}
+        {/* ============================================
+            Story Set Creation Panel
+        ============================================ */}
+        <div
+            style={{
+                marginTop: "35px",
+                background: "white",
+                borderRadius: "18px",
+                padding: "24px",
+                boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+            }}
+        >
+            <h2
+                style={{
+                    color: "#1f2b6b",
+                    marginTop: 0,
+                    marginBottom: "20px",
+                }}
+            >
+                Create Story Set
+            </h2>
+            <p
+                style={{
+                    marginTop: 0,
+                    marginBottom: "20px",
+                    color: "#555",
+                    fontSize: "16px",
+                }}
+            >
+                Selected Stories:
+                <strong>
+                    {" "}
+                    {selectedStories.length} / 4
+                </strong>
+            </p>
+            <div
+                style={{
+                    marginBottom: "20px",
+                }}
+            >
+                <label
+                    style={{
+                        display: "block",
+                        fontWeight: "700",
+                        marginBottom: "10px",
+                        color: "#1f2b6b",
+                    }}
+                >
+                    Story Set Name
+                </label>
+                {selectedStories.length > 0 && (
+                    <div
+                        style={{
+                            background: "#f5f8ff",
+                            border: "1px solid #d6e2ff",
+                            borderRadius: "12px",
+                            padding: "14px",
+                            marginBottom: "20px",
+                        }}
+                    >
+                        <strong>Selected Stories</strong>
+                        <ul
+                            style={{
+                                marginTop: "10px",
+                                marginBottom: 0,
+                            }}
+                        >
+                            {tokenizedStories
+                                .filter(story => selectedStories.includes(story._id))
+                                .map(story => (
+                                    <li key={story._id}>
+                                        {story.storyTitle ||
+                                        story.title?.englishversion ||
+                                        story.title?.englishVersion ||
+                                        "Untitled Story"}
+                                    </li>
+                                ))}
+                        </ul>
+                    </div>
+                )}
+                <input
+                    type="text"
+                    placeholder="Enter a Story Set name"
+                    value={storySetName}
+                    onChange={(e) => setStorySetName(e.target.value)}
+                    style={{
+                        width: "100%",
+                        padding: "14px",
+                        borderRadius: "10px",
+                        border: "1px solid #ccc",
+                        fontSize: "16px",
+                        boxSizing: "border-box",
+                    }}
+                />
+            </div>
+            <button
+                onClick={handleCreateStorySet}
+                disabled={
+                    storySetLoading ||
+                    selectedStories.length === 0
+                }
+                style={{
+                    background:
+                        selectedStories.length === 0
+                            ? "#cccccc"
+                            : "#3aa655",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "12px",
+                    padding: "14px 30px",
+                    fontWeight: "700",
+                    fontSize: "16px",
+                    cursor:
+                        selectedStories.length === 0
+                            ? "not-allowed"
+                            : "pointer",
+                }}
+            >
+                {storySetLoading
+                    ? "Creating..."
+                    : "Create & Activate Story Set"}
+            </button>
+        </div>
+        {/* ============================================
+            Existing Story Sets
+        ============================================ */}
+        <div
+            style={{
+                marginTop: "35px",
+                background: "white",
+                borderRadius: "18px",
+                padding: "24px",
+                boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+            }}
+        >
+            <h2
+                style={{
+                    color: "#1f2b6b",
+                    marginTop: 0,
+                    marginBottom: "20px",
+                }}
+            >
+                Existing Story Sets
+            </h2>
+            {storySetLoading ? (
+                <p>Loading Story Sets...</p>
+            ) : storySets.length === 0 ? (
+                <p>No Story Sets created yet.</p>
+            ) : (
+                storySets.map((set) => (
+                    <div
+                        key={set._id}
+                        style={{
+                            border: set.isActive
+                                ? "2px solid #3aa655"
+                                : "1px solid #ddd",
+                            borderRadius: "14px",
+                            padding: "18px",
+                            marginBottom: "16px",
+                            background: set.isActive
+                                ? "#f4fff5"
+                                : "#fafafa",
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                            }}
+                        >
+                            <div>
+                                <h3
+                                    style={{
+                                        margin: 0,
+                                        color: "#1f2b6b",
+                                    }}
+                                >
+                                    {set.name}
+                                </h3>
+    <div
+    style={{
+        marginTop: "12px",
+    }}
+>
+
+    <strong
+        style={{
+            color: "#1f2b6b",
+        }}
+    >
+        Stories
+    </strong>
+
+    <ul
+        style={{
+            marginTop: "10px",
+            marginBottom: 0,
+            paddingLeft: "20px",
+            color: "#555",
+        }}
+    >
+
+        {set.storyIds.map((storyId) => {
+
+            const story = tokenizedStories.find(
+                (s) => s._id === storyId
+            );
+
+            return (
+                <li key={storyId}>
+
+                    {story
+                        ? (
+                            story.storyTitle ||
+                            story.title?.englishversion ||
+                            story.title?.englishVersion ||
+                            "Untitled Story"
+                        )
+                        : "Story not loaded"}
+
+                </li>
+            );
+
+        })}
+
+    </ul>
+    <div style={{marginTop: "12px",}}>
+    <strong
+        style={{
+            color: "#1f2b6b",
+        }}
+    >
+        Stories
+    </strong>
+    <ul
+        style={{
+            marginTop: "10px",
+            marginBottom: 0,
+            paddingLeft: "20px",
+            color: "#555",
+        }}
+    >
+        {set.storyIds.map((storyId) => {
+            const story = tokenizedStories.find(
+                (s) => s._id === storyId
+            );
+            return (
+                <li key={storyId}>
+                    {story
+                        ? (
+                            story.storyTitle ||
+                            story.title?.englishversion ||
+                            story.title?.englishVersion ||
+                            "Untitled Story"
+                        )
+                        : "Story not loaded"}
+                </li>
+            );
+        })}
+    </ul>
+</div>
+</div>
+ </div>
+                {set.isActive && (
+                    <span
+                    style={{
+                        background: "#3aa655",
+                        color: "white",
+                        padding: "6px 14px",
+                        borderRadius: "20px",
+                        fontWeight: "700",
+                    }}
+                >
+                    🟢 Active
+                </span>
+                )}
+            </div>
+                        <div
+                            style={{
+                                marginTop: "18px",
+                                display: "flex",
+                                gap: "14px",
+                            }}
+                        >
+                            {!set.isActive && (
+                                <button
+                                    onClick={() =>
+                                        handleActivateStorySet(set._id)
+                                    }
+                                    style={{
+                                        background: "#3aa655",
+                                        color: "white",
+                                        border: "none",
+                                        borderRadius: "10px",
+                                        padding: "10px 18px",
+                                        cursor: "pointer",
+                                        fontWeight: "700",
+                                    }}
+                                >
+                                    Activate
+                                </button>
+                            )}
+                            <button
+                            onClick={() => handleDeleteStorySet(set._id)}
+                            disabled={set.isActive}
+                            style={{
+                                background: set.isActive
+                                    ? "#cccccc"
+                                    : "#d9534f",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "10px",
+                                padding: "10px 18px",
+                                cursor: set.isActive
+                                    ? "not-allowed"
+                                    : "pointer",
+                                fontWeight: "700",
+                            }}
+                        >
+                            Delete
+                        </button>                            
+                    </div>
+                    </div>
+                ))
+            )}
+        </div>
         </>
         )}
       </div>
+      
     </div>
   );
 }
