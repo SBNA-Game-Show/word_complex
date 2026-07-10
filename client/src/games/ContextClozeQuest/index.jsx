@@ -21,11 +21,15 @@ export default createZimGame({
 
   setup({ stage, W, H, zim }) {
     const zimFont = "Fredoka";
+    const sanskritFont = "Nirmala UI";
+    const getContentFont = () =>
+      selectedLanguage === "sanskrit" ? sanskritFont : zimFont;
     let disposed = false;
     let gameRunId = 0;
     let timerInterval = null;
     let selectedWordTypes = ["noun"];
     let selectedDifficulty = "easy";
+    let selectedLanguage = "english";
 
     function clearGameTimer() {
       if (timerInterval) {
@@ -438,7 +442,7 @@ export default createZimGame({
         return new zim.Label({
           text,
           size: 22,
-          font: zimFont,
+          font: getContentFont(),
           color: "#333333",
           align: "left",
           valign: "center",
@@ -495,6 +499,7 @@ export default createZimGame({
       };
 
       getFillInBlanks({
+        language: selectedLanguage,
         difficulty: selectedDifficulty,
         wordTypes: selectedWordTypes.map((type) => wordTypeMap[type]),
       }).then((result) => {
