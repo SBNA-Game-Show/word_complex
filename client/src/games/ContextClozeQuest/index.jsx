@@ -16,20 +16,22 @@ export default createZimGame({
   id: "zim-context-cloze-quest",
   width: 1100,
   height: 800,
-  color: "#f4f3ec",
-  outerColor: "#ffffff",
+  color: "#a989d6",
+  outerColor: "#eadff7",
 
   setup({ stage, W, H, zim }) {
     const zimFont = "Fredoka";
     const sanskritFont = "Nirmala UI";
-    const getContentFont = () =>
-      selectedLanguage === "sanskrit" ? sanskritFont : zimFont;
+
     let disposed = false;
     let gameRunId = 0;
     let timerInterval = null;
     let selectedWordTypes = ["noun"];
     let selectedDifficulty = "easy";
     let selectedLanguage = "english";
+
+    const getContentFont = () =>
+      selectedLanguage === "sanskrit" ? sanskritFont : zimFont;
 
     function clearGameTimer() {
       if (timerInterval) {
@@ -44,120 +46,178 @@ export default createZimGame({
       if (disposed) return;
       stage.removeAllChildren();
 
-      // ── Dreamy purple sky background ──────────────────────────────────────
-      new zim.Rectangle(W, H, "#b8a0d8").addTo(stage);
+      new zim.Rectangle(W, H, "#a989d6").addTo(stage);
+      new zim.Circle(230, "#c2ace3").addTo(stage).loc(-60, -65);
+      new zim.Circle(205, "#b99cdb").addTo(stage).loc(W - 105, -45);
+      new zim.Circle(155, "#c5afe1").addTo(stage).loc(45, H - 65);
+      new zim.Circle(145, "#c5afe1").addTo(stage).loc(W - 75, H - 70);
 
-      // Sky gradient blobs — soft clouds / depth
-      new zim.Circle(300, "#c9b8e8").addTo(stage).loc(-80, -100);
-      new zim.Circle(250, "#c9b8e8").addTo(stage).loc(W - 100, -80);
-      new zim.Circle(180, "#d4c8ee").addTo(stage).loc(W / 2 - 90, -60);
-      new zim.Circle(120, "#c0aad8").addTo(stage).loc(80,  H - 60);
-      new zim.Circle(100, "#c0aad8").addTo(stage).loc(W - 60, H - 80);
+      [
+        [95, 72], [205, 115], [885, 75], [1010, 185],
+        [74, 405], [1020, 445], [930, 690],
+      ].forEach(([x, y]) => {
+        new zim.Label({ text: "✦", size: 18, font: zimFont, color: "#f6efff" })
+          .addTo(stage).loc(x, y);
+      });
 
-      // ── Main scroll card — thick dark purple border ───────────────────────
-      // Outermost dark border
-      new zim.Rectangle({ width: 860, height: 620, color: "#5a2d82", corner: 36 })
-        .addTo(stage).loc(W / 2 - 430, 30);
-      // Mid border layer (bumped corners effect)
-      new zim.Rectangle({ width: 848, height: 608, color: "#7a45a8", corner: 34 })
-        .addTo(stage).loc(W / 2 - 424, 36);
-      // Inner card body
-      new zim.Rectangle({ width: 828, height: 588, color: "#ddd0f0", corner: 30 })
-        .addTo(stage).loc(W / 2 - 414, 46);
+      new zim.Rectangle({ width: 1010, height: 720, color: "#4d1b72", corner: 42 })
+        .addTo(stage).loc(45, 25);
+      new zim.Rectangle({ width: 996, height: 706, color: "#7b36ad", corner: 38 })
+        .addTo(stage).loc(52, 32);
+      new zim.Rectangle({
+        width: 964,
+        height: 674,
+        color: "#eadff7",
+        borderColor: "#d5bdea",
+        borderWidth: 2,
+        corner: 32,
+      }).addTo(stage).loc(68, 48);
 
-      // ── Title: "Context" white, "Cloze" gold, "Quest" white ──────────────
-      // Shadow pass first
-      new zim.Label({ text: "Context", size: 46, font: zimFont, color: "#7a45a8", bold: true })
-        .addTo(stage).loc(222, 83);
-      new zim.Label({ text: "Cloze", size: 46, font: zimFont, color: "#c89a00", bold: true })
-        .addTo(stage).loc(452, 83);
-      new zim.Label({ text: "Quest", size: 46, font: zimFont, color: "#7a45a8", bold: true })
-        .addTo(stage).loc(622, 83);
+      const addTitleWord = (text, x, color) => {
+        new zim.Label({
+          text,
+          size: 54,
+          font: zimFont,
+          color: "#5a2188",
+          bold: true,
+          align: "center",
+          valign: "center",
+        }).addTo(stage).loc(x + 2, 104);
+        new zim.Label({
+          text,
+          size: 54,
+          font: zimFont,
+          color,
+          bold: true,
+          align: "center",
+          valign: "center",
+        }).addTo(stage).loc(x, 100);
+      };
 
-      // Actual colored title
-      new zim.Label({ text: "Context", size: 46, font: zimFont, color: "#ffffff", bold: true })
-        .addTo(stage).loc(220, 80);
-      new zim.Label({ text: "Cloze", size: 46, font: zimFont, color: "#f4c45a", bold: true })
-        .addTo(stage).loc(450, 80);
-      new zim.Label({ text: "Quest", size: 46, font: zimFont, color: "#ffffff", bold: true })
-        .addTo(stage).loc(620, 80);
+      new zim.Label({ text: "✦", size: 30, font: zimFont, color: "#f4b928" })
+        .addTo(stage).loc(170, 98);
+      addTitleWord("Context", 350, "#ffffff");
+      addTitleWord("Cloze", 570, "#f7bd2b");
+      addTitleWord("Quest", 770, "#ffffff");
+      new zim.Label({ text: "✦", size: 30, font: zimFont, color: "#f4b928" })
+        .addTo(stage).loc(925, 98);
 
-      // Subtitle
       new zim.Label({
-        text: "Pick your word type and difficulty, then start your adventure!",
+        text: "Pick your language, word type and difficulty, then start your adventure!",
         size: 18,
         font: zimFont,
-        color: "#5a3880",
+        color: "#5b2c85",
         align: "center",
         valign: "center",
-      }).addTo(stage).loc(W / 2, 145);
+      }).addTo(stage).loc(W / 2, 151);
 
-      // ── Word Type section label pill ──────────────────────────────────────
-      new zim.Rectangle({ width: 155, height: 30, color: "#b89ad4", corner: 15 })
-        .addTo(stage).loc(135, 172);
+      const makeSectionPill = (text, width, x, y) => {
+        new zim.Rectangle({ width, height: 32, color: "#7d3fa7", corner: 16 })
+          .addTo(stage).loc(x, y);
+        new zim.Label({
+          text,
+          size: 17,
+          font: zimFont,
+          color: "#ffffff",
+          bold: true,
+          align: "center",
+          valign: "center",
+        }).addTo(stage).loc(x + width / 2, y + 16);
+      };
+
+      makeSectionPill("◉ Language", 145, 115, 174);
+
+      const makeLanguageButton = (language, label, x) => {
+        const isSelected = selectedLanguage === language;
+        const buttonLabel = new zim.Label({
+          text: `${isSelected ? "✓ " : ""}${label}`,
+          size: language === "sanskrit" ? 19 : 18,
+          font: language === "sanskrit" ? sanskritFont : zimFont,
+          color: "#ffffff",
+          bold: true,
+          align: "center",
+          valign: "center",
+        });
+        const button = new zim.Button({
+          width: 180,
+          height: 40,
+          label: buttonLabel,
+          backgroundColor: isSelected ? "#6d28d9" : "#a36bc0",
+          rollBackgroundColor: "#7c3aed",
+          downBackgroundColor: "#5b21b6",
+          corner: 20,
+        }).addTo(stage).loc(x, 170);
+
+        button.on("click", () => {
+          selectedLanguage = language;
+          showMenu();
+        });
+      };
+
+      makeLanguageButton("english", "English", 300);
+      makeLanguageButton("sanskrit", "संस्कृतम्", 500);
+
+      makeSectionPill("☰ Word Type", 145, 115, 222);
       new zim.Label({
-        text: "☰ Word Type",
+        text: "Choose one or more",
         size: 16,
         font: zimFont,
-        color: "#ffffff",
-        bold: true,
-        align: "center",
-        valign: "center",
-      }).addTo(stage).loc(213, 187);
-
-      new zim.Label({
-        text: "Choose on or more",
-        size: 15,
-        font: zimFont,
-        color: "#7a5a9a",
+        color: "#6b3c8f",
         align: "left",
         valign: "center",
-      }).addTo(stage).loc(300, 187);
+      }).addTo(stage).loc(280, 238);
 
-      // ── Word Type buttons — pill shape, purple filled ─────────────────────
       const wordTypeConfig = [
-        { type: "noun",      icon: "🏠", badge: "🍎", label: "Noun",      x: 135 },
-        { type: "verb",      icon: "⚡", badge: "🦊", label: "Verb",      x: 420 },
-        { type: "adjective", icon: "🎨", badge: "⭐", label: "Adjective", x: 705 },
+        { type: "noun", icon: "🏠", badge: "", label: "Noun", x: 115 },
+        { type: "verb", icon: "⚡", badge: "", label: "Verb", x: 415 },
+        { type: "adjective", icon: "🎨", badge: "", label: "Adjective", x: 715 },
       ];
 
       wordTypeConfig.forEach(({ type, icon, badge, label, x }) => {
         const isSelected = selectedWordTypes.includes(type);
-        const btnW = label === "Adjective" ? 240 : 210;
-        const btn = new zim.Container().addTo(stage).loc(x, 205);
+        const btn = new zim.Container(270, 90).addTo(stage).loc(x, 260);
 
-        // Shadow
-        new zim.Rectangle({ width: btnW, height: 58, color: "#4a1a6e", corner: 29 })
-          .addTo(btn).loc(2, 4);
-        // Pill bg
+        new zim.Rectangle({ width: 270, height: 90, color: "#4d1b72", corner: 24 })
+          .addTo(btn).loc(3, 6);
         new zim.Rectangle({
-          width: btnW, height: 58,
-          color: isSelected ? "#7c3aed" : "#9b6bbf",
-          corner: 29,
+          width: 270,
+          height: 90,
+          color: isSelected ? "#6d28d9" : "#a864bf",
+          borderColor: "#5a217e",
+          borderWidth: 2,
+          corner: 24,
         }).addTo(btn);
 
-        // Icon on left
-        new zim.Label({ text: icon, size: 24, align: "center", valign: "center" })
-          .addTo(btn).loc(28, 29);
-
-        // Label text
+        new zim.Circle(35, isSelected ? "#8b46e8" : "#b87acc")
+          .addTo(btn).loc(52, 45);
+        new zim.Label({ text: icon, size: 42, align: "center", valign: "center" })
+          .addTo(btn).loc(52, 45);
         new zim.Label({
-          text: label, size: 24, font: zimFont,
-          color: "#ffffff", bold: true,
-          align: "center", valign: "center",
-        }).addTo(btn).loc(btnW / 2 + 8, 29);
+          text: label,
+          size: 26,
+          font: zimFont,
+          color: "#ffffff",
+          bold: true,
+          align: "center",
+          valign: "center",
+        }).addTo(btn).loc(165, 47);
 
-        // Badge on right (apple / fox / star)
-        new zim.Label({ text: badge, size: 20, align: "center", valign: "center" })
-          .addTo(btn).loc(btnW - 34, 20);
+        if (badge) {
+          new zim.Label({ text: badge, size: 24, align: "center", valign: "center" })
+            .addTo(btn).loc(240, 45);
+        }
 
-        // Blue checkmark if selected
         if (isSelected) {
-          new zim.Circle(14, "#3b82f6").addTo(btn).loc(btnW - 22, 10);
+          new zim.Circle(18, "#25b8e6").addTo(btn).loc(240, 18);
           new zim.Label({
-            text: "✓", size: 13, font: zimFont, color: "#ffffff", bold: true,
-            align: "center", valign: "center",
-          }).addTo(btn).loc(btnW - 22, 10);
+            text: "✓",
+            size: 18,
+            font: zimFont,
+            color: "#ffffff",
+            bold: true,
+            align: "center",
+            valign: "center",
+          }).addTo(btn).loc(240, 18);
         }
 
         btn.cursor = "pointer";
@@ -173,72 +233,65 @@ export default createZimGame({
         });
       });
 
-      // ── Difficulty section label pill ─────────────────────────────────────
-      new zim.Rectangle({ width: 130, height: 30, color: "#b89ad4", corner: 15 })
-        .addTo(stage).loc(135, 288);
-      new zim.Label({
-        text: "✕ Difficulty",
-        size: 16, font: zimFont, color: "#ffffff", bold: true,
-        align: "center", valign: "center",
-      }).addTo(stage).loc(200, 303);
+      new zim.Rectangle({ width: 405, height: 2, color: "#cfb5e3" })
+        .addTo(stage).loc(115, 372);
+      new zim.Label({ text: "✦", size: 22, font: zimFont, color: "#9860bd" })
+        .addTo(stage).loc(W / 2, 373);
+      new zim.Rectangle({ width: 405, height: 2, color: "#cfb5e3" })
+        .addTo(stage).loc(580, 372);
 
-      // ── Difficulty items — NO card bg, just icon + mascot + text floating ─
+      makeSectionPill("⚔ Difficulty", 145, 115, 387);
+
       const difficultyConfig = [
         {
-          level: "easy",
-          crystalEmoji: "🟢", mascot: "🐛",
-          label: "Easy",      desc: "Perfect start",
-          labelColor: "#2d8a2d", x: 160,
+          level: "easy", mascot: "🐛", label: "Easy", desc: "Perfect start",
+          labelColor: "#2d9a32", iconColor: "#61d34c", x: 115,
         },
         {
-          level: "medium",
-          crystalEmoji: "🟠", mascot: "🐱",
-          label: "Medium",    desc: "Getting tricky",
-          labelColor: "#c07000", x: 430,
+          level: "medium", mascot: "🐱", label: "Medium", desc: "Getting tricky",
+          labelColor: "#e57b00", iconColor: "#ff941f", x: 415,
         },
         {
-          level: "hard",
-          crystalEmoji: "🔴", mascot: "🐉",
-          label: "Hard",      desc: "True challenge",
-          labelColor: "#c02020", x: 700,
+          level: "hard", mascot: "🐉", label: "Hard", desc: "True challenge",
+          labelColor: "#d32d2d", iconColor: "#ef3d4e", x: 715,
         },
       ];
 
-      difficultyConfig.forEach(({ level, crystalEmoji, mascot, label, desc, labelColor, x }) => {
+      difficultyConfig.forEach(({ level, mascot, label, desc, labelColor, iconColor, x }) => {
         const isSelected = selectedDifficulty === level;
-        const btn = new zim.Container().addTo(stage).loc(x, 325);
+        const btn = new zim.Container(270, 105).addTo(stage).loc(x, 423);
 
-        // Subtle selected highlight bg
-        if (isSelected) {
-          new zim.Rectangle({
-            width: 260, height: 115,
-            color: "#c8aee8",
-            borderColor: "#9b6bbf",
-            borderWidth: 2,
-            corner: 20,
-          }).addTo(btn).loc(-10, -8);
-        }
+        new zim.Rectangle({ width: 270, height: 105, color: "#b78ac9", corner: 22 })
+          .addTo(btn).loc(2, 5);
+        new zim.Rectangle({
+          width: 270,
+          height: 105,
+          color: "#f1e7f8",
+          borderColor: isSelected ? "#55c938" : "#b88bce",
+          borderWidth: isSelected ? 3 : 2,
+          corner: 22,
+        }).addTo(btn);
 
-        // Crystal / gem icon (large)
-        new zim.Label({ text: crystalEmoji, size: 44, align: "center", valign: "center" })
-          .addTo(btn).loc(30, 30);
-
-        // Mascot next to crystal
-        new zim.Label({ text: mascot, size: 40, align: "center", valign: "center" })
-          .addTo(btn).loc(95, 50);
-
-        // Label and desc to the right
+        new zim.Circle(39, iconColor).addTo(btn).loc(55, 52);
+        new zim.Label({ text: mascot, size: 46, align: "center", valign: "center" })
+          .addTo(btn).loc(55, 52);
         new zim.Label({
-          text: label, size: 22, font: zimFont,
-          color: labelColor, bold: true,
-          align: "left", valign: "center",
-        }).addTo(btn).loc(150, 28);
-
+          text: label,
+          size: 24,
+          font: zimFont,
+          color: labelColor,
+          bold: true,
+          align: "left",
+          valign: "center",
+        }).addTo(btn).loc(115, 40);
         new zim.Label({
-          text: desc, size: 14, font: zimFont,
+          text: desc,
+          size: 15,
+          font: zimFont,
           color: "#6b4a8a",
-          align: "left", valign: "center",
-        }).addTo(btn).loc(150, 58);
+          align: "left",
+          valign: "center",
+        }).addTo(btn).loc(115, 71);
 
         btn.cursor = "pointer";
         btn.on("click", () => {
@@ -247,48 +300,35 @@ export default createZimGame({
         });
       });
 
-      // ── Let's Play button — oval pill, purple with shine ──────────────────
-      // Outer dark shadow pill
-      new zim.Rectangle({ width: 266, height: 62, color: "#4a1a6e", corner: 31 })
-        .addTo(stage).loc(W / 2 - 135, 472);
+      new zim.Rectangle({ width: 376, height: 66, color: "#4a176f", corner: 33 })
+        .addTo(stage).loc(W / 2 - 188, 565);
 
       const playButton = new zim.Button({
-        width: 260,
-        height: 56,
-        label: "▶  Let's Play!",
+        width: 370,
+        height: 60,
+        label: "▶   Let's Play!",
         backgroundColor: "#7c3aed",
         rollBackgroundColor: "#6d28d9",
         downBackgroundColor: "#5b21b6",
         color: "#ffffff",
-        corner: 28,
+        corner: 30,
       });
-      playButton.label.size = 26;
+      playButton.label.size = 30;
       playButton.label.font = zimFont;
-      playButton.addTo(stage).loc(W / 2 - 130, 472);
+      playButton.addTo(stage).loc(W / 2 - 185, 565);
       playButton.on("click", () => startGame());
 
-      // Shine strip on top of button (decorative only)
-      new zim.Rectangle({ width: 180, height: 14, color: "#a87af0", corner: 7 })
-        .addTo(stage).loc(W / 2 - 90, 478);
+      new zim.Rectangle({ width: 235, height: 10, color: "#9f6af1", corner: 5 })
+        .addTo(stage).loc(W / 2 - 118, 572);
 
-      // ── Footer tip ────────────────────────────────────────────────────────
       new zim.Label({
         text: "💡 Tip: You can pick more than one word type!",
-        size: 16, font: zimFont, color: "#6b4a8a",
-        align: "center", valign: "center",
-      }).addTo(stage).loc(W / 2, 548);
-
-      // ── "Hooray! Fun ahead!" — multicolor tagline below card ──────────────
-      // Each word a different color like the reference
-      new zim.Label({ text: "Hooray!", size: 34, font: zimFont, color: "#f4c45a", bold: true })
-        .addTo(stage).loc(310, 700);
-      new zim.Label({ text: "Fun", size: 34, font: zimFont, color: "#60d8f0", bold: true })
-        .addTo(stage).loc(500, 700);
-      new zim.Label({ text: "ahead!", size: 34, font: zimFont, color: "#f4c45a", bold: true })
-        .addTo(stage).loc(570, 700);
-
-      // Small star emoji after tagline
-      new zim.Label({ text: "✨", size: 28 }).addTo(stage).loc(730, 698);
+        size: 17,
+        font: zimFont,
+        color: "#64358c",
+        align: "center",
+        valign: "center",
+      }).addTo(stage).loc(W / 2, 654);
 
       stage.update();
     }
@@ -299,33 +339,32 @@ export default createZimGame({
       clearGameTimer();
       stage.removeAllChildren();
 
-      new zim.Rectangle(W, H, "#ffffff").addTo(stage);
+      const gamePalette = {
+        background: "#a989d6",
+        header: "#5a2188",
+        surface: "#eadff7",
+        panel: "#f8f2fc",
+        panelBorder: "#d5bdea",
+        band: "#e2d0f0",
+        controls: "#d7bee9",
+        primary: "#7c3aed",
+        primaryRoll: "#6d28d9",
+        primaryDown: "#5b21b6",
+        secondary: "#a36bc0",
+        ink: "#3f2854",
+        muted: "#806491",
+        gold: "#f4b928",
+      };
 
-      // purple header
-      new zim.Rectangle(W, 140, "#4f46d9").addTo(stage).loc(0, 0);
+      new zim.Rectangle(W, H, gamePalette.background).addTo(stage);
 
-      // reading area
-      new zim.Rectangle(W, 340, "#f7f9fc").addTo(stage).loc(0, 140);
+      new zim.Rectangle(W, 140, gamePalette.header).addTo(stage).loc(0, 0);
 
-      // paragraph card
-      new zim.Rectangle({ width: 1020, height: 280, color: "#ffffff", corner: 18 })
-        .addTo(stage)
-        .loc(40, 150);
-
-      // word bank area
-      new zim.Rectangle(W, 170, "#ffffff").addTo(stage).loc(0, 430);
-
-      // button area
-      new zim.Rectangle(W, 130, "#f7f9fc").addTo(stage).loc(0, 620);
-
-      // ── Available Words label ─────────────────────────────────────────────
-      new zim.Rectangle({ width: 220, height: 32, color: "#7c3aed", corner: 16 })
-        .addTo(stage).loc(W / 2 - 110, 432);
       new zim.Label({
         text: "Context Cloze Quest",
         size: 42,
         font: zimFont,
-        color: "#000000",
+        color: "#ffffff",
         align: "center",
         valign: "center",
         bold: true,
@@ -336,7 +375,7 @@ export default createZimGame({
       const scoreBackground = new zim.Rectangle({
         width: 300,
         height: 45,
-        color: "#7c7bea",
+        color: gamePalette.secondary,
         corner: 22,
       })
         .addTo(stage)
@@ -406,17 +445,17 @@ export default createZimGame({
       }
 
       new zim.Rectangle({
-        width: 150,
-        height: 50,
-        color: "#7c7bea",
-        corner: 22,
+        width: 195,
+        height: 70,
+        color: gamePalette.secondary,
+        corner: 32,
       })
         .addTo(stage)
-        .loc(880, 45);
+        .loc(850, 35);
 
       const timerLabel = new zim.Label({
         text: `⏱ ${remainingTime}s`,
-        size: 22,
+        size: 28,
         font: zimFont,
         color: "#ffffff",
         align: "center",
@@ -424,11 +463,11 @@ export default createZimGame({
         bold: true,
       })
         .addTo(stage)
-        .loc(955, 57);
+        .loc(947, 51);
 
       const timerScoreLabel = new zim.Label({
         text: `Timer Score: ${remainingTime * 5}`,
-        size: 16,
+        size: 18,
         font: zimFont,
         color: "#ffffff",
         align: "center",
@@ -436,28 +475,34 @@ export default createZimGame({
         bold: true,
       })
         .addTo(stage)
-        .loc(955, 81);
+        .loc(947, 85);
 
-      function makeText(text, x, y) {
+      const passageWindowWidth = 980;
+      let passageWindowHeight = 250;
+      const passagePadding = 20;
+      const scrollbarBuffer = 30;
+      const passageContent = new zim.Container(passageWindowWidth, 2000);
+
+      function makeText(text) {
         return new zim.Label({
           text,
           size: 22,
           font: getContentFont(),
-          color: "#333333",
+          color: gamePalette.ink,
           align: "left",
           valign: "center",
-        }).addTo(stage).loc(x, y);
+        }).addTo(passageContent);
       }
 
       function makeBlank(x, y, index) {
-        const blank = new zim.Container().addTo(stage).loc(x, y);
+        const blank = new zim.Container().addTo(passageContent).loc(x, y);
         blank.index = index;
 
         new zim.Rectangle({
           width: 95,
           height: 28,
-          color: "#fff5f5",
-          borderColor: "#8f7cff",
+          color: gamePalette.panel,
+          borderColor: gamePalette.primary,
           borderWidth: 3,
           corner: 8,
           dashed: [8, 5],
@@ -467,7 +512,7 @@ export default createZimGame({
           text: "______",
           size: 20,
           font: zimFont,
-          color: "#999999",
+          color: gamePalette.muted,
           align: "center",
           valign: "center",
           bold: true,
@@ -479,18 +524,6 @@ export default createZimGame({
 
       let words = ["girl", "garden", "milk", "animals", "day"];
       let correctAnswers = ["girl", "garden", "milk"];
-
-      new zim.Label({
-        text: "AVAILABLE WORDS",
-        size: 22,
-        font: zimFont,
-        color: "#3b32b8",
-        align: "center",
-        valign: "center",
-        bold: true,
-      })
-        .addTo(stage)
-        .loc(W / 2, 450);
 
       const wordTypeMap = {
         noun: "NOUN",
@@ -510,12 +543,76 @@ export default createZimGame({
         words = gameData.wordBank;
         correctAnswers = gameData.answers;
 
+        const wordsPerRow = 6;
+        const wordBankRows = Math.max(1, Math.ceil(words.length / wordsPerRow));
+        const wordBankHeightByRows = {
+          1: 110,
+          2: 155,
+          3: 190,
+        };
+        const wordBankHeight =
+          wordBankHeightByRows[wordBankRows] || 190 + (wordBankRows - 3) * 43;
+        const wordBankBottom = 668;
+        const controlsDividerHeight = 12;
+        const controlsY = wordBankBottom + controlsDividerHeight;
+        const controlsHeight = 72;
+        const controlsButtonY = controlsY + 10;
+        const feedbackY = controlsY + controlsHeight;
+        const wordBankY = wordBankBottom - wordBankHeight;
+        const passageCardY = 150;
+        const wordBankTopGap = 14;
+        const passageCardHeight = wordBankY - passageCardY - wordBankTopGap;
+        passageWindowHeight = passageCardHeight - 30;
+
+        new zim.Rectangle(W, wordBankY - 140, gamePalette.surface)
+          .addTo(stage)
+          .loc(0, 140);
+
+        new zim.Rectangle({
+          width: 1020,
+          height: passageCardHeight,
+          color: gamePalette.panel,
+          borderColor: gamePalette.panelBorder,
+          borderWidth: 2,
+          corner: 18,
+        })
+          .addTo(stage)
+          .loc(40, passageCardY);
+
+        new zim.Rectangle(W, wordBankHeight, gamePalette.band)
+          .addTo(stage)
+          .loc(0, wordBankY);
+
+        new zim.Rectangle(W, controlsDividerHeight, "#b88bde")
+          .addTo(stage)
+          .loc(0, wordBankBottom);
+
+        new zim.Rectangle(W, controlsHeight, gamePalette.controls)
+          .addTo(stage)
+          .loc(0, controlsY);
+
+        new zim.Rectangle({ width: 220, height: 32, color: gamePalette.header, corner: 16 })
+          .addTo(stage)
+          .loc(W / 2 - 110, wordBankY + 8);
+
+        new zim.Label({
+          text: "AVAILABLE WORDS",
+          size: 22,
+          font: zimFont,
+          color: "#ffffff",
+          align: "center",
+          valign: "center",
+          bold: true,
+        })
+          .addTo(stage)
+          .loc(W / 2, wordBankY + 25);
+
         function drawParagraphWithInlineBlanks(paragraph) {
           const parts = paragraph.split("_____");
 
-          let x = 90;
-          let y = 165;
-          const maxX = 1030;
+          let x = passagePadding;
+          let y = 22;
+          const maxX = passageWindowWidth - passagePadding - scrollbarBuffer;
           const lineHeight = 34;
           let blankIndex = 0;
 
@@ -525,20 +622,25 @@ export default createZimGame({
             wordsInPart.forEach((word) => {
               if (!word) return;
 
-              const wordWidth = word.length * 14;
+              const label = makeText(word);
+
+              const wordWidth =
+                label.width ||
+                label.getBounds?.()?.width ||
+                60;
 
               if (x + wordWidth > maxX) {
-                x = 90;
+                x = passagePadding;
                 y += lineHeight;
               }
 
-              makeText(word, x, y);
+              label.loc(x, y);
               x += wordWidth + 12;
             });
 
             if (partIndex < parts.length - 1) {
-              if (x + 140 > maxX) {
-                x = 90;
+              if (x + 105 > maxX) {
+                x = passagePadding;
                 y += lineHeight;
               }
 
@@ -547,14 +649,41 @@ export default createZimGame({
               blankIndex++;
             }
           });
-        }
-        drawParagraphWithInlineBlanks(gameData.paragraph);
 
-        const wordsPerRow = 6;
+          return y + lineHeight;
+        }
+        const passageContentHeight = Math.max(
+          passageWindowHeight,
+          drawParagraphWithInlineBlanks(gameData.paragraph),
+        );
+
+        passageContent.setBounds(
+          0,
+          0,
+          passageWindowWidth,
+          passageContentHeight,
+        );
+        passageContent.width = passageWindowWidth;
+        passageContent.height = passageContentHeight;
+
+        new zim.Window({
+          width: passageWindowWidth,
+          height: passageWindowHeight,
+          content: passageContent,
+          backgroundColor: "transparent",
+          borderColor: "transparent",
+          padding: 0,
+          scrollBarDrag: true,
+          scrollBarColor: gamePalette.primary,
+          scrollBarFade: false,
+        })
+          .addTo(stage)
+          .loc(60, 165);
+
         const spacingX = 160;
         const spacingY = 43;
         const startX = 70;
-        const startY = 470;
+        const startY = wordBankY + 50;
 
         words.forEach((word, i) => {
           const row = Math.floor(i / wordsPerRow);
@@ -567,13 +696,19 @@ export default createZimGame({
           const wordButton = new zim.Button({
             width: buttonWidth,
             height: 40,
-            label: word,
-            backgroundColor: "#6c5ce7",
-            rollBackgroundColor: "#5b4ee6",
-            downBackgroundColor: "#4c40d8",
+            label: new zim.Label({
+              text: word,
+              size: selectedLanguage === "sanskrit" ? 20 : 24,
+              font: getContentFont(),
+              color: "#ffffff",
+              align: "center",
+              valign: "center",
+            }),
+            backgroundColor: gamePalette.primary,
+            rollBackgroundColor: gamePalette.primaryRoll,
+            downBackgroundColor: gamePalette.primaryDown,
             corner: 10,
           });
-          wordButton.label.size = 24;
           wordButton.addTo(stage);
           wordButton.loc(currentX, currentY);
           wordButton.homeX = currentX;
@@ -586,11 +721,18 @@ export default createZimGame({
             let matchedBlank = null;
 
             blanks.forEach((blank) => {
-              const centerX = wordButton.x + 60;
-              const centerY = wordButton.y + 25;
+              const buttonCenter = wordButton.localToGlobal(
+                wordButton.width / 2,
+                wordButton.height / 2,
+              );
+              const blankTopLeft = blank.localToGlobal(0, 0);
 
-              const insideX = centerX > blank.x && centerX < blank.x + 95;
-              const insideY = centerY > blank.y && centerY < blank.y + 28;
+              const insideX =
+                buttonCenter.x > blankTopLeft.x &&
+                buttonCenter.x < blankTopLeft.x + 95;
+              const insideY =
+                buttonCenter.y > blankTopLeft.y &&
+                buttonCenter.y < blankTopLeft.y + 28;
 
               if (insideX && insideY) {
                 matchedBlank = blank;
@@ -605,6 +747,13 @@ export default createZimGame({
 
                 if (existingButton) {
                   existingButton.blankIndex = undefined;
+                  const existingGlobal = existingButton.localToGlobal(0, 0);
+                  existingButton.addTo(stage);
+                  const existingStagePoint = stage.globalToLocal(
+                    existingGlobal.x,
+                    existingGlobal.y,
+                  );
+                  existingButton.loc(existingStagePoint.x, existingStagePoint.y);
 
                   existingButton.animate({
                     props: {
@@ -617,6 +766,15 @@ export default createZimGame({
                   });
                 }
               }
+
+              const buttonGlobal = wordButton.localToGlobal(0, 0);
+              wordButton.addTo(passageContent);
+              const buttonContentPoint = passageContent.globalToLocal(
+                buttonGlobal.x,
+                buttonGlobal.y,
+              );
+              wordButton.loc(buttonContentPoint.x, buttonContentPoint.y);
+
               wordButton.animate({
                 props: {
                   x: matchedBlank.x,
@@ -632,6 +790,13 @@ export default createZimGame({
               wordButton.blankIndex = matchedBlank.index;
               matchedBlank.filledWord = wordButton.word;
             } else {
+              const buttonGlobal = wordButton.localToGlobal(0, 0);
+              wordButton.addTo(stage);
+              const buttonStagePoint = stage.globalToLocal(
+                buttonGlobal.x,
+                buttonGlobal.y,
+              );
+              wordButton.loc(buttonStagePoint.x, buttonStagePoint.y);
               wordButton.blankIndex = undefined;
 
               wordButton.animate({
@@ -651,11 +816,11 @@ export default createZimGame({
 
         const feedbackBar = new zim.Rectangle({
           width: W,
-          height: 70,
-          color: "#ffffff",
+          height: 48,
+          color: gamePalette.surface,
         })
           .addTo(stage)
-          .loc(0, 724);
+          .loc(0, feedbackY);
 
         const feedbackLabel = new zim.Label({
           text: "",
@@ -667,7 +832,7 @@ export default createZimGame({
           bold: true,
         })
           .addTo(stage)
-          .loc(W / 2, 758);
+          .loc(W / 2, feedbackY + 24);
 
         // --- HINT: applyHint function ---
         function applyHint() {
@@ -700,9 +865,9 @@ export default createZimGame({
           width: 180,
           height: 52,
           label: "← Menu",
-          backgroundColor: "#ffffff",
-          rollBackgroundColor: "#f3f4f6",
-          color: "#4f46d9",
+          backgroundColor: gamePalette.panel,
+          rollBackgroundColor: gamePalette.surface,
+          color: gamePalette.header,
           corner: 12,
         });
 
@@ -717,12 +882,12 @@ export default createZimGame({
           width: 200,
           height: 52,
           label: "↻ Reset Game",
-          backgroundColor: "#e53935",
-          rollBackgroundColor: "#c62828",
+          backgroundColor: gamePalette.secondary,
+          rollBackgroundColor: "#8f50ae",
           corner: 25,
         });
         resetButton.label.size = 22;
-        resetButton.addTo(stage).loc(270, 640);
+        resetButton.addTo(stage).loc(270, controlsButtonY);
         resetButton.on("click", () => {
           clearGameTimer();
           startGame();
@@ -733,22 +898,22 @@ export default createZimGame({
           stage,
           zim,
           x: 490,
-          y: 640,
+          y: controlsButtonY,
           policy: hintPolicy,
           onUse: applyHint,
-          palette: { bg: "#f4c45a", color: "#1f4a5c" },
+          palette: { bg: gamePalette.gold, color: gamePalette.ink },
         });
         // --------------------------------------------------------
 
         const checkButton = new zim.Button({
           width: 240, height: 50,
           label: "✓ Submit Answer",
-          backgroundColor: "#18b853",
-          rollBackgroundColor: "#12a448",
+          backgroundColor: gamePalette.primary,
+          rollBackgroundColor: gamePalette.primaryRoll,
           corner: 25,
         });
         checkButton.label.size = 22;
-        checkButton.addTo(stage).loc(640, 640);
+        checkButton.addTo(stage).loc(640, controlsButtonY);
         checkButton.on("click", () => {
           let correctCount = 0;
           let filledCount = 0;
