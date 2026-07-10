@@ -4,7 +4,9 @@ import {
   getAllStories,
   getAllTokenizedStories,
   addNewStory,
-  writeMeta,
+  addNewSamskrutamStory,
+  writeLearnSanskritMeta,
+  writeSamskrutamMeta,
   uploadStory,
   getUnusedStories,
 } from "../services/admin/AdminControls";
@@ -175,7 +177,7 @@ async function handleDownloadSanskritStory(story) {
 
     try {
 
-        const result = await addNewStory(story._id);
+        const result = await addNewSamskrutamStory(story._id);
 
         alert(
 
@@ -196,39 +198,43 @@ async function handleDownloadSanskritStory(story) {
     }
 
 }
-  async function handleWriteMeta() {
-
-        try {
-
-            setLoading(true);
-
-            const result = await writeMeta();
-
-            alert(
-
-                result.message ||
-
-                "Metadata generated successfully."
-
-            );
-
-        }
-
-        catch(error){
-
-            console.error(error);
-
-            alert("Metadata generation failed.");
-
-        }
-
-        finally{
-
-            setLoading(false);
-
-        }
-
+// handler function for learn sanskrit stories write meta data
+  async function handleWriteLearnMeta() {
+    try {
+        setLoading(true);
+        const result = await writeLearnSanskritMeta();
+        alert(
+            result.message ||
+            "LearnSanskrit metadata generated successfully."
+        );
     }
+    catch (error) {
+        console.error(error);
+        alert("LearnSanskrit metadata generation failed.");
+    }
+    finally {
+        setLoading(false);
+    }
+}
+  // handler function to write meta data for samskrutam stories
+  async function handleWriteSamskrutamMeta() {
+    try {
+        setLoading(true);
+        const result = await writeSamskrutamMeta();
+        alert(
+            result.message ||
+            "Samskrutam metadata generated successfully."
+        );
+    }
+    catch (error) {
+        console.error(error);
+        alert("Samskrutam metadata generation failed.");
+    }
+    finally {
+        setLoading(false);
+    }
+}
+// handler for upload
     async function handleUpload() {
         if (!uploadFile) {
             alert("Please choose a file.");
@@ -573,16 +579,10 @@ async function handleDownloadSanskritStory(story) {
                                             justifyContent:"center",
                                         }}
                                     >
-
-                                        <button
-                                            onClick={handleWriteMeta}
-                                            style={actionButtonStyle}
-                                        >
-                                            Write Metadata
-                                        </button>
-
-                                    </div>
-
+                                    <button onClick={handleWriteLearnMeta}>
+                                        Write Metadata
+                                    </button>
+                                </div>
                                     {
 
                                         loading && !learnLoaded ? (
@@ -711,20 +711,12 @@ async function handleDownloadSanskritStory(story) {
                                             justifyContent:"center",
                                         }}
                                     >
-
-                                        <button
-                                            onClick={handleWriteMeta}
-                                            style={actionButtonStyle}
-                                        >
+                                        <button onClick={handleWriteSamskrutamMeta}>
                                             Write Metadata
                                         </button>
-
                                     </div>
-
                                     {
-
                                         loading && !sanskritLoaded ? (
-
                                             <p>Loading stories...</p>
 
                                         ) : (
@@ -854,6 +846,7 @@ async function handleDownloadSanskritStory(story) {
                     {story.storyTitle ||
                     story.title?.englishversion ||
                     story.title?.englishVersion ||
+                    story.english_title ||
                     "Untitled Story"}
                 </h3>
 
@@ -1154,42 +1147,7 @@ async function handleDownloadSanskritStory(story) {
         })}
 
     </ul>
-    <div style={{marginTop: "12px",}}>
-    <strong
-        style={{
-            color: "#1f2b6b",
-        }}
-    >
-        Stories
-    </strong>
-    <ul
-        style={{
-            marginTop: "10px",
-            marginBottom: 0,
-            paddingLeft: "20px",
-            color: "#555",
-        }}
-    >
-        {set.storyIds.map((storyId) => {
-            const story = tokenizedStories.find(
-                (s) => s._id === storyId
-            );
-            return (
-                <li key={storyId}>
-                    {story
-                        ? (
-                            story.storyTitle ||
-                            story.title?.englishversion ||
-                            story.title?.englishVersion ||
-                            "Untitled Story"
-                        )
-                        : "Story not loaded"}
-                </li>
-            );
-        })}
-    </ul>
-</div>
-</div>
+    </div>
  </div>
                 {set.isActive && (
                     <span
