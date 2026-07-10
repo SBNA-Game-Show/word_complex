@@ -11,9 +11,16 @@ function getNumberOfBlanks(difficulty = "easy") {
 
   return difficultyMap[difficulty] || 3;
 }
-
+function isPlayableWord(word) {
+  return (
+    word &&
+    typeof word.text === "string" &&
+    /[\p{L}\p{M}]/u.test(word.text)
+  );
+}
 function getAnswers(tokenizedWords, wordTypes = ["NOUN"], numberOfBlanks = 3) {
   const filteredWords = tokenizedWords
+    .filter(isPlayableWord)
     .filter((word) => wordTypes.includes(word.pos || word.upos))
     .map((word) => word.text);
 
@@ -27,6 +34,7 @@ function getAnswers(tokenizedWords, wordTypes = ["NOUN"], numberOfBlanks = 3) {
 function getDistractors(tokenizedWords, answers, wordTypes = ["NOUN"], count = 3) {
   // First try to get distractors from the selected word types
   const preferredWords = tokenizedWords
+    .filter(isPlayableWord)
     .filter((word) => wordTypes.includes(word.pos || word.upos))
     .map((word) => word.text);
 
@@ -39,6 +47,7 @@ function getDistractors(tokenizedWords, answers, wordTypes = ["NOUN"], count = 3
   // If not enough distractors, use other word types as backup
   if (distractorPool.length < count) {
     const backupWords = tokenizedWords
+      .filter(isPlayableWord)
       .map((word) => word.text);
 
     const backupUniqueWords = [...new Set(backupWords)];
