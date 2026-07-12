@@ -954,6 +954,14 @@ input {
   box-shadow: 0 0 0 4px rgba(255, 216, 77, 0.3);
 }
 
+/* The streak pill opens the rewards screen, so give it a tappable feel. */
+.streak-pill-button:hover {
+  transform: translateY(-1px);
+}
+.streak-pill-button:active {
+  transform: translateY(1px);
+}
+
 /* Gentle pulse while streak/stars load (e.g. during a cold backend wake). */
 .streak-pill.is-loading {
   animation: streak-pill-pulse 1.2s ease-in-out infinite;

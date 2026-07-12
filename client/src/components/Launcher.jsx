@@ -11,6 +11,7 @@ export default function Launcher({
   onChooseCharacter,
   onChooseStory,
   onLeaderboard,
+  onOpenStreak,
   isZooming = false,
   isLaunching = false,
 }) {
@@ -35,12 +36,18 @@ export default function Launcher({
         </div>
         <div className="topbar-actions">
           <div className="streak-pills" aria-label="Today">
-            <span className={`streak-pill sun${progressLoading ? " is-loading" : ""}`}>
+            <button
+              type="button"
+              className={`streak-pill sun streak-pill-button${progressLoading ? " is-loading" : ""}`}
+              onClick={onOpenStreak}
+              aria-label="Open daily rewards"
+              title="Daily rewards"
+            >
               <span className="dot" />{" "}
               {progressLoading
                 ? "Loading streak…"
                 : `${streak} day${streak === 1 ? "" : "s"} streak`}
-            </span>
+            </button>
             <span className="streak-pill">
               <span className="dot" /> {user?.role ?? "Reader"}
             </span>
