@@ -281,7 +281,7 @@ export default function LeaderboardPage({ onBack }) {
               )}
 
               {/* Signed in but no record yet */}
-              {user?.id && !you && (
+              {user?.id && !you && !youInList && (
                 <div className="lb-state lb-state--hint">
                   Play a game to claim your spot on the board.
                 </div>
