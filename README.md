@@ -65,8 +65,10 @@ docker-compose up
 
 - **Atlas URI**: configured in `server/.env` as `ATLAS_URI`
 - **Database**: `word_complex`
-- **Collection**: `tokenized_stories`
-- Each story document contains: `title`, `category`, `englishVersion`, `sanskritVersion`, `transliteratedVersion`, `tokenized_sanskrit_version`, `tokenized_english_version`, `storyMoral`, `actors`
+- **Collections**:
+  - `tokenized_stories` — story data. Each document contains: `title`, `category`, `englishVersion`, `sanskritVersion`, `transliteratedVersion`, `tokenized_sanskrit_version`, `tokenized_english_version`, `storyMoral`, `actors`
+  - `meaning-bridge` — Meaning Bridge best scores, one doc per player (`_id` = Firebase UID): `displayName`, `bestScore`, `bestTime` (ms), `accuracy`, `attemptsPlayed`
+  - `players` — shared cross-game leaderboard (written only via `submitLeaderboardScore`)
 - **IP Whitelist**: MongoDB Atlas restricts by IP — ensure your network IP is whitelisted
 
 ## Testing

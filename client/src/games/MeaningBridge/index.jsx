@@ -1,8 +1,10 @@
 import { createZimGame } from "../createZimGame";
 import { emit } from "../../scenes/sceneBus";
 import {
+  fetchMeaningBridgeGlobalLeaderboard,
   fetchMeaningBridgeLeaderboard,
   fetchMeaningBridgeRound,
+  saveMeaningBridgeBestScore,
   submitMeaningBridgeScore,
 } from "../../services/meaningBridgeApi";
 
@@ -745,7 +747,11 @@ export default createZimGame({
     }
 
     function getPlayButtonLabel() {
-      return `Play 3 Rounds (${formatSeconds(ROUND_SECONDS)} each) →`;
+      if (!isTimedMode()) {
+        return "Play Now →";
+      }
+
+      return `Start ${formatSeconds(getSelectedTimerSeconds())} →`;
     }
 
     function setPlayMode(nextMode) {
@@ -866,7 +872,11 @@ export default createZimGame({
     }
 
     function getSessionStatusText() {
-      return `⏱ ${formatSeconds(timedSecondsLeft)} • Round ${Math.min(roundIndex + 1, ROUNDS_PER_SESSION)}/${ROUNDS_PER_SESSION}`;
+      if (isTimedMode()) {
+        return `⏱ ${formatSeconds(timedSecondsLeft)} • Round ${Math.min(roundIndex + 1, ROUNDS_PER_SESSION)}/${ROUNDS_PER_SESSION}`;
+      }
+
+      return `Practice • Puzzle ${Math.min(roundIndex + 1, ROUNDS_PER_SESSION)}/${ROUNDS_PER_SESSION}`;
     }
 
     function stopTimedTimer() {
@@ -881,6 +891,10 @@ export default createZimGame({
     function updateTimedClock() {
       if (disposed) {
         stopTimedTimer();
+        return;
+      }
+
+      if (!isTimedMode()) {
         return;
       }
 
@@ -901,12 +915,17 @@ export default createZimGame({
       }
     }
 
-    // Every round gets its own enforced countdown, regardless of play mode.
+    // Timed mode: every round gets its own countdown using the time the
+    // player picked on the menu (preset or custom). Practice mode: no timer.
     function startRoundCountdown() {
       if (disposed) return;
       stopTimedTimer();
 
-      timedSecondsTotal = ROUND_SECONDS;
+      if (!isTimedMode()) {
+        return;
+      }
+
+      timedSecondsTotal = getSelectedTimerSeconds() || ROUND_SECONDS;
       timedSecondsLeft = timedSecondsTotal;
       timedEndsAt = Date.now() + timedSecondsTotal * 1000;
 
@@ -1356,36 +1375,37 @@ export default createZimGame({
           ? lastCompletedRound.matches.length
           : 0;
         const wrongAttempts = Number(lastCompletedRound.wrongAttempts) || 0;
-        const totalAttempts = correctMatches + wrongAttempts;
-
-        const accuracy =
-          totalAttempts > 0
-            ? Math.round((correctMatches / totalAttempts) * 100)
-            : 0;
+        const hintsUsed = Number(lastCompletedRound.hintsUsed) || 0;
 
         return {
-          accuracy,
+          accuracy: calculateAccuracy(correctMatches, wrongAttempts, hintsUsed),
           timeSeconds: Number(lastCompletedRound.timeSeconds) || 0,
-          hintsUsed: Number(lastCompletedRound.hintsUsed) || 0,
+          hintsUsed,
           wrongAttempts,
         };
       }
 
       const correctMatches = Object.keys(matches || {}).length;
       const wrongAttempts = Number(roundWrongAttempts) || 0;
-      const totalAttempts = correctMatches + wrongAttempts;
-
-      const accuracy =
-        totalAttempts > 0
-          ? Math.round((correctMatches / totalAttempts) * 100)
-          : 0;
+      const hintsUsed = Number(roundHintsUsed) || 0;
 
       return {
-        accuracy,
+        accuracy: calculateAccuracy(correctMatches, wrongAttempts, hintsUsed),
         timeSeconds: getElapsedRoundSeconds(),
-        hintsUsed: Number(roundHintsUsed) || 0,
+        hintsUsed,
         wrongAttempts,
       };
+    }
+
+    // Accuracy: correct / (correct + wrong + hints). Wrong picks AND hint
+    // uses count against it, so a hint-assisted perfect run isn't "100%".
+    function calculateAccuracy(correctMatches, wrongAttempts, hintsUsed) {
+      const totalAttempts =
+        correctMatches + wrongAttempts + Math.max(0, hintsUsed);
+
+      return totalAttempts > 0
+        ? Math.round((correctMatches / totalAttempts) * 100)
+        : 0;
     }
 
     function drawPuzzleResultStrip(cx, y) {
@@ -1464,11 +1484,11 @@ export default createZimGame({
         0,
       );
 
-      const totalAttempts = correctMatches + wrongAttempts;
-      const accuracy =
-        totalAttempts > 0
-          ? Math.round((correctMatches / totalAttempts) * 100)
-          : 0;
+      const accuracy = calculateAccuracy(
+        correctMatches,
+        wrongAttempts,
+        hintsUsed,
+      );
 
       return {
         // The server-computed score (base + speed bonus) is authoritative;
@@ -1667,6 +1687,37 @@ export default createZimGame({
             : null,
         );
 
+        // Persist the finished session to the `meaning-bridge` collection:
+        // one document per player (Firebase UID), highest attempt kept.
+        const playerUuid = String(authUser?.id || "").trim();
+
+        if (playerUuid) {
+          try {
+            const saved = await saveMeaningBridgeBestScore({
+              uuid: playerUuid,
+              playerName: getNormalizedPlayerName(),
+              score: submittedResultSummary.score,
+              timeSeconds: submittedResultSummary.timeSeconds,
+              accuracy: submittedResultSummary.accuracy,
+            });
+
+            if (saved?.isNewBest) {
+              submittedResultSummary.message = saved.message;
+            }
+          } catch (persistError) {
+            // Non-fatal: the round scores were accepted; only the best-score
+            // persistence failed. Log it, don't scare the player.
+            console.error(
+              "Meaning Bridge best-score save failed:",
+              persistError,
+            );
+          }
+        } else {
+          console.warn(
+            "Meaning Bridge: no Firebase UID — best score not persisted.",
+          );
+        }
+
         scoreSubmitMessage =
           submittedResultSummary.message ||
           "Score saved! Great bridge building.";
@@ -1699,13 +1750,22 @@ export default createZimGame({
       }
 
       try {
-        const data = await fetchMeaningBridgeLeaderboard(10);
+        // Persistent leaderboard from the `meaning-bridge` collection —
+        // one row per player, highest attempt only.
+        const data = await fetchMeaningBridgeGlobalLeaderboard(10);
         leaderboard = Array.isArray(data?.scores) ? data.scores : [];
       } catch (error) {
-        leaderboardError =
-          error instanceof Error
-            ? error.message
-            : "Could not load leaderboard.";
+        // Fall back to the in-memory session leaderboard if the DB-backed
+        // endpoint is unavailable, so the scene still shows something.
+        try {
+          const fallback = await fetchMeaningBridgeLeaderboard(10);
+          leaderboard = Array.isArray(fallback?.scores) ? fallback.scores : [];
+        } catch {
+          leaderboardError =
+            error instanceof Error
+              ? error.message
+              : "Could not load leaderboard.";
+        }
       } finally {
         isLoadingLeaderboard = false;
       }
@@ -1875,8 +1935,8 @@ export default createZimGame({
       roundStartScore = 0;
       completedPuzzles = 0;
 
-      timedSecondsTotal = ROUND_SECONDS;
-      timedSecondsLeft = ROUND_SECONDS;
+      timedSecondsTotal = getSelectedTimerSeconds() || ROUND_SECONDS;
+      timedSecondsLeft = timedSecondsTotal;
       timedEndsAt = 0;
 
       puzzle = null;
@@ -2510,38 +2570,39 @@ export default createZimGame({
         .addTo(preview)
         .loc(28, 39);
 
-      // Every session is the same format now: 3 rounds (4 → 5 → 6 pairs),
-      // 90 seconds each — so no play-mode toggle or timer presets.
-      const sessionInfo = new zim.Container().addTo(stage).loc(W / 2 - 296, 440);
-      sessionInfo.mouseChildren = false;
-      new zim.Rectangle({
-        width: 592,
-        height: 64,
-        color: "rgba(255,255,255,0.88)",
-        borderColor: rgba(C.tangerine, 0.45),
-        borderWidth: 2,
-        corner: 22,
-      }).addTo(sessionInfo);
-      new zim.Label({
-        text: `⏱️ 3 rounds: 4, 5, then 6 pairs — ${formatSeconds(ROUND_SECONDS)} on the clock for each. Finish all 3 to claim your leaderboard spot!`,
-        size: 15,
-        font: FONT,
-        color: C.ink,
-        lineWidth: 540,
-        align: "center",
-        bold: true,
-      })
-        .addTo(sessionInfo)
-        .loc(296, 18);
+      drawPlayModeToggle({
+        x: W / 2 - 296,
+        y: 424,
+      });
 
-      const actionY = 596;
+      if (isTimedMode()) {
+        drawTimerOptionsSection({
+          x: W / 2 - 198,
+          y: 500,
+        });
+
+        if (isCustomTimerSelected()) {
+          drawCustomTimerEditor({
+            x: W / 2 - 235,
+            y: 552,
+          });
+        }
+      }
+
+      const actionY = isTimedMode()
+        ? isCustomTimerSelected()
+          ? 644
+          : 614
+        : 596;
 
       drawShortcutStrip({
-        text: "Shortcuts: 1-3 Challenge • Enter Start • Esc Home",
+        text: isTimedMode()
+          ? "Shortcuts: 1-3 Challenge • P Practice • T Timed • C Custom • Enter Start • Esc Home"
+          : "Shortcuts: 1-3 Challenge • P Practice • T Timed • Enter Start • Esc Home",
         x: W / 2 - 350,
         y: actionY - 40,
         width: 700,
-        accent: active.accent,
+        accent: isTimedMode() ? C.tangerine : active.accent,
       });
 
       drawKidButton({
@@ -3144,8 +3205,10 @@ export default createZimGame({
 
         screen = "gameplay";
 
-        renderGame();
+        // Start the countdown before rendering so the header label created in
+        // renderGame stays live and keeps ticking (stopTimedTimer nulls it).
         startRoundCountdown();
+        renderGame();
       } catch (error) {
         if (disposed) return;
 
@@ -3378,27 +3441,12 @@ export default createZimGame({
 
       const isLastRound = isFinalRound();
 
-      if (!isLastRound) {
-        // Players may leave mid-session; finished rounds still get saved.
-        const finishBtn = new zim.Button({
-          width: 200,
-          height: 48,
-          label: "Save & Finish",
-          backgroundColor: C.grape,
-          rollBackgroundColor: "#7a50e0",
-          color: C.white,
-          corner: 24,
-        })
-          .addTo(stage)
-          .loc(cx - 225, mY + mH - 60);
-
-        finishBtn.label.size = 20;
-        finishBtn.label.font = FONT;
-        finishBtn.on("click", finishSession);
-      }
+      // Timed mode (and the final round of practice) shows a single centered
+      // button, matching the original layout.
+      const singleButton = isTimedMode() || isLastRound;
 
       const btn = new zim.Button({
-        width: 220,
+        width: singleButton ? 220 : 190,
         height: 48,
         label: isLastRound ? "See Final Results →" : "Next Puzzle →",
         backgroundColor: C.tangerine,
@@ -3407,10 +3455,29 @@ export default createZimGame({
         corner: 24,
       })
         .addTo(stage)
-        .loc(isLastRound ? cx - 110 : cx + 5, mY + mH - 60);
+        .loc(singleButton ? cx - 110 : cx - 200, mY + mH - 60);
       btn.label.size = 20;
       btn.label.font = FONT;
       btn.on("click", advanceAfterRoundComplete);
+
+      if (!isTimedMode() && !isLastRound) {
+        // Practice: leave early — finished rounds still get saved.
+        const finishBtn = new zim.Button({
+          width: 190,
+          height: 48,
+          label: "See Results",
+          backgroundColor: C.grape,
+          rollBackgroundColor: "#7a50e0",
+          color: C.white,
+          corner: 24,
+        })
+          .addTo(stage)
+          .loc(cx + 10, mY + mH - 60);
+
+        finishBtn.label.size = 20;
+        finishBtn.label.font = FONT;
+        finishBtn.on("click", finishSession);
+      }
 
       safeUpdate();
     }
@@ -3495,8 +3562,8 @@ export default createZimGame({
           .addTo(panel)
           .loc(340, 190);
       } else {
-        leaderboard.slice(0, 10).forEach((player, index) => {
-          const y = 20 + index * 34;
+        leaderboard.slice(0, 8).forEach((player, index) => {
+          const y = 32 + index * 42;
           const rank = index + 1;
           const medal =
             rank === 1
@@ -3509,7 +3576,7 @@ export default createZimGame({
 
           new zim.Label({
             text: medal,
-            size: 17,
+            size: 20,
             font: FONT,
             color: C.ink,
             align: "center",
@@ -3517,30 +3584,30 @@ export default createZimGame({
             bold: true,
           })
             .addTo(panel)
-            .loc(54, y + 13);
+            .loc(54, y + 16);
 
           new zim.Label({
             text: player.playerName || "Bridge Builder",
-            size: 15,
+            size: 18,
             font: FONT,
             color: C.ink,
             bold: true,
           })
             .addTo(panel)
-            .loc(94, y + 2);
+            .loc(94, y + 4);
 
           new zim.Label({
-            text: `${player.roundsPlayed || 0} rounds • ${player.accuracyAverage || 0}% accuracy${player.sessionComplete ? "" : " • ⏳ session in progress"}`,
-            size: 10,
+            text: `${player.roundsPlayed || 0} rounds • ${player.accuracyAverage || 0}% accuracy`,
+            size: 12,
             font: FONT,
             color: C.sub,
           })
             .addTo(panel)
-            .loc(94, y + 21);
+            .loc(94, y + 26);
 
           new zim.Label({
             text: `⭐ ${player.totalScore || 0}`,
-            size: 15,
+            size: 17,
             font: FONT,
             color: "#7a5800",
             align: "right",
@@ -3548,7 +3615,7 @@ export default createZimGame({
             bold: true,
           })
             .addTo(panel)
-            .loc(610, y + 13);
+            .loc(610, y + 17);
         });
       }
 
@@ -3696,13 +3763,16 @@ export default createZimGame({
       // Title — varies by outcome
       const sessionCompleted =
         completedRoundSubmissions.length >= ROUNDS_PER_SESSION;
-      const titleText = isLowScore
-        ? "Don't give up! 😔"
-        : isNewBest
-          ? "🥇 New Best!"
-          : sessionCompleted
-            ? "Session complete! 🌉"
-            : "You finished! ⭐";
+      const ranOutOfTime = isTimedMode() && timedSecondsLeft <= 0;
+      const titleText = ranOutOfTime
+        ? "Time's up! ⏱️"
+        : isLowScore
+          ? "Don't give up! 😔"
+          : isNewBest
+            ? "🥇 New Best!"
+            : sessionCompleted
+              ? "Session complete! 🌉"
+              : "You finished! ⭐";
       new zim.Label({
         text: titleText,
         size: 42,

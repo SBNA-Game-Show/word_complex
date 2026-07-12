@@ -6,6 +6,10 @@ const {
 const {
   retrieveStoryById,
 } = require("../../raw-data-connect/retrieveTokenizedStoryById");
+const {
+  saveBestScore,
+  getTopPlayers,
+} = require("../service/meaningBridgeScoreService");
 
 const SUPPORTED_MODES = new Set([
   "word-to-synonym",
@@ -393,10 +397,105 @@ const getMeaningBridgeLeaderboard = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/v1/meaningBridge/score
+ * Persist a finished session into the `meaning-bridge` collection.
+ * One document per player (uuid); only their highest attempt is kept.
+ */
+const saveMeaningBridgeBestScore = async (req, res) => {
+  try {
+    const {
+      uuid,
+      playerName = "Guest",
+      score,
+      timeSeconds,
+      accuracy = 0,
+    } = req.body || {};
+
+    if (!String(uuid || "").trim()) {
+      return res.status(400).json({
+        success: false,
+        ok: false,
+        error: "uuid is required.",
+      });
+    }
+
+    const numericScore = Number(score);
+    const numericTime = Number(timeSeconds);
+
+    if (!Number.isFinite(numericScore) || numericScore < 0) {
+      return res.status(400).json({
+        success: false,
+        ok: false,
+        error: "score must be a non-negative number.",
+      });
+    }
+
+    if (!Number.isFinite(numericTime) || numericTime < 0) {
+      return res.status(400).json({
+        success: false,
+        ok: false,
+        error: "timeSeconds must be a non-negative number.",
+      });
+    }
+
+    const { isNewBest, entry } = await saveBestScore({
+      uuid,
+      playerName,
+      score: numericScore,
+      timeSeconds: numericTime,
+      accuracy: Number(accuracy) || 0,
+    });
+
+    return res.status(200).json({
+      success: true,
+      ok: true,
+      isNewBest,
+      message: isNewBest
+        ? "New personal best saved!"
+        : "Score received — your previous best still stands.",
+      entry,
+      scores: await getTopPlayers(10),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      ok: false,
+      error:
+        error instanceof Error ? error.message : "Failed to save best score.",
+    });
+  }
+};
+
+/**
+ * GET /api/v1/meaningBridge/score/leaderboard?limit=10
+ * DB-backed leaderboard: one row per player, highest attempt only.
+ */
+const getMeaningBridgeGlobalLeaderboard = async (req, res) => {
+  try {
+    const limit = req.query?.limit || 10;
+
+    return res.status(200).json({
+      success: true,
+      ok: true,
+      scores: await getTopPlayers(limit),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      ok: false,
+      error:
+        error instanceof Error ? error.message : "Failed to fetch leaderboard.",
+    });
+  }
+};
+
 module.exports = {
   getMeaningBridgeHealth,
   generateMeaningBridgeRound,
   submitMeaningBridgeScore,
   // exported for scoring: see calculateSubmittedRoundStats (speed bonus)
   getMeaningBridgeLeaderboard,
+  saveMeaningBridgeBestScore,
+  getMeaningBridgeGlobalLeaderboard,
 };
