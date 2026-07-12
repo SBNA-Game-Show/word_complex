@@ -1,0 +1,1581 @@
+[
+  {
+    "_id": "game-001",
+    "story_id": "123",
+    "info": [
+      {
+        "playerName": "Jack",
+        "totalCoins": 500,
+        "totalScore": 500,
+        "game": {
+          "Noun": {
+            "totalWords": 10,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.13",
+                "coins": 200,
+                "totalScore": 300,
+                "hintsUsed": 0,
+                "achievedDate": "2025-05-15"
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 100,
+                "totalScore": 200,
+                "hintsUsed": 1,
+                "achievedDate": "2025-04-15"
+              },
+              {
+                "bestTime": "0.20",
+                "coins": 50,
+                "totalScore": 100,
+                "hintsUsed": 1,
+                "achievedDate": "2025-03-15"
+              },
+              {
+                "bestTime": "0.10",
+                "coins": 400,
+                "totalScore": 400,
+                "hintsUsed": 0,
+                "achievedDate": "2025-02-15"
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 200,
+                "totalScore": 300,
+                "hintsUsed": 1,
+                "achievedDate": "2024-12-15"
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.25",
+                "coins": 400,
+                "totalScore": 400,
+                "hintsUsed": 1,
+                "achievedDate": "2025-05-15"
+              },
+              {
+                "bestTime": "0.20",
+                "coins": 450,
+                "totalScore": 450,
+                "hintsUsed": 0,
+                "achievedDate": "2025-04-15"
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 500,
+                "totalScore": 500,
+                "hintsUsed": 0,
+                "achievedDate": "2025-03-15"
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 600,
+                "totalScore": 700,
+                "hintsUsed": 2,
+                "achievedDate": "2025-02-15"
+              },
+              {
+                "bestTime": "0.25",
+                "coins": 500,
+                "totalScore": 550,
+                "hintsUsed": 2,
+                "achievedDate": "2025-01-15"
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 5,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.10",
+                "coins": 100,
+                "totalScore": 200,
+                "hintsUsed": 0,
+                "achievedDate": "2025-05-15"
+              },
+              {
+                "bestTime": "0.2",
+                "coins": 300,
+                "totalScore": 300,
+                "hintsUsed": 1,
+                "achievedDate": "2025-04-15"
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 50,
+                "totalScore": 100,
+                "hintsUsed": 1,
+                "achievedDate": "2025-03-15"
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 400,
+                "totalScore": 450,
+                "hintsUsed": 0,
+                "achievedDate": "2025-02-15"
+              },
+              {
+                "bestTime": "0.2",
+                "coins": 300,
+                "totalScore": 300,
+                "hintsUsed": 0,
+                "achievedDate": "2025-01-15"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "playerName": "Jane",
+        "totalCoins": 480,
+        "totalScore": 520,
+        "game": {
+          "Noun": {
+            "totalWords": 10,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.14",
+                "coins": 180,
+                "totalScore": 280,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 180,
+                "totalScore": 280,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.2",
+                "coins": 100,
+                "totalScore": 100,
+                "achievedDate": "2025-03-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 100,
+                "totalScore": 100,
+                "achievedDate": "2025-02-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 190,
+                "totalScore": 290,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.24",
+                "coins": 350,
+                "totalScore": 420,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.24",
+                "coins": 350,
+                "totalScore": 420,
+                "achievedDate": "2025-03-15",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.2",
+                "coins": 100,
+                "totalScore": 100,
+                "achievedDate": "2025-03-15",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.21",
+                "coins": 80,
+                "totalScore": 100,
+                "achievedDate": "2025-02-13",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.22",
+                "coins": 60,
+                "totalScore": 100,
+                "achievedDate": "2025-01-14",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 5,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.11",
+                "coins": 120,
+                "totalScore": 220,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.12",
+                "coins": 100,
+                "totalScore": 190,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 80,
+                "totalScore": 160,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 60,
+                "totalScore": 130,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 50,
+                "totalScore": 100,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "playerName": "John",
+        "totalCoins": 450,
+        "totalScore": 470,
+        "game": {
+          "Noun": {
+            "totalWords": 10,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.15",
+                "coins": 170,
+                "totalScore": 250,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 150,
+                "totalScore": 220,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.17",
+                "coins": 130,
+                "totalScore": 190,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.18",
+                "coins": 110,
+                "totalScore": 160,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.19",
+                "coins": 90,
+                "totalScore": 130,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.27",
+                "coins": 300,
+                "totalScore": 370,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.28",
+                "coins": 280,
+                "totalScore": 340,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.29",
+                "coins": 260,
+                "totalScore": 310,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.3",
+                "coins": 240,
+                "totalScore": 280,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.31",
+                "coins": 220,
+                "totalScore": 250,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 5,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.12",
+                "coins": 130,
+                "totalScore": 210,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 110,
+                "totalScore": 180,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 90,
+                "totalScore": 150,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 70,
+                "totalScore": 120,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 50,
+                "totalScore": 100,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "playerName": "Emma",
+        "totalCoins": 610,
+        "totalScore": 690,
+        "game": {
+          "Noun": {
+            "totalWords": 10,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.12",
+                "coins": 240,
+                "totalScore": 330,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 220,
+                "totalScore": 300,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 200,
+                "totalScore": 270,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 180,
+                "totalScore": 240,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 160,
+                "totalScore": 210,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.23",
+                "coins": 410,
+                "totalScore": 480,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.24",
+                "coins": 390,
+                "totalScore": 450,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.25",
+                "coins": 370,
+                "totalScore": 420,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.26",
+                "coins": 350,
+                "totalScore": 390,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.27",
+                "coins": 330,
+                "totalScore": 360,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 5,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.09",
+                "coins": 160,
+                "totalScore": 260,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.1",
+                "coins": 140,
+                "totalScore": 230,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.11",
+                "coins": 120,
+                "totalScore": 200,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.12",
+                "coins": 100,
+                "totalScore": 170,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 80,
+                "totalScore": 140,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "playerName": "Liam",
+        "totalCoins": 420,
+        "totalScore": 430,
+        "game": {
+          "Noun": {
+            "totalWords": 10,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.16",
+                "coins": 150,
+                "totalScore": 220,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.17",
+                "coins": 130,
+                "totalScore": 190,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.18",
+                "coins": 110,
+                "totalScore": 160,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.19",
+                "coins": 90,
+                "totalScore": 130,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.2",
+                "coins": 70,
+                "totalScore": 100,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.28",
+                "coins": 260,
+                "totalScore": 310,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.29",
+                "coins": 240,
+                "totalScore": 280,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.3",
+                "coins": 220,
+                "totalScore": 250,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.31",
+                "coins": 200,
+                "totalScore": 220,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.32",
+                "coins": 180,
+                "totalScore": 190,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 5,
+            "hintsAvailable": 1,
+            "history": [
+              {
+                "bestTime": "0.13",
+                "coins": 110,
+                "totalScore": 180,
+                "achievedDate": "2025-05-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 90,
+                "totalScore": 150,
+                "achievedDate": "2025-04-15",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 70,
+                "totalScore": 120,
+                "achievedDate": "2025-03-16",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 50,
+                "totalScore": 100,
+                "achievedDate": "2025-02-14",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.17",
+                "coins": 50,
+                "totalScore": 100,
+                "achievedDate": "2025-01-15",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "_id": "game-002",
+    "story_id": "456",
+    "info": [
+      {
+        "playerName": "Jack",
+        "totalCoins": 850,
+        "totalScore": 1050,
+        "game": {
+          "Noun": {
+            "totalWords": 25,
+            "hintsAvailable": 3,
+            "history": [
+              {
+                "bestTime": "0.12",
+                "coins": 250,
+                "totalScore": 350,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 230,
+                "totalScore": 320,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 210,
+                "totalScore": 290,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 190,
+                "totalScore": 260,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 170,
+                "totalScore": 230,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.23",
+                "coins": 300,
+                "totalScore": 400,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.24",
+                "coins": 280,
+                "totalScore": 370,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.25",
+                "coins": 260,
+                "totalScore": 340,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.26",
+                "coins": 240,
+                "totalScore": 310,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.27",
+                "coins": 220,
+                "totalScore": 280,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 35,
+            "hintsAvailable": 4,
+            "history": [
+              {
+                "bestTime": "0.09",
+                "coins": 300,
+                "totalScore": 300,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.1",
+                "coins": 280,
+                "totalScore": 270,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.11",
+                "coins": 260,
+                "totalScore": 240,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.12",
+                "coins": 240,
+                "totalScore": 210,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 220,
+                "totalScore": 180,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "playerName": "Jane",
+        "totalCoins": 790,
+        "totalScore": 980,
+        "game": {
+          "Noun": {
+            "totalWords": 25,
+            "hintsAvailable": 3,
+            "history": [
+              {
+                "bestTime": "0.13",
+                "coins": 220,
+                "totalScore": 310,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 200,
+                "totalScore": 280,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 180,
+                "totalScore": 250,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 160,
+                "totalScore": 220,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.17",
+                "coins": 140,
+                "totalScore": 190,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.24",
+                "coins": 280,
+                "totalScore": 360,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.25",
+                "coins": 260,
+                "totalScore": 330,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.26",
+                "coins": 240,
+                "totalScore": 300,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.27",
+                "coins": 220,
+                "totalScore": 270,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.28",
+                "coins": 200,
+                "totalScore": 240,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 35,
+            "hintsAvailable": 4,
+            "history": [
+              {
+                "bestTime": "0.10",
+                "coins": 290,
+                "totalScore": 310,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.11",
+                "coins": 270,
+                "totalScore": 280,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.12",
+                "coins": 250,
+                "totalScore": 250,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 230,
+                "totalScore": 220,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 210,
+                "totalScore": 190,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "playerName": "John",
+        "totalCoins": 720,
+        "totalScore": 910,
+        "game": {
+          "Noun": {
+            "totalWords": 25,
+            "hintsAvailable": 3,
+            "history": [
+              {
+                "bestTime": "0.14",
+                "coins": 200,
+                "totalScore": 280,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 180,
+                "totalScore": 250,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 160,
+                "totalScore": 220,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.17",
+                "coins": 140,
+                "totalScore": 190,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.18",
+                "coins": 120,
+                "totalScore": 160,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.26",
+                "coins": 250,
+                "totalScore": 330,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.27",
+                "coins": 230,
+                "totalScore": 300,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.28",
+                "coins": 210,
+                "totalScore": 270,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.29",
+                "coins": 190,
+                "totalScore": 240,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.3",
+                "coins": 170,
+                "totalScore": 210,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 35,
+            "hintsAvailable": 4,
+            "history": [
+              {
+                "bestTime": "0.11",
+                "coins": 270,
+                "totalScore": 300,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.12",
+                "coins": 250,
+                "totalScore": 270,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 230,
+                "totalScore": 240,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 210,
+                "totalScore": 210,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 190,
+                "totalScore": 180,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "playerName": "Emma",
+        "totalCoins": 930,
+        "totalScore": 1180,
+        "game": {
+          "Noun": {
+            "totalWords": 25,
+            "hintsAvailable": 3,
+            "history": [
+              {
+                "bestTime": "0.11",
+                "coins": 280,
+                "totalScore": 380,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.12",
+                "coins": 260,
+                "totalScore": 350,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 240,
+                "totalScore": 320,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 220,
+                "totalScore": 290,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 200,
+                "totalScore": 260,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.22",
+                "coins": 330,
+                "totalScore": 420,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.23",
+                "coins": 310,
+                "totalScore": 390,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.24",
+                "coins": 290,
+                "totalScore": 360,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.25",
+                "coins": 270,
+                "totalScore": 330,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.26",
+                "coins": 250,
+                "totalScore": 300,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 35,
+            "hintsAvailable": 4,
+            "history": [
+              {
+                "bestTime": "0.08",
+                "coins": 320,
+                "totalScore": 380,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.09",
+                "coins": 300,
+                "totalScore": 350,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.1",
+                "coins": 280,
+                "totalScore": 320,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.11",
+                "coins": 260,
+                "totalScore": 290,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.12",
+                "coins": 240,
+                "totalScore": 260,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "playerName": "Liam",
+        "totalCoins": 680,
+        "totalScore": 860,
+        "game": {
+          "Noun": {
+            "totalWords": 25,
+            "hintsAvailable": 3,
+            "history": [
+              {
+                "bestTime": "0.15",
+                "coins": 180,
+                "totalScore": 260,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 160,
+                "totalScore": 230,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.17",
+                "coins": 140,
+                "totalScore": 200,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.18",
+                "coins": 120,
+                "totalScore": 170,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.19",
+                "coins": 100,
+                "totalScore": 140,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 15,
+            "hintsAvailable": 2,
+            "history": [
+              {
+                "bestTime": "0.27",
+                "coins": 230,
+                "totalScore": 300,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.28",
+                "coins": 210,
+                "totalScore": 270,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.29",
+                "coins": 190,
+                "totalScore": 240,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.3",
+                "coins": 170,
+                "totalScore": 210,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.31",
+                "coins": 150,
+                "totalScore": 180,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 35,
+            "hintsAvailable": 4,
+            "history": [
+              {
+                "bestTime": "0.12",
+                "coins": 270,
+                "totalScore": 300,
+                "achievedDate": "2025-05-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 250,
+                "totalScore": 270,
+                "achievedDate": "2025-04-20",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 230,
+                "totalScore": 240,
+                "achievedDate": "2025-03-21",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 210,
+                "totalScore": 210,
+                "achievedDate": "2025-02-19",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 190,
+                "totalScore": 180,
+                "achievedDate": "2025-01-20",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "_id": "game-003",
+    "story_id": "789",
+    "info": [
+      {
+        "playerName": "Jack",
+        "totalCoins": 520,
+        "totalScore": 540,
+        "game": {
+          "Noun": {
+            "totalWords": 42,
+            "hintsAvailable": 5,
+            "history": [
+              {
+                "bestTime": "0.12",
+                "coins": 210,
+                "totalScore": 320,
+                "achievedDate": "2025-05-25",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 190,
+                "totalScore": 290,
+                "achievedDate": "2025-04-25",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 170,
+                "totalScore": 260,
+                "achievedDate": "2025-03-26",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 150,
+                "totalScore": 230,
+                "achievedDate": "2025-02-24",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 130,
+                "totalScore": 200,
+                "achievedDate": "2025-01-25",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 27,
+            "hintsAvailable": 3,
+            "history": [
+              {
+                "bestTime": "0.24",
+                "coins": 410,
+                "totalScore": 420,
+                "achievedDate": "2025-05-25",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.25",
+                "coins": 390,
+                "totalScore": 390,
+                "achievedDate": "2025-04-25",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.26",
+                "coins": 370,
+                "totalScore": 360,
+                "achievedDate": "2025-03-26",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.27",
+                "coins": 350,
+                "totalScore": 330,
+                "achievedDate": "2025-02-24",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.28",
+                "coins": 330,
+                "totalScore": 300,
+                "achievedDate": "2025-01-25",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 60,
+            "hintsAvailable": 6,
+
+            "history": [
+              {
+                "bestTime": "0.11",
+                "coins": 110,
+                "totalScore": 210,
+                "achievedDate": "2025-05-25",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.12",
+                "coins": 90,
+                "totalScore": 180,
+                "achievedDate": "2025-04-25",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 70,
+                "totalScore": 150,
+                "achievedDate": "2025-03-26",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 50,
+                "totalScore": 120,
+                "achievedDate": "2025-02-24",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 50,
+                "totalScore": 100,
+                "achievedDate": "2025-01-25",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "playerName": "Jane",
+        "totalCoins": 490,
+        "totalScore": 550,
+        "game": {
+          "Noun": {
+            "totalWords": 42,
+            "hintsAvailable": 5,
+            "history": [
+              {
+                "bestTime": "0.13",
+                "coins": 190,
+                "totalScore": 290,
+                "achievedDate": "2025-05-25",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 170,
+                "totalScore": 260,
+                "achievedDate": "2025-04-25",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.15",
+                "coins": 150,
+                "totalScore": 230,
+                "achievedDate": "2025-03-26",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.16",
+                "coins": 130,
+                "totalScore": 200,
+                "achievedDate": "2025-02-24",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.17",
+                "coins": 110,
+                "totalScore": 170,
+                "achievedDate": "2025-01-25",
+                "hintsUsed": 0
+              }
+            ]
+          },
+          "Verb": {
+            "totalWords": 27,
+            "hintsAvailable": 3,
+            "history": [
+              {
+                "bestTime": "0.22",
+                "coins": 370,
+                "totalScore": 440,
+                "achievedDate": "2025-05-25",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.23",
+                "coins": 350,
+                "totalScore": 410,
+                "achievedDate": "2025-04-25",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.24",
+                "coins": 330,
+                "totalScore": 380,
+                "achievedDate": "2025-03-26",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.25",
+                "coins": 310,
+                "totalScore": 350,
+                "achievedDate": "2025-02-24",
+                "hintsUsed": 1
+              },
+              {
+                "bestTime": "0.26",
+                "coins": 290,
+                "totalScore": 320,
+                "achievedDate": "2025-01-25",
+                "hintsUsed": 1
+              }
+            ]
+          },
+          "Adjective": {
+            "totalWords": 60,
+            "hintsAvailable": 6,
+            "history": [
+              {
+                "bestTime": "0.10",
+                "coins": 130,
+                "totalScore": 240,
+                "achievedDate": "2025-05-25",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.11",
+                "coins": 110,
+                "totalScore": 210,
+                "achievedDate": "2025-04-25",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.12",
+                "coins": 90,
+                "totalScore": 180,
+                "achievedDate": "2025-03-26",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.13",
+                "coins": 70,
+                "totalScore": 150,
+                "achievedDate": "2025-02-24",
+                "hintsUsed": 0
+              },
+              {
+                "bestTime": "0.14",
+                "coins": 50,
+                "totalScore": 120,
+                "achievedDate": "2025-01-25",
+                "hintsUsed": 0
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+]

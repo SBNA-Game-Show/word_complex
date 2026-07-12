@@ -6,8 +6,27 @@ const {
   findPOSSanskrit,
 } = require("../controller/wordhuntcontroller");
 
-//API Routes
+const {
+  getWordHuntLeaderboard,
+  getPlayerRank,
+  getLeaderboardStats,
+} = require("../controller/wordhuntLeaderboardController");
+
+// API Routes
 wordHuntRouter.get("/POSEnglish", findPOSEnglish);
 wordHuntRouter.get("/POSSanskrit", findPOSSanskrit);
+
+// Leaderboard Routes
+wordHuntRouter.get("/leaderboard", getWordHuntLeaderboard);
+
+wordHuntRouter.get(
+  "/leaderboard/stats",
+  getLeaderboardStats
+);
+
+wordHuntRouter.get(
+  "/leaderboard/player/:playerName",
+  getPlayerRank
+);
 
 module.exports = wordHuntRouter;

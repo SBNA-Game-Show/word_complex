@@ -25,9 +25,20 @@ async function initializeGame(req, res) {
     const story = await retrieveStoryById(storyId);
 
     const language = req.query.language || "english";
+
     const versionField = `${language}Version`;
     const tokenizedField = `tokenized_${language}_version`;
-    const words = story[tokenizedField];
+
+    const passageFromDatabase = story[versionField];
+    const tokensFromDatabase = story[tokenizedField];
+
+    const originalParagraph = Array.isArray(passageFromDatabase)
+      ? passageFromDatabase.join(" ")
+      : passageFromDatabase;
+
+    const words = Array.isArray(tokensFromDatabase)
+      ? tokensFromDatabase.flat()
+      : [];
 
     const difficulty = req.query.difficulty || "easy";
     const wordTypes = req.query.wordTypes
@@ -46,7 +57,7 @@ async function initializeGame(req, res) {
 
     const gameData = createFillInBlankGame(
       story._id,
-      story[versionField],
+      originalParagraph,
       answers,
       distractors,
     );

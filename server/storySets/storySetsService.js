@@ -134,7 +134,6 @@ async function createSet({ name, storyIds }) {
       `Story set already exists: "${duplicate.name}" (${duplicate._id}) contains the same stories`,
     );
   }
-
   const unknown = await findUnknownStoryIds(storyIds);
   if (unknown.length > 0) {
     throw new StorySetError(400, `Unknown storyIds: ${unknown.join(", ")}`);
