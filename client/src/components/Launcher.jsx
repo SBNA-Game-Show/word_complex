@@ -1,5 +1,6 @@
 import BackgroundDecor from "./BackgroundDecor";
 import { useAuth } from "../auth/AuthContext";
+import { useProgress } from "../progress";
 import UserBadge from "./UserBadge";
 import { games } from "../games/index.js";
 
@@ -14,6 +15,7 @@ export default function Launcher({
   isLaunching = false,
 }) {
   const { logout, user } = useAuth();
+  const { streak, stars, loading: progressLoading } = useProgress();
 
   function startDefaultGame() {
     onStart("sentence-builder");
@@ -33,14 +35,18 @@ export default function Launcher({
         </div>
         <div className="topbar-actions">
           <div className="streak-pills" aria-label="Today">
-            <span className="streak-pill sun">
-              <span className="dot" /> 5 day streak
+            <span className={`streak-pill sun${progressLoading ? " is-loading" : ""}`}>
+              <span className="dot" />{" "}
+              {progressLoading
+                ? "Loading streak…"
+                : `${streak} day${streak === 1 ? "" : "s"} streak`}
             </span>
             <span className="streak-pill">
               <span className="dot" /> {user?.role ?? "Reader"}
             </span>
-            <span className="streak-pill alt">
-              <span className="dot" /> {user?.stars ?? 0} stars
+            <span className={`streak-pill alt${progressLoading ? " is-loading" : ""}`}>
+              <span className="dot" />{" "}
+              {progressLoading ? "…" : `${stars} star${stars === 1 ? "" : "s"}`}
             </span>
           </div>
           <button

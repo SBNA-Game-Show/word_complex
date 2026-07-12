@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AuthProvider, LoginPage, useAuth } from "./auth";
+import { ProgressProvider, StreakToast } from "./progress";
 import VideoBackground from "./components/VideoBackground";
 import Launcher from "./components/Launcher";
 import GameScreen from "./components/GameScreen";
@@ -24,7 +25,9 @@ const CHARACTER_STORAGE_KEY = "wc:selectedCharacter";
 export default function App() {
   return (
     <AuthProvider>
-      <AuthenticatedApp />
+      <ProgressProvider>
+        <AuthenticatedApp />
+      </ProgressProvider>
     </AuthProvider>
   );
 }
@@ -128,6 +131,7 @@ function AuthenticatedApp() {
       }`}
     >
       <VideoBackground />
+      {isAuthenticated && <StreakToast />}
       {isInitializing ? (
         <div className="auth-splash" role="status" aria-live="polite">
           <span className="auth-splash-logo" aria-hidden="true">

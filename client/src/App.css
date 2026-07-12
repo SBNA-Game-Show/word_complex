@@ -954,6 +954,21 @@ input {
   box-shadow: 0 0 0 4px rgba(255, 216, 77, 0.3);
 }
 
+/* Gentle pulse while streak/stars load (e.g. during a cold backend wake). */
+.streak-pill.is-loading {
+  animation: streak-pill-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes streak-pill-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
 .hero {
   display: grid;
   align-items: start;
