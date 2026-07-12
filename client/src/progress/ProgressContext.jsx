@@ -98,7 +98,11 @@ export function ProgressProvider({ children }) {
 
   const dismissAward = useCallback(() => setDailyAward(null), []);
 
-  const ownedCharacters = progress?.ownedCharacters ?? config?.freeCharacters ?? [];
+  // Free characters always count as owned, even for accounts created before the
+  // free set changed — union them with whatever the player has bought or been gifted.
+  const ownedCharacters = Array.from(
+    new Set([...(config?.freeCharacters ?? []), ...(progress?.ownedCharacters ?? [])]),
+  );
 
   const value = useMemo(
     () => ({

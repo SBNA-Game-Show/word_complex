@@ -138,10 +138,8 @@ function AuthenticatedApp() {
       {isAuthenticated && selectedStoryId && <StreakToast />}
       {isInitializing ? (
         <div className="auth-splash" role="status" aria-live="polite">
-          <span className="auth-splash-logo" aria-hidden="true">
-            W
-          </span>
-          <p>Loading...</p>
+          <p className="splash-word">Word Complex</p>
+          <p className="splash-sub">Getting your adventure ready…</p>
         </div>
       ) : !isAuthenticated ? (
         <LoginPage />

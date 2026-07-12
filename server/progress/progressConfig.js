@@ -20,16 +20,17 @@ const DAILY_BASE = 5;
 const DAILY_CAP = 25;
 
 // The three buddies every player owns from day one — no stars needed.
-const FREE_CHARACTERS = ["sprout", "bubbles", "cap"];
+const FREE_CHARACTERS = ["tomely", "sprout", "bubbles"];
 
 // Characters gifted automatically the day a streak reaches the milestone.
 // Keyed by streak day. A player can't skip a day (streak only ever +1 or
 // resets to 1), so each milestone day is always landed on exactly.
 const MILESTONE_GIFTS = { 10: "luna", 20: "comet" };
 
-// Characters bought with stars. Priced so a full ~20-day streak (~290 stars)
-// comfortably unlocks all three (total 270).
-const CHARACTER_PRICES = { tomely: 60, bolt: 90, berry: 120 };
+// Characters bought with stars. Priced to be reachable early: the cheapest is
+// affordable around day 5 (35 stars), and all three (total 170) well before a
+// full 20-day streak, which also gifts Luna (day 10) and Comet (day 20).
+const CHARACTER_PRICES = { cap: 30, bolt: 55, berry: 85 };
 
 // How many days of the ladder the gift window renders.
 const LADDER_LENGTH = 20;

@@ -52,7 +52,7 @@ describe("registerVisit", () => {
     expect(state).toMatchObject({
       streak: 1,
       stars: 5,
-      ownedCharacters: ["sprout", "bubbles", "cap"],
+      ownedCharacters: ["tomely", "sprout", "bubbles"],
       awardedStars: 5,
       isNewDay: true,
     });
@@ -75,7 +75,7 @@ describe("registerVisit", () => {
       streak: 9,
       lastVisitDate: "2026-07-10",
       stars: 100,
-      ownedCharacters: ["sprout", "bubbles", "cap"],
+      ownedCharacters: ["tomely", "sprout", "bubbles"],
     });
     const state = await registerVisit("u1", at("2026-07-11"));
     expect(state.streak).toBe(10);
@@ -95,24 +95,24 @@ describe("buyCharacter", () => {
     streak: 5,
     lastVisitDate: "2026-07-11",
     stars: 100,
-    ownedCharacters: ["sprout", "bubbles", "cap"],
+    ownedCharacters: ["tomely", "sprout", "bubbles"],
   };
 
   it("spends stars and unlocks the character", async () => {
     seed("u1", owner);
-    const state = await buyCharacter("u1", "tomely");
-    expect(state.stars).toBe(40);
-    expect(state.ownedCharacters).toContain("tomely");
+    const state = await buyCharacter("u1", "cap");
+    expect(state.stars).toBe(70); // 100 - 30
+    expect(state.ownedCharacters).toContain("cap");
   });
 
   it("rejects when the player can't afford it", async () => {
     seed("u1", { ...owner, stars: 10 });
-    await expect(buyCharacter("u1", "tomely")).rejects.toThrow(/Not enough stars/);
+    await expect(buyCharacter("u1", "cap")).rejects.toThrow(/Not enough stars/);
   });
 
   it("rejects buying an already-owned character", async () => {
-    seed("u1", { ...owner, ownedCharacters: [...owner.ownedCharacters, "tomely"] });
-    await expect(buyCharacter("u1", "tomely")).rejects.toThrow(/already owned/);
+    seed("u1", { ...owner, ownedCharacters: [...owner.ownedCharacters, "cap"] });
+    await expect(buyCharacter("u1", "cap")).rejects.toThrow(/already owned/);
   });
 
   it("rejects characters that are not for sale", async () => {
