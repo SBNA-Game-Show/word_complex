@@ -32,6 +32,11 @@ const {
 const {
   getActiveStoryIds: getFallbackStoryIds,
 } = require("../activeStoriesConfig");
+/**
+ * Importing Word hunt service to Initialize Game Repository with game id and
+ * list of stories
+ */
+const { initWordHuntRepo } = require("../wordhunt/service/gameservice");
 
 const SETS_COLLECTION = "storySets";
 const CONFIG_COLLECTION = "config";
@@ -146,6 +151,12 @@ async function createSet({ name, storyIds }) {
     createdAt: new Date(),
   };
   await sets.insertOne(doc);
+
+  // initializing word hunt repo
+
+  wordunt_Ids = [...storyIds];
+  wordHuntService = initWordHuntRepo(wordunt_Ids, doc._id);
+
   return doc;
 }
 

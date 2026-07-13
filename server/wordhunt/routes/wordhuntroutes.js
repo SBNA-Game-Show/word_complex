@@ -6,6 +6,7 @@ const {
   findPOSSanskrit,
 } = require("../controller/wordhuntcontroller");
 
+
 const {
   getWordHuntLeaderboard,
   getPlayerRank,
@@ -28,5 +29,7 @@ wordHuntRouter.get(
   "/leaderboard/player/:playerName",
   getPlayerRank
 );
+
+// GAME ROUTES
 
 module.exports = wordHuntRouter;
