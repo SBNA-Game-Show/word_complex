@@ -83,7 +83,10 @@ export default function GameScreen({ gameId, onBack }) {
         data-testid={`canvas-shell-${gameId}`}
       >
         {Game ? (
-          <Game authUser={user} />
+          // key on the uid: ZIM games capture authUser once at setup, so a
+          // login/logout must remount the game or scores would be submitted
+          // under the previous player's identity.
+          <Game key={user?.id ?? "signed-out"} authUser={user} />
         ) : (
           <p className="missing-game">Game not found.</p>
         )}

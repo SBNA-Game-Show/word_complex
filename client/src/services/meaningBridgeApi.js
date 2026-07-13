@@ -57,6 +57,7 @@ export async function submitMeaningBridgeScore({
   timeSeconds,
   hintsUsed,
   wrongAttempts,
+  pairCount,
 }) {
   const response = await fetchWithTimeout(`${API_BASE}/meaningBridge/submit`, {
     method: "POST",
@@ -68,10 +69,47 @@ export async function submitMeaningBridgeScore({
       timeSeconds,
       hintsUsed,
       wrongAttempts,
+      pairCount,
     }),
   });
 
   return readJsonResponse(response, "Failed to submit Meaning Bridge score");
+}
+
+/**
+ * Save a finished session to the `meaning-bridge` MongoDB collection.
+ * One document per player (uuid) — the server keeps only the highest attempt.
+ */
+export async function saveMeaningBridgeBestScore({
+  uuid,
+  playerName,
+  score,
+  timeSeconds,
+  accuracy,
+}) {
+  const response = await fetchWithTimeout(`${API_BASE}/meaningBridge/score`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ uuid, playerName, score, timeSeconds, accuracy }),
+  });
+
+  return readJsonResponse(response, "Failed to save Meaning Bridge best score");
+}
+
+/**
+ * Persistent leaderboard from the `meaning-bridge` collection:
+ * one row per player, highest attempt only. Survives server restarts.
+ */
+export async function fetchMeaningBridgeGlobalLeaderboard(limit = 10) {
+  const response = await fetchWithTimeout(
+    `${API_BASE}/meaningBridge/score/leaderboard?limit=${encodeURIComponent(limit)}`,
+    {},
+  );
+
+  return readJsonResponse(
+    response,
+    "Failed to fetch Meaning Bridge leaderboard",
+  );
 }
 
 export async function fetchMeaningBridgeLeaderboard(limit = 10) {

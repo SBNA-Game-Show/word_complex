@@ -63,23 +63,34 @@ export function createZimGame({
         }
       }
 
-      try {
-        frame = new zim.Frame({
-          scaling: scaling || id,
-          width,
-          height,
-          color,
-          outerColor,
-          ready,
-          allowDefault: true,
-        });
-      } catch (err) {
-        console.error("[ZimGame] Frame creation failed:", err);
-      }
+      // Defer Frame creation by one tick. ZIM finishes its internal setup in
+      // its own setTimeout, so a Frame created during a mount that unmounts
+      // immediately (StrictMode double-mount, or an auth-change remount via
+      // the key prop) wakes up pointing at a removed canvas and throws
+      // "Cannot set properties of null (setting 'tag')". Deferring lets the
+      // cleanup cancel creation before ZIM is ever involved.
+      const createFrameTimer = setTimeout(() => {
+        if (disposed || !holderRef.current?.isConnected) return;
+
+        try {
+          frame = new zim.Frame({
+            scaling: scaling || id,
+            width,
+            height,
+            color,
+            outerColor,
+            ready,
+            allowDefault: true,
+          });
+        } catch (err) {
+          console.error("[ZimGame] Frame creation failed:", err);
+        }
+      }, 0);
 
       return () => {
         disposed = true;
         initializedRef.current = false;
+        clearTimeout(createFrameTimer);
 
         if (setupCleanup) {
           try {

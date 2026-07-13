@@ -45,7 +45,9 @@ server/
 | POST | `/api/v1/meaningBridge/generate` | Optional API key | Generate word-match puzzle |
 | POST | `/api/v1/meaningBridge/generate-sentence` | Optional API key | Generate sentence-match puzzle |
 | POST | `/api/v1/meaningBridge/submit` | Optional API key | Submit round answers, returns score |
-| GET | `/api/v1/meaningBridge/leaderboard` | Optional API key | Get top scores |
+| GET | `/api/v1/meaningBridge/leaderboard` | Optional API key | Get top scores (in-memory, per server run) |
+| POST | `/api/v1/meaningBridge/score` | Optional API key | Save finished session to `meaning-bridge` collection (one doc per player, best attempt only) |
+| GET | `/api/v1/meaningBridge/score/leaderboard` | Optional API key | Persistent leaderboard from `meaning-bridge` collection |
 | GET | `/api/v1/wordHunt` | No | Word hunt game data |
 
 ## Meaning Bridge Data Flow
@@ -58,6 +60,21 @@ MongoDB Atlas (tokenized_stories)
   → saveRoundFallback()             — stores puzzle in memory for scoring
   → returns { puzzle, story } to frontend
 ```
+
+### Best-score persistence (`meaning-bridge` collection)
+
+After a finished session (3 rounds), the client POSTs `/api/v1/meaningBridge/score`
+with `{ uuid, playerName, score, timeSeconds, accuracy }`. One document per player,
+keyed by Firebase UID as `_id` (same convention as the other games):
+
+```
+{ _id, displayName, bestScore, bestTime (ms), accuracy, attemptsPlayed, createdAt, updatedAt }
+```
+
+Only the highest attempt is kept: a higher score (or equal score with faster time)
+replaces `bestScore` / `bestTime` / `accuracy` together; worse attempts only
+increment `attemptsPlayed`. Leaderboard sorts by `bestScore` desc, `bestTime` asc.
+Code: `meaning-bridge/db/meaningBridgeCollection.js` + `meaning-bridge/service/meaningBridgeScoreService.js`.
 
 ## Running Locally
 
