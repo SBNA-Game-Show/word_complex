@@ -41,4 +41,51 @@ const initializeGame = async (storyId, gameId) => {
   return await game.save();
 };
 
-module.exports = { initializeGame };
+const getAllGameInfo = async () => {
+  const games = await WordHunt.find();
+
+  if (!games || games.length === 0) {
+    return [];
+  }
+
+  return games;
+};
+
+const retrievePlayerInfoByStory = async (gameId, storyId, playerName) => {
+  if (!gameId) {
+    throw new Error("Game Id is required");
+  }
+
+  if (!storyId) {
+    throw new Error("Story Id is Required");
+  }
+
+  if (!playerName) {
+    throw new Error("Player Name is Required");
+  }
+
+  const game = await WordHunt.findById(gameId);
+
+  if (!game) {
+    throw new Error("No Game Found By Given Id");
+  }
+
+  const story = game.stories.find((story) => story.storyId === storyId);
+
+  if (!story) {
+    throw new Error("No Story Found By Given Id");
+  }
+
+  const player = story.gameInfo.find(
+    (player) => player.playerName === playerName,
+  );
+
+  if (!player) {
+    throw new Error("No Player Found By Given Name");
+  }
+
+  return player;
+};
+
+
+module.exports = { initializeGame, getAllGameInfo };

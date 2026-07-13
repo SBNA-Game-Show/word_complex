@@ -5,7 +5,7 @@ const gameInfoSchema = new mongoose.Schema(
   {
     playerName: {
       type: String,
-      default: null,
+      required: true,
     },
 
     totalCoins: {
@@ -18,34 +18,43 @@ const gameInfoSchema = new mongoose.Schema(
       default: 0,
     },
 
-    game: {
-      Noun: {
-        type: gameDataSchema,
-      },
+    games: [
+      {
+        Noun: {
+          type: gameDataSchema,
+        },
 
-      Verb: {
-        type: gameDataSchema,
-      },
+        Verb: {
+          type: gameDataSchema,
+        },
 
-      Adjective: {
-        type: gameDataSchema,
+        Adjective: {
+          type: gameDataSchema,
+        },
       },
-    },
+    ],
   },
-  { _id: false },
+  {
+    _id: false,
+  },
 );
 
 gameInfoSchema.methods.calculateTotals = function () {
-  const game = this.game || {};
+  let coins = 0;
+  let score = 0;
 
-  this.totalCoins =
-    (game.Noun?.coins ?? 0) +
-    (game.Verb?.coins ?? 0) +
-    (game.Adjective?.coins ?? 0);
+  this.games.forEach((game) => {
+    coins += game.Noun?.coins ?? 0;
+    coins += game.Verb?.coins ?? 0;
+    coins += game.Adjective?.coins ?? 0;
 
-  this.totalScore =
-    (game.Noun?.totalScore ?? 0) +
-    (game.Verb?.totalScore ?? 0) +
-    (game.Adjective?.totalScore ?? 0);
+    score += game.Noun?.totalScore ?? 0;
+    score += game.Verb?.totalScore ?? 0;
+    score += game.Adjective?.totalScore ?? 0;
+  });
+
+  this.totalCoins = coins;
+  this.totalScore = score;
 };
+
 module.exports = gameInfoSchema;
