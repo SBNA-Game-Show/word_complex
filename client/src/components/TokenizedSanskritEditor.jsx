@@ -14,26 +14,42 @@ export default function TokenizedSanskritEditor({
   Array.isArray(tokenizedSanskrit[0])
     ? tokenizedSanskrit
     : [tokenizedSanskrit];
-
-  const updateWord = (
-    sentenceIndex,
-    wordIndex,
-    value
-  ) => {
-    const updatedSentences =
-      tokenizedSanskrit.map(
-        (sentence) => [...sentence]
-      );
-    updatedSentences[sentenceIndex][wordIndex] =
-      value;
-
-    updateStoryField(
-      story._id,
-      "tokenized_sanskrit_version",
-      updatedSentences
-    );
+  const getWordColor = (upos) => {
+        switch ((upos || "").toUpperCase()) {
+            case "NOUN":
+                return "#d4edda";      // light green
+            case "ADJ":
+                return "#f8d7da";      // light red
+            case "ADV":
+                return "#d6eaff";      // light blue
+            case "VERB":
+                return "#e8ddff";      // light lilac
+            case "INTJ":
+                return "#fff3cd";      // Butter Yellow
+            case "PART":
+                return "#ffe5cc";      // Light Orange
+            case "PRON":
+                return "#fde2f3";      // Light Pink
+            default:
+                return "#ffffff";      // white
+        }
   };
-  
+  const updateWordField = (
+        sentenceIndex,
+        wordIndex,
+        field,
+        value
+    ) => {
+        const updatedSentences =
+            JSON.parse(JSON.stringify(tokenizedSanskrit));
+        updatedSentences[sentenceIndex][wordIndex][field] =
+            value;
+        updateStoryField(
+            story._id,
+            "tokenized_sanskrit_version",
+            updatedSentences
+        );
+    };  
   /*
  * Add a new word after the selected word.
  */
@@ -48,7 +64,14 @@ const addWord = (
     updatedSentences[sentenceIndex].splice(
         wordIndex + 1,
         0,
-        ""
+        {
+            text: "",
+            lemma: "",
+            upos: "",
+            xpos: "",
+            feats: "",
+            definition: ""
+        }
     );
     updateStoryField(
         story._id,
@@ -232,9 +255,10 @@ const addSentence = (sentenceIndex) => {
                 </div>
               <div
                 style={{
-                  display:"flex",
-                  flexWrap:"wrap",
-                  gap:"10px",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+                    gap: "18px",
+                    marginTop: "15px",
                 }}
               >
                 {(Array.isArray(sentence) ? sentence : []).map(
@@ -242,92 +266,158 @@ const addSentence = (sentenceIndex) => {
                   <div
                     key={wordIndex}
                     style={{
-                      display:"flex",
-                      flexDirection:"column",
-                      minWidth:"120px",
-                      flex:"1 0 120px",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize:"12px",
-                        color:"#666",
-                        marginBottom:"4px",
-                      }}
-                    >
-                      Word {wordIndex+1}
-                    </label>
-                    <div
-                    style={{
+                        border:
+                            word.upos === "NOUN" ? "2px solid #28a745"
+                                : word.upos === "ADJ"
+                                ? "2px solid #dc3545"
+                                : word.upos === "ADV"
+                                ? "2px solid #007bff"
+                                : word.upos === "VERB"
+                                ? "2px solid #8e44ad"
+                                : word.upos === "INTJ"
+                                ? "2px solid #f0ad00"
+                                : word.upos === "PART"
+                                ? "2px solid #fd7e14"
+                                : word.upos === "PRON"
+                                ? "2px solid #e83e8c"
+                                : "1px solid #ddd",
+                        borderRadius: "10px",
+                        padding: "15px",
+                        background: getWordColor(word.upos),
                         display: "flex",
-                        alignItems: "center",
+                        flexDirection: "column",
                         gap: "8px",
                     }}
+                  >
+                    <h5
+                        style={{
+                            margin: "0 0 8px 0",
+                            color:
+                                word.upos === "NOUN"
+                                    ? "#1e7e34"
+                                    : word.upos === "ADJ"
+                                    ? "#b21f2d"
+                                    : word.upos === "ADV"
+                                    ? "#0056b3"
+                                    : word.upos === "VERB"
+                                    ? "#6f42c1"
+                                    : word.upos === "INTJ"
+                                    ? "#b8860b"
+                                    : word.upos === "PART"
+                                    ? "#d35400"
+                                    : word.upos === "PRON"
+                                    ? "#c2185b"
+                                    : "#1f2b6b",
+                        }}
                     >
+                        Word {wordIndex + 1}
+                    </h5>
+                    <label>Text</label>
                     <input
                         type="text"
-                        value={word}
+                        value={word.text ?? ""}
                         onChange={(e) =>
-                        updateWord(
-                            sentenceIndex,
-                            wordIndex,
-                            e.target.value
-                        )
+                            updateWordField(
+                                sentenceIndex,
+                                wordIndex,
+                                "text",
+                                e.target.value
+                            )
                         }
-                        style={{
-                        flex: 1,
-                        padding: "8px",
-                        borderRadius: "6px",
-                        border: "1px solid #ccc",
-                        }}
                     />
-                    <button
-                        type="button"
-                        onClick={() =>
-                        addWord(
-                            sentenceIndex,
-                            wordIndex
-                        )
+                    <label>Lemma</label>
+                    <input
+                        type="text"
+                        value={word.lemma ?? ""}
+                        onChange={(e) =>
+                            updateWordField(
+                                sentenceIndex,
+                                wordIndex,
+                                "lemma",
+                                e.target.value
+                            )
                         }
-                        title="Add Word"
+                    />
+                    <label>UPOS</label>
+                    <input
+                        type="text"
+                        value={word.upos ?? ""}
+                        onChange={(e) =>
+                            updateWordField(
+                                sentenceIndex,
+                                wordIndex,
+                                "upos",
+                                e.target.value
+                            )
+                        }
+                    />
+                    <label>XPOS</label>
+                    <input
+                        type="text"
+                        value={word.xpos ?? ""}
+                        onChange={(e) =>
+                            updateWordField(
+                                sentenceIndex,
+                                wordIndex,
+                                "xpos",
+                                e.target.value
+                            )
+                        }
+                    />
+                    <label>Feats</label>
+                    <input
+                        type="text"
+                        value={word.feats ?? ""}
+                        onChange={(e) =>
+                            updateWordField(
+                                sentenceIndex,
+                                wordIndex,
+                                "feats",
+                                e.target.value
+                            )
+                        }
+                    />
+                    <div
                         style={{
-                        width: "34px",
-                        height: "34px",
-                        borderRadius: "6px",
-                        border: "none",
-                        background: "#4caf50",
-                        color: "white",
-                        cursor: "pointer",
-                        fontWeight: "bold",
-                        fontSize: "18px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginTop: "10px",
                         }}
                     >
-                        +
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() =>
-                        deleteWord(
-                            sentenceIndex,
-                            wordIndex
-                        )
-                        }
-                        title="Delete Word"
-                        style={{
-                        width: "34px",
-                        height: "34px",
-                        borderRadius: "6px",
-                        border: "none",
-                        background: "#d32f2f",
-                        color: "white",
-                        cursor: "pointer",
-                        fontWeight: "bold",
-                        }}
-                    >
-                        ×
-                    </button>
+                        <button
+                            type="button"
+                            onClick={() =>
+                                addWord(sentenceIndex, wordIndex)
+                            }
+                            style={{
+                                background: "#4caf50",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "6px",
+                                padding: "8px 14px",
+                                cursor: "pointer",
+                            }}
+                        >
+                            +
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() =>
+                                deleteWord(sentenceIndex, wordIndex)
+                            }
+                            style={{
+                                background: "#d32f2f",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "6px",
+                                padding: "8px 14px",
+                                cursor: "pointer",
+                            }}
+                        >
+                            ×
+                        </button>
                     </div>
-                  </div>
+                </div>
                 ))}
               </div>
             </div>
