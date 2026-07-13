@@ -8,6 +8,7 @@ export default function TokenizedEditor() {
   const [stories, setStories] = useState([]);
   const [editedStories, setEditedStories] = useState({});
   const [expandedStory, setExpandedStory] = useState(null);
+  const [expandedEnglish, setExpandedEnglish] = useState({});
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -151,6 +152,12 @@ const updateStoryField = (storyId, field, value) => {
  const hasUnsavedChanges = (storyId) => {
     return editedStories.hasOwnProperty(storyId);
  };
+ const toggleEnglish = (storyId) => {
+        setExpandedEnglish((prev) => ({
+            ...prev,
+            [storyId]: !prev[storyId],
+        }));
+  };
   useEffect(() => {
     getStories();
   }, []);
@@ -287,22 +294,30 @@ const updateStoryField = (storyId, field, value) => {
       <div
         style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: expandedStory ? "1fr" : "repeat(4, 1fr)",
             gap: "22px",
             alignItems: "start",
         }}
       >
-        {filteredStories.map((story) => (
+        { filteredStories
+                .filter((story) => expandedStory ? story._id === expandedStory : true)
+                .map((story) => (
           <div
             key={story._id}
             style={{
-              background: "white",
-              borderRadius: "15px",
-              padding: "18px",
-              boxShadow:
-                "0 2px 10px rgba(0,0,0,.08)",
+                background: "white",
+                borderRadius: "15px",
+                padding: "18px",
+                boxShadow:
+                    "0 2px 10px rgba(0,0,0,.08)",
+                width: "100%",
+                maxWidth:
+                    expandedStory === story._id
+                        ? "100%"
+                        : "100%",
+                overflow: "hidden",
             }}
-          >
+            >
             <div
               onClick={() =>
                 setExpandedStory(
@@ -678,16 +693,53 @@ const updateStoryField = (storyId, field, value) => {
                             )
                         )}
                     </div>
-                    <TokenizedEnglishEditor
-                        story={story}
-                        getEditedStory={getEditedStory}
-                        updateStoryField={updateStoryField}
-                    />
                     <TokenizedSanskritEditor
                         story={story}
                         getEditedStory={getEditedStory}
                         updateStoryField={updateStoryField}
                     />
+                    <div
+                        style={{
+                            marginTop: "30px",
+                            border: "1px solid #ddd",
+                            borderRadius: "10px",
+                            overflow: "hidden",
+                        }}
+                    >
+                        <div
+                            onClick={() => toggleEnglish(story._id)}
+                            style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "15px 20px",
+                                background: "#1f2b6b",
+                                color: "white",
+                                cursor: "pointer",
+                                fontWeight: "bold",
+                                fontSize: "18px",
+                            }}
+                        >
+                            <span>Tokenized English Version</span>
+                            <span>
+                                {expandedEnglish[story._id] ? "▲" : "▼"}
+                            </span>
+                        </div>
+                        {expandedEnglish[story._id] && (
+                            <div
+                                style={{
+                                    padding: "20px",
+                                    background: "#fff",
+                                }}
+                            >
+                                <TokenizedEnglishEditor
+                                    story={story}
+                                    getEditedStory={getEditedStory}
+                                    updateStoryField={updateStoryField}
+                                />
+                            </div>
+                        )}
+                    </div>                   
                     <div
                         style={{
                             display: "flex",
