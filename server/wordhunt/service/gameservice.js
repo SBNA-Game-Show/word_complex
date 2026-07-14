@@ -118,16 +118,51 @@ const getPlayerInfoByStory = async (gameId, storyId, playerId) => {
 
     const response = await retrievePlayerInfoByStory(gameId, storyId, playerId);
 
-    const games = response.games;
+    const nounWords = response.nounWords;
+    const verbWords = response.verbWords;
+    const adjWords = response.adjWords;
 
-    const nounData = games.Noun;
+    const retrievedGames = response.gameInfo;
 
-    console.log(nounData);
+    const playerInfo = retrievedGames.find((player) => player._id === playerId);
+    const playersCoins = playerInfo.totalCoins;
+    const playersScore = playerInfo.totalScore;
+    // console.log("Player Info: ", playerInfo);
 
-    return response;
+    const nounData = playerInfo.games.Noun.history;
+    // console.log(nounData);
+    const verbData = playerInfo.games.Verb.history;
+    const adjData = playerInfo.games.Adjective.history;
+
+    const sortedNoun = arraySorter(nounData, nounWords);
+    const sortedVerb = arraySorter(verbData, verbWords);
+    const sortedAdj = arraySorter(adjData, adjWords);
+
+    // return response;
+
+    return {
+      storyId: storyId,
+      earnedCoins: playersCoins,
+      earnedScore: playersScore,
+      games: {
+        Noun: sortedNoun,
+        Verb: sortedVerb,
+        Adjective: sortedAdj,
+      },
+    };
   } catch (e) {
     throw new Error(e.message);
   }
+};
+
+const arraySorter = (data, wordCount) => {
+  const lowestTime = data.sort((a, b) => a.bestTime - b.bestTime)[0];
+
+  if (lowestTime.foundWords < wordCount) {
+    return null;
+  }
+
+  return lowestTime;
 };
 
 module.exports = {
