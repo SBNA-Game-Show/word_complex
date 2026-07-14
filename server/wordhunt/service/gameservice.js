@@ -64,6 +64,7 @@ const insertStroyInfo = async (gameId, storyId, storyInfo) => {
 const insertGameData = async (
   gameId,
   storyId,
+  playerId,
   playerName,
   gameData,
   gameInstance,
@@ -75,6 +76,9 @@ const insertGameData = async (
 
     if (!storyId) {
       throw new Error("Story Id is Required");
+    }
+    if (!playerId) {
+      throw new Error("Player Id is Required");
     }
 
     if (!playerName) {
@@ -88,6 +92,7 @@ const insertGameData = async (
     const response = await registerGameData(
       gameId,
       storyId,
+      playerId,
       playerName,
       gameData,
       gameInstance,

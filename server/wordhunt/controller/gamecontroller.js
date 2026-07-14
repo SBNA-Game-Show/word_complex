@@ -83,6 +83,7 @@ const addGameData = async (req, res) => {
     const {
       gameId,
       storyId,
+      playerId,
       playerName,
       bestTime,
       coins,
@@ -103,6 +104,7 @@ const addGameData = async (req, res) => {
     const response = await insertGameData(
       gameId,
       storyId,
+      playerId,
       playerName,
       gameData,
       gameInstance,

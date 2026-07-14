@@ -92,6 +92,7 @@ const initializeStoryInfo = async (gameId, storyId, storyInfo) => {
 const registerGameData = async (
   gameId,
   storyId,
+  playerId,
   playerName,
   gameData,
   gameInstance,
@@ -120,6 +121,7 @@ const registerGameData = async (
     // Create player if not found
     if (!player) {
       story.gameInfo.push({
+        _id: playerId,
         playerName,
         totalCoins: 0,
         totalScore: 0,

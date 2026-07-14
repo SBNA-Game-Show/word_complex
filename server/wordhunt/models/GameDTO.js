@@ -1,7 +1,7 @@
 const GameData = require("./GameData");
 
 class Game {
-  constructor(gameId, storyId, playerName, gameInstance, gameData) {
+  constructor(gameId, storyId, playerId, playerName, gameInstance, gameData) {
     if (gameId == null) {
       throw new Error("Game Id Cannot be NULL");
     }
@@ -11,6 +11,11 @@ class Game {
       throw new Error("Story Id cannot be NULL");
     }
     this.storyId = storyId;
+
+    if (playerId == null) {
+      throw new Error("Player Id cannot be NULL");
+    }
+    this.playerId = playerId;
 
     if (playerName == null) {
       throw new Error("Player Name Cannot be NULL");
