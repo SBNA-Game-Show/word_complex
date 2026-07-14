@@ -1,4 +1,12 @@
-const { initializeGame } = require("../repository/wordhuntrepo");
+const {
+  initializeGame,
+  getAllGameInfo,
+  initializeStoryInfo,
+  registerGameData,
+} = require("../repository/wordhuntrepo");
+
+const GameData = require("../models/GameData");
+const StoryInfo = require("../models/StoryInfo");
 
 const initWordHuntRepo = async (storyId, gameId) => {
   try {
@@ -23,4 +31,77 @@ const initWordHuntRepo = async (storyId, gameId) => {
   }
 };
 
-module.exports = { initWordHuntRepo };
+const retrieveAllMetaData = async () => {
+  try {
+    const games = await getAllGameInfo();
+
+    return games;
+  } catch (e) {
+    throw new Error(e.message);
+  }
+};
+
+const insertStroyInfo = async (gameId, storyId, storyInfo) => {
+  try {
+    if (gameId == null) {
+      throw new Error("Game Id is Required");
+    }
+    if (storyId == null) {
+      throw new Error("Story Id is Required");
+    }
+    if (!(storyInfo instanceof StoryInfo)) {
+      throw new Error("Incorrect Story Information Passed ");
+    }
+
+    const response = initializeStoryInfo(gameId, storyId, storyInfo);
+
+    return response;
+  } catch (e) {
+    throw new Error(e.message);
+  }
+};
+
+const insertGameData = async (
+  gameId,
+  storyId,
+  playerName,
+  gameData,
+  gameInstance,
+) => {
+  try {
+    if (!gameId) {
+      throw new Error("Game Id is Required");
+    }
+
+    if (!storyId) {
+      throw new Error("Story Id is Required");
+    }
+
+    if (!playerName) {
+      throw new Error("Player Name is Required");
+    }
+
+    if (!(gameData instanceof GameData)) {
+      throw new Error("Invalid Game Data Passed");
+    }
+
+    const response = await registerGameData(
+      gameId,
+      storyId,
+      playerName,
+      gameData,
+      gameInstance,
+    );
+
+    return response;
+  } catch (e) {
+    throw new Error(e.message);
+  }
+};
+
+module.exports = {
+  initWordHuntRepo,
+  retrieveAllMetaData,
+  insertStroyInfo,
+  insertGameData,
+};

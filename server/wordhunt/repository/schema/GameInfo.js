@@ -5,7 +5,7 @@ const gameInfoSchema = new mongoose.Schema(
   {
     playerName: {
       type: String,
-      required: true,
+      default: null,
     },
 
     totalCoins: {
@@ -18,39 +18,70 @@ const gameInfoSchema = new mongoose.Schema(
       default: 0,
     },
 
-    games: [
-      {
-        Noun: {
-          type: gameDataSchema,
-        },
-
-        Verb: {
-          type: gameDataSchema,
-        },
-
-        Adjective: {
-          type: gameDataSchema,
+    games: {
+      Noun: {
+        history: {
+          type: [gameDataSchema],
+          default: [],
         },
       },
-    ],
+
+      Verb: {
+        history: {
+          type: [gameDataSchema],
+          default: [],
+        },
+      },
+
+      Adjective: {
+        history: {
+          type: [gameDataSchema],
+          default: [],
+        },
+      },
+    },
   },
   {
     _id: false,
   },
 );
 
+gameInfoSchema.methods.addNounGame = function (gameData) {
+  if (!this.games.Noun) {
+    throw new Error("Noun game is not Initialized");
+  }
+  this.games.Noun.history.push(gameData);
+
+  this.calculateTotals();
+};
+gameInfoSchema.methods.addVerbGame = function (gameData) {
+  if (!this.games.Verb) {
+    throw new Error("Noun game is not Initialized");
+  }
+  this.games.Verb.history.push(gameData);
+
+  this.calculateTotals();
+};
+gameInfoSchema.methods.addAdjGame = function (gameData) {
+  if (!this.games.Adjective) {
+    throw new Error("Noun game is not Initialized");
+  }
+  this.games.Adjective.history.push(gameData);
+
+  this.calculateTotals();
+};
+
 gameInfoSchema.methods.calculateTotals = function () {
   let coins = 0;
   let score = 0;
 
-  this.games.forEach((game) => {
-    coins += game.Noun?.coins ?? 0;
-    coins += game.Verb?.coins ?? 0;
-    coins += game.Adjective?.coins ?? 0;
+  Object.values(this.games).forEach((game) => {
+    if (!game) return;
 
-    score += game.Noun?.totalScore ?? 0;
-    score += game.Verb?.totalScore ?? 0;
-    score += game.Adjective?.totalScore ?? 0;
+    game.history.forEach((instance) => {
+      coins += instance.coins ?? 0;
+      score += instance.totalScore ?? 0;
+    });
   });
 
   this.totalCoins = coins;

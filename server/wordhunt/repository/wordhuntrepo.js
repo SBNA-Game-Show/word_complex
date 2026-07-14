@@ -2,6 +2,16 @@ const WordHunt = require("./schema/WordHunt");
 
 const MAXIMUM_STORIES_TO_HAVE_IN_A_GAME = 4;
 
+/**
+ *
+ * @param {["storyId1","storyId2","storyId3","storyId4"]} storyId
+ * Takes a array fo story Ids as paramater
+ * @param {gameId1} gameId
+ * Takes game Id
+ * Initializes Word Hunt Game Repository
+ *
+ * @returns
+ */
 const initializeGame = async (storyId, gameId) => {
   if (!Array.isArray(storyId)) {
     throw new Error(
@@ -25,12 +35,7 @@ const initializeGame = async (storyId, gameId) => {
 
   const stories = storyId.map((id) => ({
     storyId: id,
-    gameInfo: [
-      {
-        totalCoins: 0,
-        totalScore: 0,
-      },
-    ],
+    gameInfo: [],
   }));
 
   const game = new WordHunt({
@@ -40,15 +45,127 @@ const initializeGame = async (storyId, gameId) => {
 
   return await game.save();
 };
-
+/**
+ *
+ * @returns the complete Word Hunt Repository for Leaderboard and other game
+ * data purposes
+ */
 const getAllGameInfo = async () => {
   const games = await WordHunt.find();
 
-  if (!games || games.length === 0) {
-    return [];
-  }
-
   return games;
+};
+/**
+ * According to given game id, story id and data like number of words to find in the story.
+ * writes data according to the game
+ */
+
+const initializeStoryInfo = async (gameId, storyId, storyInfo) => {
+  try {
+    const game = await WordHunt.findById(gameId);
+
+    if (!game) {
+      throw new Error("No Game Found By Given Id");
+    }
+
+    const story = game.stories.find((story) => story.storyId === storyId);
+
+    if (!story) {
+      throw new Error("No Story Found By Given Id");
+    }
+
+    const response = game.initializeStoryInfo(story, storyInfo);
+
+    await game.save();
+
+    return response;
+  } catch (e) {
+    throw new Error(e.message);
+  }
+};
+/**
+ * Given gameid, story id , playername ana and data game metadata
+ * wirites to the noun game if player name is found then adds to the same player
+ * data else creates a new player data
+ */
+
+const registerGameData = async (
+  gameId,
+  storyId,
+  playerName,
+  gameData,
+  gameInstance,
+) => {
+  try {
+    if (!["Noun", "Verb", "Adjective"].includes(gameInstance)) {
+      throw new Error("Invalid Game Instance");
+    }
+
+    const game = await WordHunt.findById(gameId);
+
+    if (!game) {
+      throw new Error("No Game Can be Found By Given Game Id");
+    }
+
+    const story = game.stories.find((story) => story.storyId === storyId);
+
+    if (!story) {
+      throw new Error("No Story can be Found By Given Story Id");
+    }
+
+    let player = story.gameInfo.find(
+      (player) => player.playerName === playerName,
+    );
+
+    // Create player if not found
+    if (!player) {
+      story.gameInfo.push({
+        playerName,
+        totalCoins: 0,
+        totalScore: 0,
+        games: {
+          Noun: {
+            history: [],
+          },
+          Verb: {
+            history: [],
+          },
+          Adjective: {
+            history: [],
+          },
+        },
+      });
+
+      player = story.gameInfo[story.gameInfo.length - 1];
+    }
+
+    // Ensure all game histories exist (for older documents)
+    player.games ??= {};
+
+    player.games.Noun ??= { history: [] };
+    player.games.Verb ??= { history: [] };
+    player.games.Adjective ??= { history: [] };
+
+    switch (gameInstance) {
+      case "Noun":
+        player.addNounGame(gameData);
+        break;
+
+      case "Verb":
+        player.addVerbGame(gameData);
+        break;
+
+      case "Adjective":
+        player.addAdjGame(gameData);
+        break;
+    }
+
+    await game.save();
+
+    return player;
+  } catch (e) {
+    throw new Error(e.message);
+  }
 };
 
 const retrievePlayerInfoByStory = async (gameId, storyId, playerName) => {
@@ -87,5 +204,9 @@ const retrievePlayerInfoByStory = async (gameId, storyId, playerName) => {
   return player;
 };
 
-
-module.exports = { initializeGame, getAllGameInfo };
+module.exports = {
+  initializeGame,
+  getAllGameInfo,
+  initializeStoryInfo,
+  registerGameData,
+};
