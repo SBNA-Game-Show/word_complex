@@ -1,50 +1,49 @@
 const mongoose = require("mongoose");
 const gameDataSchema = require("./GameData");
 
-const gameInfoSchema = new mongoose.Schema(
-  {
-    playerName: {
-      type: String,
-      default: null,
-    },
+const gameInfoSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+    required: [true, "Unique Id is required"],
+  },
+  playerName: {
+    type: String,
+    default: null,
+  },
 
-    totalCoins: {
-      type: Number,
-      default: 0,
-    },
+  totalCoins: {
+    type: Number,
+    default: 0,
+  },
 
-    totalScore: {
-      type: Number,
-      default: 0,
-    },
+  totalScore: {
+    type: Number,
+    default: 0,
+  },
 
-    games: {
-      Noun: {
-        history: {
-          type: [gameDataSchema],
-          default: [],
-        },
+  games: {
+    Noun: {
+      history: {
+        type: [gameDataSchema],
+        default: [],
       },
+    },
 
-      Verb: {
-        history: {
-          type: [gameDataSchema],
-          default: [],
-        },
+    Verb: {
+      history: {
+        type: [gameDataSchema],
+        default: [],
       },
+    },
 
-      Adjective: {
-        history: {
-          type: [gameDataSchema],
-          default: [],
-        },
+    Adjective: {
+      history: {
+        type: [gameDataSchema],
+        default: [],
       },
     },
   },
-  {
-    _id: false,
-  },
-);
+});
 
 gameInfoSchema.methods.addNounGame = function (gameData) {
   if (!this.games.Noun) {

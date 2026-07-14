@@ -7,7 +7,6 @@ import GameManger from "./utils/GameManager";
 
 import GameServiceManager from "./utils/GameServiceManager";
 import { getSelectedStoryId } from "../../storyPicker/activeStory";
-import { useAuth } from "../../auth/AuthContext";
 
 class Game {
   constructor(setup) {
@@ -17,6 +16,8 @@ class Game {
     this.height = setup.H;
     this.zim = setup.zim;
     this.serviceManager = new GameServiceManager(this);
+
+    this.authUser = setup.authUser;
 
     this.data = null;
     this.passageArray = null;
@@ -59,7 +60,8 @@ class Game {
     this.EARNED_COINS = 0;
 
     // Player
-    this.player = "Jack";
+    this.playerId = this.authUser.id;
+    this.player = this.authUser.name;
     this.playerCoins = 0;
     this.totalScore = 0;
     this.maxScore = 0;
@@ -95,6 +97,7 @@ class Game {
   //----------------------------------
 
   async start() {
+    console.log("Player Info: ", this.player);
     this.hasGameStarted = false; // Reset explicitly on menu returns
     this.landingPage = new LandingPage(this).createLandingPage();
 

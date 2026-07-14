@@ -1,6 +1,5 @@
 import { createZimGame } from "../createZimGame";
 import Game from "./Game";
-import { useAuth } from "../../auth/AuthContext";
 
 export default createZimGame({
   id: "word-hunt",
@@ -11,14 +10,14 @@ export default createZimGame({
   color: "#FFE0C4BF",
   outerColor: "#556B3D",
 
-  setup({ frame, stage, W, H, zim }) {
+  setup({ frame, stage, W, H, zim, authUser }) {
     const game = new Game({
       frame,
       stage,
       W,
       H,
       zim,
-      
+      authUser,
     });
 
     game.start();
