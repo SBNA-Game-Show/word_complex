@@ -12,6 +12,13 @@ jest.mock("../raw-data-connect/retrieveTokenizedStoryById", () => ({
   retrieveRandomStory: jest.fn(),
 }));
 
+// createSet initializes the Word Hunt repo, which otherwise reaches the real
+// Mongoose model and opens a DB connection that never settles — leaving an open
+// handle that hangs Jest. Stub it out.
+jest.mock("../wordhunt/service/gameservice", () => ({
+  initWordHuntRepo: jest.fn().mockResolvedValue({}),
+}));
+
 const connectDb = require("../config/dataConnectConfig");
 const {
   retrieveStoryById,

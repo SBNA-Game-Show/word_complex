@@ -152,10 +152,16 @@ async function createSet({ name, storyIds }) {
   };
   await sets.insertOne(doc);
 
-  // initializing word hunt repo
-
-  wordunt_Ids = [...storyIds];
-  wordHuntService = initWordHuntRepo(wordunt_Ids, doc._id);
+  // Initialize the Word Hunt repo for this set's stories. This is a secondary
+  // side-effect: a failure here must not fail set creation (same fail-soft
+  // spirit as the read path), so we await and swallow into a log.
+  try {
+    await initWordHuntRepo([...storyIds], doc._id);
+  } catch (error) {
+    console.error(
+      `Word Hunt repo init failed for set ${doc._id}: ${error.message}`,
+    );
+  }
 
   return doc;
 }
