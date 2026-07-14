@@ -149,7 +149,7 @@ class FindAdjectiveGame {
       emit("hint", { text: "More Coming Soon" });
     };
 
-    // Highlighting verbs green when hint is clicked
+    // Highlighting Adjectives green when hint is clicked
 
     this.controlPanel.hintClicked = () => {
       if (this.passageDisplay && this.passageDisplay.wordLabels) {
@@ -199,17 +199,31 @@ class FindAdjectiveGame {
         this.progressBar.setTime(minutes, seconds);
       },
 
-      () => {
+      async () => {
         if (this.gameOver || !this.game.hasGameStarted) {
           return;
         }
         this.gameOver = true;
+        const elapsedMs = this.timer.getElapsedTime();
+        const minutes = Math.floor(elapsedMs / 60000);
+        const seconds = Math.floor((elapsedMs % 60000) / 1000);
+        const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
         this.game.isInputLocked = true;
         this.progressBar.showTimesUp();
         this.game.TOTAL_SCORE += this.score;
         this.playerInformation.update(this.score);
 
         this.messageBar.showTimeOverMessage(this.timeUpKey);
+        if (this.foundWords.length >= 2) {
+          const res = await this.manager.writeGameInformation(
+            completionTime,
+            this.hintsUsed,
+            this.foundWords.length,
+            this.game.adjGameKey,
+          );
+          // console.log(res);
+        }
+
         emit("hint", { text: this.timeUpKey });
 
         this.game.stage.update();
@@ -299,7 +313,7 @@ class FindAdjectiveGame {
   // WIN
   //-----------------------------------
 
-  checkWin() {
+  async checkWin() {
     if (this.foundWords.length === this.adjectives.length) {
       this.gameOver = true;
       this.timer.stop();
@@ -329,6 +343,12 @@ class FindAdjectiveGame {
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
       this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
+      const res = await this.manager.writeGameInformation(
+        completionTime,
+        this.hintsUsed,
+        this.foundWords.length,
+        this.game.adjGameKey,
+      );
       this.game.hasGameStarted = false;
       emit("complete");
     }
