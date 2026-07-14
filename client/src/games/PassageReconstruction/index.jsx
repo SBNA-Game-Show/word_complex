@@ -926,7 +926,9 @@ export default createZimGame({
       // Cloze Quest). Timed-out runs count too — they just carry the full 90s,
       // so they lose time tiebreaks. The server only keeps it if it beats the
       // player's stored best (score -> time -> hints).
-      if (authUser?.id) {
+      // Guests never touch the leaderboard: anonymous Firebase users have a
+      // real UID, so checking id alone is not enough — isGuest is the gate.
+      if (authUser?.id && !authUser.isGuest) {
         const elapsedMs =
           (GAME_SECONDS - Math.max(0, countdown.remaining())) * 1000;
 
