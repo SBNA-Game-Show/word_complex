@@ -1691,7 +1691,9 @@ export default createZimGame({
         // one document per player (Firebase UID), highest attempt kept.
         const playerUuid = String(authUser?.id || "").trim();
 
-        if (playerUuid) {
+        // Guests are excluded from the leaderboard (anonymous users still
+        // have a UID, so a non-empty uuid alone doesn't stop them).
+        if (playerUuid && !authUser?.isGuest) {
           try {
             const saved = await saveMeaningBridgeBestScore({
               uuid: playerUuid,

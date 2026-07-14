@@ -1,5 +1,7 @@
 import { createZimGame } from "../createZimGame";
 import { getPassageReconstructionGame } from "../../services/passageReconstructionService";
+import { submitPassageReconstructionScore } from "../../services/passageReconstructionScoreApi";
+import { getSelectedStoryId } from "../../storyPicker/activeStory";
 import { emit } from "../../scenes/sceneBus";
 import { createHintPolicy } from "../shared/hintPolicy";
 import { createHintButton } from "../shared/hintButton";
@@ -32,7 +34,7 @@ export default createZimGame({
   height: 720,
   color: "#cfe9f7",
   outerColor: "#0e2233",
-  setup({ frame, stage, W, H, zim }) {
+  setup({ frame, stage, W, H, zim, authUser }) {
     let disposed = false;
     let rounds = [];
     let roundIndex = 0;
@@ -49,7 +51,9 @@ export default createZimGame({
     // Whole-game 90s countdown. The pure policy tracks remaining seconds + pause;
     // the ZIM interval below drives it and a HUD label shows it. When it expires the
     // whole game ends with a results screen (see endByTimeout / showResults).
-    const countdown = createCountdown({ seconds: 90 });
+    const GAME_SECONDS = 90;
+    const countdown = createCountdown({ seconds: GAME_SECONDS });
+    let hintsUsedTotal = 0; // whole-game hint count, for the leaderboard run
     let timerInterval = null; // ZIM intervalObject (one for the whole game)
     let timerLabel = null; // live HUD label, re-pointed on every makeStatus()
     let gameOver = false; // set once the game ends (timeout or finish); blocks input
@@ -167,6 +171,7 @@ export default createZimGame({
       layoutCache = { round: -1, layout: null };
       countdown.reset();
       hintPolicy.reset();
+      hintsUsedTotal = 0;
     }
 
     function makeLanguageButton({ language, label, detail, x }) {
@@ -609,6 +614,7 @@ export default createZimGame({
       // this phrase belongs.
       hintedSlots.add(target);
       hintPolicy.use();
+      hintsUsedTotal += 1;
       score = Math.max(0, score - hintPolicy.penalty);
       if (hintButton) hintButton.refresh();
       emit("hint", { text: `"${answer[target]}" goes in slot ${target + 1}.` });
@@ -910,6 +916,38 @@ export default createZimGame({
       feedbackActive = true;
       emit(timedOut ? "timeUp" : "complete");
 
+      // Time bonus: +5 pts per second left on the clock, only when the quest
+      // was finished (on a timeout remaining is 0 anyway, but be explicit).
+      // Max possible score = 3x100 rounds + 90x5 bonus = 750.
+      const timeBonus = timedOut ? 0 : countdown.remaining() * 5;
+      score += timeBonus;
+
+      // Push the finished run to the PR leaderboard (same pattern as Context
+      // Cloze Quest). Timed-out runs count too — they just carry the full 90s,
+      // so they lose time tiebreaks. The server only keeps it if it beats the
+      // player's stored best (score -> time -> hints).
+      // Guests never touch the leaderboard: anonymous Firebase users have a
+      // real UID, so checking id alone is not enough — isGuest is the gate.
+      if (authUser?.id && !authUser.isGuest) {
+        const elapsedMs =
+          (GAME_SECONDS - Math.max(0, countdown.remaining())) * 1000;
+
+        submitPassageReconstructionScore({
+          uuid: authUser.id,
+          displayName: authUser.name || "Player",
+          score,
+          time: elapsedMs,
+          hintsUsed: hintsUsedTotal,
+          storyId: getSelectedStoryId(),
+        })
+          .then((result) => {
+            console.log("Passage Reconstruction score result:", result);
+          })
+          .catch((error) => {
+            console.error("Could not save Passage Reconstruction score:", error);
+          });
+      }
+
       const roundsRight = correctChecks;
       const roundsWrong = rounds.length - correctChecks; // unreached rounds count as missed
       const accuracy = checks ? Math.round((correctChecks / checks) * 100) : 100;
@@ -921,7 +959,12 @@ export default createZimGame({
         new zim.Label({ text, size, font: zimFont, color, align: "center", valign: "top" })
           .addTo(stage).loc(W / 2, y);
       makecenteredLabel(timedOut ? "Time's Up!" : "Quest Complete", 48, palette.ink, 210);
-      makecenteredLabel(`Final score: ${score}`, 32, "#3a5240", 282);
+      makecenteredLabel(
+        timeBonus > 0
+          ? `Final score: ${score} (+${timeBonus} time bonus)`
+          : `Final score: ${score}`,
+        32, "#3a5240", 282,
+      );
       makecenteredLabel(`Rounds right: ${roundsRight}/${rounds.length}`, 28, "#3a7a4a", 332);
       makecenteredLabel(`Rounds missed: ${roundsWrong}/${rounds.length}`, 28, "#a05038", 372);
       makecenteredLabel(`Accuracy: ${accuracy}%`, 22, palette.inkSoft, 414);
