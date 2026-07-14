@@ -32,6 +32,7 @@
 const { GAME_KEYS } = require("../leaderboardConfig");
 const contextClozeService = require("../../fillinblanks/services/contextClozeQuestScoreService");
 const passageReconstructionScoreService = require("../../passagereconstruction/service/passageReconstructionScoreService");
+const meaningBridgeScoreService = require("../../meaning-bridge/service/meaningBridgeScoreService");
 
 // How many rows we pull from each game before merging. ContextQuiz's service
 // clamps at 100, so going higher there is a no-op.
@@ -45,13 +46,12 @@ const PER_GAME_FETCH = 100;
 const contextQuizMAX = 1140;
 const wordHuntMAX = 0; // TODO (Sabahat)
 const passageReconstructionMAX = 750; // 3 rounds x 100 + 90s x 5 time bonus
-const meaningBridgeMAX = 0; // TODO
+const meaningBridgeMAX = 285; // 3 rounds (4+5+6 pairs) x 10/pair + 3 x 45 max speed bonus
 
 /**
- * One adapter per GAME_KEYS entry. TODO owners fill in their game:
- *  - WordHunt: real Mongo top-X + maxScore (current service is mock JSON).
- *  - PassageReconstruction: no score recording yet.
- *  - MeaningBridge: no score recording yet.
+ * One adapter per GAME_KEYS entry. Live: ContextQuiz, PassageReconstruction,
+ * MeaningBridge. Remaining TODO — WordHunt (Sabahat): needs a real Mongo
+ * top-X + maxScore (current service still reads mock JSON).
  */
 const ADAPTERS = {
   ContextQuiz: {
@@ -79,7 +79,19 @@ const ADAPTERS = {
       }));
     },
   },
-  MeaningBridge: null, // TODO
+  MeaningBridge: {
+    maxScore: meaningBridgeMAX,
+    getTopPlayers: async (x) => {
+      // Wasiq's rows are pre-shaped for his game scene: playerName/totalScore.
+      const rows = await meaningBridgeScoreService.getTopPlayers(x);
+      return rows.map((r) => ({
+        uuid: r.uuid,
+        displayName: r.playerName ?? null,
+        avatar: r.avatar ?? null,
+        score: r.totalScore ?? 0,
+      }));
+    },
+  },
 };
 
 /** rawScore -> 0–100. Guards against a missing/zero maxScore. */
