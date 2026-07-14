@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-
 import {
   getAllStories,
   getAllTokenizedStories,
@@ -242,17 +241,17 @@ async function handleDownloadSanskritStory(story) {
         }
         try {
             setLoading(true);
-
             const result = await uploadStory(uploadFile);
-
-            alert(result.message);
-
-            setUploadFile(null);
-
-            await refreshStories();
-        } catch (error) {
-            alert(error.message || "Upload failed");
-        } finally {
+            if(result.success){
+                alert(result.result.message);
+                setUploadFile(null);
+                await refreshStories();
+            }else{
+                alert("Upload failed.");
+            }
+        }catch(error){
+            alert(error.message || "Upload failed.");
+        }finally{
             setLoading(false);
         }
     }
@@ -465,6 +464,14 @@ async function handleDownloadSanskritStory(story) {
             >
                 Refresh
             </button>
+            <button
+                onClick={() => {
+                    window.location.href = "/tokenized-editor";
+                }}
+                style={actionButtonStyle}
+            >
+                Edit Tokenized Stories
+            </button>
         </div>
 
         {activeView === "available" ? (
@@ -478,57 +485,57 @@ async function handleDownloadSanskritStory(story) {
                     >
                         Available Stories
                     </h2>
-
                     {/* Upload Asset */}
-
                     <div
                         style={{
-                            background: "white",
-                            borderRadius: "18px",
-                            padding: "24px",
-                            marginBottom: "35px",
-                            boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+                            display: "flex",
+                            gap: "20px",
+                            alignItems: "center",
+                            flexWrap: "wrap",
                         }}
                     >
-
-                        <h3
+                        <label
                             style={{
-                                color: "#1f2b6b",
-                                marginTop: 0,
-                                marginBottom: "20px",
+                                background: "#f8a53c",
+                                color: "white",
+                                padding: "14px 28px",
+                                borderRadius: "14px",
+                                cursor: "pointer",
+                                fontWeight: "700",
+                                boxShadow: "0 4px 12px rgba(248,165,60,.3)",
                             }}
                         >
-                            Upload Asset
-                        </h3>
-
-                        <div
-                            style={{
-                                display: "flex",
-                                gap: "20px",
-                                alignItems: "center",
-                                flexWrap: "wrap",
-                            }}
-                        >
+                            Choose File
                             <input
                                 type="file"
                                 accept=".pdf,.json,.txt,.doc,.docx,image/*"
+                                style={{ display: "none" }}
                                 onChange={(e) => setUploadFile(e.target.files[0])}
                             />
-                            <button
-                                onClick={handleUpload}
-                                style={actionButtonStyle}
-                            >
-                                Upload
-                            </button>
-                        </div>
+                        </label>
+                        <span
+                            style={{
+                                color: "#555",
+                                fontWeight: "600",
+                            }}
+                        >
+                            {uploadFile ? uploadFile.name : "No file selected"}
+                        </span>
+
+                        <button
+                            onClick={handleUpload}
+                            style={actionButtonStyle}
+                        >
+                            Upload
+                        </button>
                     </div>
-
+                    <hr/>
                     {/* Learn Sanskrit Section */}
-
                     <div
                         style={{
                             background:"white",
                             borderRadius:"18px",
+                            marginTop:"24px",
                             marginBottom:"24px",
                             padding:"20px",
                             boxShadow:"0 2px 10px rgba(0,0,0,.08)",
@@ -579,7 +586,8 @@ async function handleDownloadSanskritStory(story) {
                                             justifyContent:"center",
                                         }}
                                     >
-                                    <button onClick={handleWriteLearnMeta}>
+                                    <button onClick={handleWriteLearnMeta}
+                                    style={actionButtonStyle}>
                                         Write Metadata
                                     </button>
                                 </div>
@@ -711,7 +719,8 @@ async function handleDownloadSanskritStory(story) {
                                             justifyContent:"center",
                                         }}
                                     >
-                                        <button onClick={handleWriteSamskrutamMeta}>
+                                        <button onClick={handleWriteSamskrutamMeta}
+                                        style={actionButtonStyle}>
                                             Write Metadata
                                         </button>
                                     </div>

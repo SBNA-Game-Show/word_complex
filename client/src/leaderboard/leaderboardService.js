@@ -24,6 +24,18 @@ async function readJson(response, fallbackMessage) {
 
 /** Top players for a board. Returns an array of leaderboard rows. */
 export async function fetchLeaderboard(board = "master", limit = 100) {
+    if (board === "ContextQuiz") {
+    const response = await fetch(
+      `${API_BASE}/fillInBlanks/leaderboard?limit=10`
+    );
+
+    const json = await readJson(
+      response,
+      "Failed to load Context Quiz leaderboard"
+    );
+
+    return json.data ?? [];
+  }
   const params = new URLSearchParams({ game: board, limit: String(limit) });
   const response = await fetch(`${API_BASE}/leaderboard?${params}`);
   const json = await readJson(response, "Failed to load leaderboard");

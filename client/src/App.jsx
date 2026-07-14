@@ -20,6 +20,7 @@ import { getSceneConfig } from "./scenes/sceneConfig";
 import { usePreloadImages } from "./preloadImages";
 import "./App.css";
 import AdminPage from "./components/AdminPage";
+import TokenizedEditor from "./components/TokenizedEditor";
 
 const CHARACTER_STORAGE_KEY = "wc:selectedCharacter";
 
@@ -35,8 +36,12 @@ export default function App() {
 
 function AuthenticatedApp() {
   const { isAuthenticated, isInitializing } = useAuth();
-  const isAdminRoute =
-    typeof window !== "undefined" && window.location.pathname === "/admin";
+  // const isAdminRoute =
+  //   typeof window !== "undefined" && window.location.pathname === "/admin";
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+    const isAdminRoute = pathname === "/admin";
+    const isTokenizedEditorRoute =
+      pathname === "/tokenized-editor";
   const [screen, setScreen] = useState("launcher");
   const [activeGameId, setActiveGameId] = useState("sentence-builder");
   const [selectedCharacterId, setSelectedCharacterId] = useState(() => {
@@ -78,6 +83,9 @@ function AuthenticatedApp() {
   // Admins skip the game shell entirely (after all hooks have run).
   if (isAdminRoute) {
     return <AdminPage />;
+  }
+  if (isTokenizedEditorRoute) {
+    return <TokenizedEditor />;
   }
 
   function openGame(gameId) {

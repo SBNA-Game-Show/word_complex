@@ -3,6 +3,8 @@ import { emit } from "../../scenes/sceneBus";
 import { getFillInBlanks } from "../../services/FillInTheBlankFrontendService";
 import { createHintPolicy } from "../shared/hintPolicy";
 import { createHintButton } from "../shared/hintButton";
+import { getSelectedStoryId } from "../../storyPicker/activeStory";
+import { submitContextClozeQuestScore } from "../../services/contextClozeQuestScoreApi";
 
 export const meta = {
   id: "context-cloze-quest",
@@ -19,7 +21,7 @@ export default createZimGame({
   color: "#a989d6",
   outerColor: "#eadff7",
 
-  setup({ stage, W, H, zim }) {
+  setup({ stage, W, H, zim, authUser }) {
     const zimFont = "Fredoka";
     const sanskritFont = "Nirmala UI";
 
@@ -397,9 +399,11 @@ export default createZimGame({
       const wordButtons = [];
 
       // --- HINT SYSTEM ---
-      const hintPolicy = createHintPolicy({ maxPerRound: 2, penalty: 25 });
+      const maxHintsPerRound = 2;
+      const hintPolicy = createHintPolicy({ maxPerRound: maxHintsPerRound, penalty: 25 });
       const hintedKeys = new Set();
       let hintButton = null;
+      let checkButton = null;
       // -------------------
 
       const timeLimits = {
@@ -408,13 +412,20 @@ export default createZimGame({
         hard: 120,
       };
 
-      const difficultyMultipliers = {
-        easy: 1,
-        medium: 1.5,
-        hard: 2,
-      };
+      const timerScorePerSecond = 2;
 
       let remainingTime = timeLimits[selectedDifficulty];
+      let roundSubmitted = false;
+
+      function lockSubmittedRound() {
+        roundSubmitted = true;
+        wordButtons.forEach((button) => {
+          button.mouseEnabled = false;
+          button.cursor = "default";
+        });
+        if (hintButton) hintButton.mouseEnabled = false;
+        if (checkButton) checkButton.mouseEnabled = false;
+      }
 
       function startTimer() {
         clearGameTimer();
@@ -428,7 +439,7 @@ export default createZimGame({
           remainingTime--;
 
           timerLabel.text = `⏱ ${remainingTime}s`;
-          timerScoreLabel.text = `Timer Score: ${remainingTime * 5}`;
+          timerScoreLabel.text = `Perfect Bonus: ${remainingTime * timerScorePerSecond}`;
 
           if (remainingTime <= 0) {
             clearGameTimer();
@@ -466,7 +477,7 @@ export default createZimGame({
         .loc(947, 51);
 
       const timerScoreLabel = new zim.Label({
-        text: `Timer Score: ${remainingTime * 5}`,
+        text: `Perfect Bonus: ${remainingTime * timerScorePerSecond}`,
         size: 18,
         font: zimFont,
         color: "#ffffff",
@@ -716,9 +727,24 @@ export default createZimGame({
           wordButtons.push(wordButton);
 
           wordButton.word = word;
+          wordButton.on("mousedown", () => {
+            if (roundSubmitted) return;
+
+            const buttonGlobal = wordButton.localToGlobal(0, 0);
+            wordButton.addTo(stage);
+            const buttonStagePoint = stage.globalToLocal(
+              buttonGlobal.x,
+              buttonGlobal.y,
+            );
+            wordButton.loc(buttonStagePoint.x, buttonStagePoint.y);
+            stage.update();
+          });
           wordButton.drag();
           wordButton.on("pressup", () => {
+            if (roundSubmitted) return;
+
             let matchedBlank = null;
+            const previousBlankIndex = wordButton.blankIndex;
 
             blanks.forEach((blank) => {
               const buttonCenter = wordButton.localToGlobal(
@@ -740,7 +766,10 @@ export default createZimGame({
             });
 
             if (matchedBlank) {
-              if (matchedBlank.filledWord) {
+              if (
+                matchedBlank.filledWord &&
+                matchedBlank.index !== previousBlankIndex
+              ) {
                 const existingButton = wordButtons.find(
                   (button) => button.word === matchedBlank.filledWord
                 );
@@ -784,8 +813,11 @@ export default createZimGame({
                 },
                 time: 0.2,
               });
-              if (wordButton.blankIndex !== undefined) {
-                blanks[wordButton.blankIndex].filledWord = undefined;
+              if (
+                previousBlankIndex !== undefined &&
+                previousBlankIndex !== matchedBlank.index
+              ) {
+                blanks[previousBlankIndex].filledWord = undefined;
               }
               wordButton.blankIndex = matchedBlank.index;
               matchedBlank.filledWord = wordButton.word;
@@ -797,6 +829,9 @@ export default createZimGame({
                 buttonGlobal.y,
               );
               wordButton.loc(buttonStagePoint.x, buttonStagePoint.y);
+              if (previousBlankIndex !== undefined) {
+                blanks[previousBlankIndex].filledWord = undefined;
+              }
               wordButton.blankIndex = undefined;
 
               wordButton.animate({
@@ -836,7 +871,7 @@ export default createZimGame({
 
         // --- HINT: applyHint function ---
         function applyHint() {
-          if (!hintPolicy.canUse()) return;
+          if (roundSubmitted || !hintPolicy.canUse()) return;
 
           // Find the first blank not yet correctly filled and not already hinted
           let target = -1;
@@ -905,7 +940,7 @@ export default createZimGame({
         });
         // --------------------------------------------------------
 
-        const checkButton = new zim.Button({
+        checkButton = new zim.Button({
           width: 240, height: 50,
           label: "✓ Submit Answer",
           backgroundColor: gamePalette.primary,
@@ -915,6 +950,8 @@ export default createZimGame({
         checkButton.label.size = 22;
         checkButton.addTo(stage).loc(640, controlsButtonY);
         checkButton.on("click", () => {
+          if (roundSubmitted) return;
+
           let correctCount = 0;
           let filledCount = 0;
           const totalQuestions = correctAnswers.length;
@@ -925,9 +962,16 @@ export default createZimGame({
           });
 
           const answerScore = correctCount * 100;
-          const difficultyScore = answerScore * difficultyMultipliers[selectedDifficulty];
-          const timeBonus = remainingTime * 5;
-          const finalScore = Math.round(difficultyScore + timeBonus);
+          const isPerfectScore = correctCount === totalQuestions;
+          const timeBonus = isPerfectScore
+            ? Math.max(0, remainingTime) * timerScorePerSecond
+            : 0;
+          const hintsUsed = maxHintsPerRound - hintPolicy.remaining();
+          const hintPenalty = hintsUsed * hintPolicy.penalty;
+          const finalScore = Math.max(0, answerScore + timeBonus - hintPenalty);
+          const perfectBonusText = isPerfectScore ? ` (Perfect Bonus: +${timeBonus})` : "";
+          const missedPerfectBonusText = isPerfectScore ? "" : " (Perfect Bonus: 0)";
+          const hintScoreText = hintPenalty > 0 ? ` (Hints: -${hintPenalty})` : "";
           scoreLabel.text = `Answer Score: ${correctCount}/${totalQuestions} = ${answerScore}`;
 
           if (filledCount < totalQuestions) {
@@ -936,16 +980,40 @@ export default createZimGame({
             feedbackLabel.color = "#856404";
           } else if (correctCount === totalQuestions) {
             feedbackBar.color = "#d7f3dc";
-            feedbackLabel.text = `🎉 Excellent! Final Score: ${finalScore}`;
+            feedbackLabel.text = `🎉 Excellent! Final Score: ${finalScore}${perfectBonusText}${hintScoreText}`;
             clearGameTimer();
+            lockSubmittedRound();
             feedbackLabel.color = "#0b5c24";
             emit("complete");
           } else {
             clearGameTimer();
+            lockSubmittedRound();
             feedbackBar.color = "#ffe1e1";
-            feedbackLabel.text = `❌ You got ${correctCount}/${totalQuestions}. Final Score: ${finalScore}`;
+            feedbackLabel.text = `❌ You got ${correctCount}/${totalQuestions}. Final Score: ${finalScore}${missedPerfectBonusText}${hintScoreText}`;
             feedbackLabel.color = "#a61b1b";
             emit("wrong");
+          }
+
+          if (filledCount === totalQuestions && authUser?.id) {
+            const elapsedSeconds =
+              timeLimits[selectedDifficulty] - Math.max(0, remainingTime);
+
+            const scoreData = {
+              uuid: authUser.id,
+              displayName: authUser.name || "Player",
+              score: finalScore,
+              bestTime: elapsedSeconds * 1000,
+              storyId: getSelectedStoryId(),
+              difficulty: selectedDifficulty,
+            };
+
+            submitContextClozeQuestScore(scoreData)
+              .then((result) => {
+                console.log("Context Cloze Quest score result:", result);
+              })
+              .catch((error) => {
+                console.error("Could not save Context Cloze Quest score:", error);
+              });
           }
           stage.update();
         });
