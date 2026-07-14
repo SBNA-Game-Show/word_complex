@@ -1,5 +1,6 @@
 import { createZimGame } from "../createZimGame";
 import Game from "./Game";
+import { useAuth } from "../../auth/AuthContext";
 
 export default createZimGame({
   id: "word-hunt",
@@ -17,6 +18,7 @@ export default createZimGame({
       W,
       H,
       zim,
+      
     });
 
     game.start();

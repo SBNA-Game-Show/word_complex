@@ -7,6 +7,7 @@ import GameManger from "./utils/GameManager";
 
 import GameServiceManager from "./utils/GameServiceManager";
 import { getSelectedStoryId } from "../../storyPicker/activeStory";
+import { useAuth } from "../../auth/AuthContext";
 
 class Game {
   constructor(setup) {
