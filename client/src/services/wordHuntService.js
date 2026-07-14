@@ -1,5 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
+// PASSAGE END POINT CONNECTION
 export const retrieveEnglishVersion = async (storyId) => {
   try {
     if (!storyId) {
@@ -53,4 +54,54 @@ export const retrieveSanskritVersion = async (storyId) => {
   }
 };
 
-export default { retrieveEnglishVersion, retrieveSanskritVersion };
+// GAME END POINTS CONNECTION
+
+export const writeStoryInformation = async (storyInfo) => {
+  try {
+    const response = await fetch(`${API_BASE}/wordHunt/addStoryInfo`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(storyInfo),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to save story information");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to save story information:", error);
+    throw error;
+  }
+};
+
+export const writeGameInformation = async (gameInfo) => {
+  try {
+    const response = await fetch(`${API_BASE}/wordHunt/addGameData`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(gameInfo),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to save Game information");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to save Game information:", error);
+    throw error;
+  }
+};
+
+export default {
+  retrieveEnglishVersion,
+  retrieveSanskritVersion,
+  writeStoryInformation,
+  writeGameInformation,
+};

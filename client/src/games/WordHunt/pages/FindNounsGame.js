@@ -154,7 +154,7 @@ class FindNounsGame {
 
     // 1. Highlight nouns as green when clicked
     this.controlPanel.hintClicked = () => {
-      console.log("Hint Clicked - Highlighting Nouns");
+      // console.log("Hint Clicked - Highlighting Nouns");
       if (this.passageDisplay && this.passageDisplay.wordLabels) {
         this.passageDisplay.wordLabels.forEach((wordObj) => {
           if (this.nouns.includes(wordObj.text)) {
@@ -170,7 +170,7 @@ class FindNounsGame {
 
     // 2. Removing
     this.controlPanel.onHintExpired = () => {
-      console.log("Hint Expired - Removing Highlights");
+      // console.log("Hint Expired - Removing Highlights");
       if (this.passageDisplay && this.passageDisplay.wordLabels) {
         this.passageDisplay.wordLabels.forEach((wordObj) => {
           if (this.nouns.includes(wordObj.text)) {
@@ -207,20 +207,33 @@ class FindNounsGame {
         this.progressBar.setTime(minutes, seconds);
       },
 
-      () => {
-        console.log("TIMEOUT CALLBACK");
-        console.log("gameOver =", this.gameOver);
-        console.log("found =", this.foundWords.length);
+      async () => {
+        // console.log("TIMEOUT CALLBACK");
+        // console.log("gameOver =", this.gameOver);
+        // console.log("found =", this.foundWords.length);
         if (this.gameOver || !this.game.hasGameStarted) {
           return;
         }
         this.gameOver = true;
+        const elapsedMs = this.timer.getElapsedTime();
+        const minutes = Math.floor(elapsedMs / 60000);
+        const seconds = Math.floor((elapsedMs % 60000) / 1000);
+        const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
         this.game.isInputLocked = true;
         this.progressBar.showTimesUp();
         this.game.TOTAL_SCORE += this.score;
         this.playerInformation.update(this.score);
 
         this.messageBar.showTimeOverMessage(this.timeUpKey);
+        if (this.foundWords.length >= 2) {
+          const res = await this.manager.writeGameInformation(
+            completionTime,
+            this.hintsUsed,
+            this.foundWords.length,
+            this.game.nounGameKey,
+          );
+          // console.log(res);
+        }
         emit("hint", { text: this.timeUpKey });
 
         this.game.stage.update();
@@ -240,7 +253,7 @@ class FindNounsGame {
     const passageDisplayCont = this.passageDisplay.displayPassage(
       (cleanWord, label) => {
         if (this.game.isInputLocked) return;
-        console.log("CLICKED TARGET WORD:", cleanWord);
+        // console.log("CLICKED TARGET WORD:", cleanWord);
 
         // CORRECT NOUN MATCH
         if (this.nouns.includes(cleanWord)) {
@@ -261,7 +274,7 @@ class FindNounsGame {
             this.hintsUsed,
           );
           this.score += pointsEarned;
-          console.log("New Score: ", this.score);
+          // console.log("New Score: ", this.score);
           this.playerInformation.update(this.score);
           this.progressBar.setFound(this.foundWords.length);
 
@@ -303,8 +316,8 @@ class FindNounsGame {
   //-----------------------------------
   // WIN
   //-----------------------------------
-  checkWin() {
-    console.log("NOUN CHECKWIN", this.foundWords.length, this.nouns.length);
+  async checkWin() {
+    // console.log("NOUN CHECKWIN", this.foundWords.length, this.nouns.length);
     if (this.foundWords.length === this.nouns.length) {
       this.gameOver = true;
       this.timer.stop();
@@ -334,6 +347,13 @@ class FindNounsGame {
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
       this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
+      const res = await this.manager.writeGameInformation(
+        completionTime,
+        this.hintsUsed,
+        this.foundWords.length,
+        this.game.nounGameKey,
+      );
+      // console.log(res);
       this.game.hasGameStarted = false;
       emit("complete");
     }
@@ -347,7 +367,7 @@ class FindNounsGame {
     if (!this.restartButton) return;
 
     this.restartButton.tap(() => {
-      console.log("Restart Button Tapped");
+      // console.log("Restart Button Tapped");
 
       this.gameOver = false;
       this.foundWords = [];

@@ -17,6 +17,8 @@ class Game {
     this.zim = setup.zim;
     this.serviceManager = new GameServiceManager(this);
 
+    this.authUser = setup.authUser;
+
     this.data = null;
     this.passageArray = null;
     this.tokenizedArray = null;
@@ -39,6 +41,7 @@ class Game {
     // game logic variables
     // Story is whatever the player chose on the picker this session.
     this.currentStoryId = getSelectedStoryId();
+    this.currentGameId = null;
     this.gameTime = 0;
     this.isInputLocked = false;
 
@@ -57,7 +60,8 @@ class Game {
     this.EARNED_COINS = 0;
 
     // Player
-    this.player = "Jack";
+    this.playerId = this.authUser.id;
+    this.player = this.authUser.name;
     this.playerCoins = 0;
     this.totalScore = 0;
     this.maxScore = 0;
@@ -93,6 +97,7 @@ class Game {
   //----------------------------------
 
   async start() {
+    console.log("Player Info: ", this.player);
     this.hasGameStarted = false; // Reset explicitly on menu returns
     this.landingPage = new LandingPage(this).createLandingPage();
 
@@ -109,10 +114,10 @@ class Game {
       try {
         // 🛠️ FIXED: Flow control intercepts language configuration on click execution
         if (this.LANGUAGE === "SA") {
-          console.log("Loading Sanskrit pipeline data assets...");
+          // console.log("Loading Sanskrit pipeline data assets...");
           await this.serviceManager.getPassageByIdSanskrit();
         } else {
-          console.log("Loading English pipeline data assets...");
+          // console.log("Loading English pipeline data assets...");
           await this.serviceManager.getPassageByIdEnglish();
         }
 
@@ -134,19 +139,17 @@ class Game {
     this.isInputLocked = true;
     this.messageBar?.clearActiveMessages?.();
 
-    [
-      this.findNounsGame,
-      this.findVerbGame,
-      this.findAdjectiveGame,
-    ].forEach((activeGame) => {
-      activeGame?.timer?.stop?.();
-      if (activeGame?.controlPanel?.hintAutoCloseTimer) {
-        clearTimeout(activeGame.controlPanel.hintAutoCloseTimer);
-        activeGame.controlPanel.hintAutoCloseTimer = null;
-      }
-      activeGame?.messageBar?.clearActiveMessages?.();
-      activeGame?.passageDisplay?.destroy?.();
-    });
+    [this.findNounsGame, this.findVerbGame, this.findAdjectiveGame].forEach(
+      (activeGame) => {
+        activeGame?.timer?.stop?.();
+        if (activeGame?.controlPanel?.hintAutoCloseTimer) {
+          clearTimeout(activeGame.controlPanel.hintAutoCloseTimer);
+          activeGame.controlPanel.hintAutoCloseTimer = null;
+        }
+        activeGame?.messageBar?.clearActiveMessages?.();
+        activeGame?.passageDisplay?.destroy?.();
+      },
+    );
 
     this.stage.removeAllChildren();
     this.stage.update();

@@ -7,6 +7,13 @@ const {
 } = require("../controller/wordhuntcontroller");
 
 const {
+  initGame,
+  getAll,
+  addStoryInfo,
+  addGameData,
+} = require("../controller/gamecontroller");
+
+const {
   getWordHuntLeaderboard,
   getPlayerRank,
   getLeaderboardStats,
@@ -19,14 +26,18 @@ wordHuntRouter.get("/POSSanskrit", findPOSSanskrit);
 // Leaderboard Routes
 wordHuntRouter.get("/leaderboard", getWordHuntLeaderboard);
 
-wordHuntRouter.get(
-  "/leaderboard/stats",
-  getLeaderboardStats
-);
+wordHuntRouter.get("/leaderboard/stats", getLeaderboardStats);
 
-wordHuntRouter.get(
-  "/leaderboard/player/:playerName",
-  getPlayerRank
-);
+wordHuntRouter.get("/leaderboard/player/:playerName", getPlayerRank);
+
+// GAME ROUTES
+
+//POST ROUTES
+wordHuntRouter.post("/initGame", initGame);
+wordHuntRouter.post("/addStoryInfo", addStoryInfo);
+wordHuntRouter.post("/addGameData", addGameData);
+
+//GET ROUTES
+wordHuntRouter.get("/allGameData", getAll);
 
 module.exports = wordHuntRouter;

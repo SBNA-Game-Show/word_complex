@@ -2,6 +2,7 @@ import ControlPanel from "../UI/Panel";
 import ProgressBar from "../UI/ProgressBar";
 import Definitions from "./Definitions";
 import Helper from "./Helper";
+import { GameInfo } from "../DTO/GameInfo";
 
 /**
  * The following class is responsible for setting game time
@@ -14,6 +15,7 @@ class GameManager {
     this.progressBar = new ProgressBar(game);
     this.definitions = new Definitions(game);
     this.controlPanel = new ControlPanel(game);
+    this.service = this.game.serviceManager;
 
     this.wordTypes = null;
     this.totalWordsToFind = 0;
@@ -86,6 +88,16 @@ class GameManager {
     // console.log(
     //   `[Hint Config Loaded] Allowed: ${this.game.allowedHints} | Penalty: ${this.game.hintPenalty}`,
     // );
+  }
+
+  calculateHints(wordCount) {
+    const tenWordBlocks = Math.floor(wordCount / 10);
+    const baseHints = this.game.BASE_HINTS ?? 1;
+
+    if (tenWordBlocks > 0) {
+      return baseHints + tenWordBlocks;
+    }
+    return baseHints;
   }
 
   setInitialGameTime(gameType) {
@@ -203,6 +215,59 @@ class GameManager {
     }
 
     return 0;
+  }
+
+  async addGameData(bestTime, hintsUsed, foundWords, gameInstance) {
+    try {
+      if (!this.verifyPlayer()) {
+        console.log(
+          "Player is Guest. Not Writing Game Information to Database",
+        );
+        return null;
+      }
+
+      const response = await this.writeGameInformation(
+        bestTime,
+        hintsUsed,
+        foundWords,
+        gameInstance,
+      );
+
+      return response;
+    } catch (e) {
+      throw new Error(e.message);
+    }
+  }
+
+  verifyPlayer() {
+    return this.game.player !== "Guest";
+  }
+
+  async writeGameInformation(bestTime, hintsUsed, foundWords, gameInstance) {
+    try {
+      const gameInfo = new GameInfo(
+        this.game.currentGameId,
+        this.game.currentStoryId,
+        this.game.playerId,
+        this.game.player,
+        bestTime,
+        this.game.EARNED_COINS,
+        this.game.TOTAL_SCORE,
+        hintsUsed,
+        foundWords,
+        gameInstance,
+      );
+
+      const response = await this.service.writeGameInfo(gameInfo);
+      console.log("Response FROM MAnager: ", response);
+
+      this.game.EARNED_COINS = 0;
+      this.game.TOTAL_SCORE = 0;
+
+      return response;
+    } catch (e) {
+      throw new Error(e.message);
+    }
   }
 }
 

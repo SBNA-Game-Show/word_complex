@@ -22,7 +22,21 @@ const getStroyById = async (storyId) => {
 
 const extractRequiredData = (data) => {
   if (!data) {
-    throw new Error("Story data not Found");
+    throw new Error("Story data not found");
+  }
+
+  if (
+    !Array.isArray(data.sanskritVersion) ||
+    data.sanskritVersion.length === 0
+  ) {
+    throw new Error("Sanskrit passage not found");
+  }
+
+  if (
+    !Array.isArray(data.tokenized_sanskrit_version) ||
+    data.tokenized_sanskrit_version.length === 0
+  ) {
+    throw new Error("Tokenized Sanskrit passage not found");
   }
 
   return {
