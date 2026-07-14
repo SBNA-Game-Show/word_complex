@@ -3,11 +3,11 @@ const leaderboardService = require("../service/wordhuntLeaderboardService");
 /**
  * GET /wordhunt/leaderboard
  */
-const getWordHuntLeaderboard = (req, res) => {
+const getWordHuntLeaderboard = async (req,res)=>{
     try {
 
         const leaderboard =
-            leaderboardService.getWordHuntLeaderboard();
+            await leaderboardService.getWordHuntLeaderboard();
 
         res.status(200).json({
             success: true,
@@ -29,12 +29,12 @@ const getWordHuntLeaderboard = (req, res) => {
 /**
  * GET /wordhunt/leaderboard/stats
  */
-const getLeaderboardStats = (req, res) => {
+const getLeaderboardStats = async (req, res) => {
 
     try {
 
         const stats =
-            leaderboardService.getLeaderboardStats();
+            await leaderboardService.getLeaderboardStats();
 
         res.status(200).json({
             success: true,
@@ -57,14 +57,14 @@ const getLeaderboardStats = (req, res) => {
 /**
  * GET /wordhunt/leaderboard/player/:playerName
  */
-const getPlayerRank = (req, res) => {
+const getPlayerRank = async (req, res) => {
 
     try {
 
         const { playerName } = req.params;
 
         const player =
-            leaderboardService.getPlayerRank(playerName);
+            await leaderboardService.getPlayerRank(playerName);
 
         if (!player) {
 
