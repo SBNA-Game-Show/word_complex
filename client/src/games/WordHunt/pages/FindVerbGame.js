@@ -104,7 +104,7 @@ class FindVerbGame {
     };
 
     this.messageBar.onRestart = () => {
-      console.log("Restart Triggered");
+      // console.log("Restart Triggered");
       this.gameOver = false;
       this.timer.stop(); // Completely clear loop state first
 
@@ -193,19 +193,32 @@ class FindVerbGame {
         this.progressBar.setTime(minutes, seconds);
       },
 
-      () => {
-        console.log("TIMEOUT CALLBACK");
+      async () => {
+        // console.log("TIMEOUT CALLBACK");
         // State Guard to block popups firing if already won/exited
         if (this.gameOver || !this.game.hasGameStarted) {
           return;
         }
         this.gameOver = true;
+        const elapsedMs = this.timer.getElapsedTime();
+        const minutes = Math.floor(elapsedMs / 60000);
+        const seconds = Math.floor((elapsedMs % 60000) / 1000);
+        const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
         this.game.isInputLocked = true;
         this.progressBar.showTimesUp();
         this.game.TOTAL_SCORE += this.score;
         this.playerInformation.update(this.score);
 
         this.messageBar.showTimeOverMessage(this.timeUpKey);
+        if (this.foundWords.length >= 2) {
+          const res = await this.manager.writeGameInformation(
+            completionTime,
+            this.hintsUsed,
+            this.foundWords.length,
+            this.game.verbGameKey,
+          );
+          // console.log(res);
+        }
         emit("hint", { text: this.timeUpKey });
 
         this.game.stage.update();
@@ -278,7 +291,7 @@ class FindVerbGame {
   //-----------------------------------
   // WIN
   //-----------------------------------
-  checkWin() {
+  async checkWin() {
     if (this.foundWords.length === this.verbs.length) {
       this.gameOver = true;
       this.timer.stop(); // Stop the loop ticking down inside the code immediately
@@ -300,9 +313,17 @@ class FindVerbGame {
       this.game.EARNED_COINS += earnedCoins;
 
       this.playerInformation.update(this.score);
+      this.game.isInputLocked = true;
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
       this.messageBar.showWinningMessage(this.game.verbGameKey, completionTime);
+      const res = await this.manager.writeGameInformation(
+        completionTime,
+        this.hintsUsed,
+        this.foundWords.length,
+        this.game.verbGameKey,
+      );
+      s;
       this.game.hasGameStarted = false;
       emit("complete");
     }
