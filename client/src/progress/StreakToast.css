@@ -1,0 +1,43 @@
+/* Daily-streak reward toast — pins to the top-center under the navbar and
+   pops in using the app's shared pop-in feel. */
+.streak-toast {
+  position: fixed;
+  top: 78px;
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 1.15rem;
+  color: var(--ink);
+  text-align: left;
+  background: linear-gradient(135deg, #fff5cf, #ffe08a);
+  border: 1px solid rgba(196, 130, 14, 0.25);
+  border-radius: 999px;
+  box-shadow: 0 14px 30px rgba(196, 130, 14, 0.28);
+  cursor: pointer;
+  animation: pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.streak-toast-flame {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.streak-toast-copy {
+  display: grid;
+  gap: 0.1rem;
+  line-height: 1.15;
+}
+
+.streak-toast-copy strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.streak-toast-copy span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}

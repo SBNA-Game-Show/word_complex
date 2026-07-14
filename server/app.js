@@ -10,6 +10,7 @@ const meaningBridge = require("./meaning-bridge/routes/meaningbridgeroutes");
 const leaderboard = require("./leaderboard/routes/leaderboardRoutes");
 const stories = require("./stories/routes/storiesroutes");
 const storySets = require("./storySets/routes/storySetsRoutes");
+const progress = require("./progress/routes/progressRoutes");
 
 // Middleware
 const requireAdmin = require("./middleware/requireAdmin");
@@ -31,6 +32,7 @@ app.use("/api/v1/wordHunt", wordHunt);
 app.use("/api/v1/meaningBridge", meaningBridge);
 app.use("/api/v1/leaderboard", leaderboard);
 app.use("/api/v1/stories", stories);
+app.use("/api/v1/progress", progress);
 
 // Admin-only routes.
 // TEMP (2026-07-08): requireAdmin check disabled until the auth system is decided —

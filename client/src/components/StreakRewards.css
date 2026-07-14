@@ -1,0 +1,277 @@
+/* Streak rewards screen — the ladder you open from the streak pill. Reuses the
+   shared .game-header / .back-button navbar; everything else is namespaced sr-. */
+
+.streak-rewards {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: clamp(1rem, 2.4vw, 1.8rem);
+  width: 100%;
+  min-height: 100vh;
+  padding: clamp(5.5rem, 8vw, 7rem) clamp(1.2rem, 3vw, 2.4rem)
+    clamp(1.6rem, 3vw, 2.6rem);
+  overflow-x: hidden;
+}
+
+.streak-rewards > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Streak / stars readout on the right of the navbar. */
+.sr-stats {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.sr-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--panel);
+  border-radius: 999px;
+  box-shadow: var(--shadow-soft);
+}
+
+.sr-stat.alt {
+  background: linear-gradient(135deg, #fff5cf, #ffe08a);
+}
+
+.sr-intro {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: center;
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.sr-intro h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sr-intro-text {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.sr-ladder {
+  align-self: start;
+  width: 100%;
+  max-width: 940px;
+  margin: 0 auto;
+}
+
+.sr-loading {
+  text-align: center;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* Five across on desktop, so days 5/10/15/20 line up down the right edge and
+   both gift days land at the end of their row. Drops to two on phones. */
+.sr-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(0.7rem, 1.4vw, 1.1rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 640px) {
+  .sr-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* One day on the ladder. Every tile is the same size — milestones stand out by
+   colour and a ribbon, not by spanning, so the grid stays even. */
+.sr-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 150px;
+  padding: 1rem 0.7rem;
+  text-align: center;
+  background: linear-gradient(180deg, #ffffff, #f6f8ff);
+  border: 1.5px solid rgba(29, 43, 102, 0.06);
+  border-radius: 22px;
+  box-shadow:
+    var(--shadow-soft),
+    0 8px 0 rgba(29, 43, 102, 0.06);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+  animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sr-day:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    var(--shadow-soft),
+    0 12px 0 rgba(29, 43, 102, 0.06);
+}
+
+.sr-day-num {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* A crisp gradient star instead of an emoji, so it stays sharp and on-brand. */
+.sr-star {
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(160deg, var(--sunshine), var(--tangerine));
+  clip-path: polygon(
+    50% 2%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+  filter: drop-shadow(0 3px 2px rgba(196, 130, 14, 0.28));
+}
+
+.sr-day-reward {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* Already earned: warm sunshine fill and a check in the corner. */
+.sr-day.is-earned {
+  background: linear-gradient(180deg, #fff3c9, #ffe08a);
+  border-color: rgba(196, 130, 14, 0.28);
+  box-shadow:
+    var(--shadow-soft),
+    0 8px 0 rgba(196, 130, 14, 0.18);
+}
+
+.sr-check {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--leaf);
+  border-radius: 50%;
+  box-shadow: 0 3px 0 rgba(31, 116, 75, 0.32);
+}
+
+/* Not reached yet: cool and dimmed, star drained of colour. */
+.sr-day.is-locked {
+  opacity: 0.9;
+  box-shadow: var(--shadow-soft);
+}
+
+.sr-day.is-locked .sr-star {
+  background: linear-gradient(160deg, #dfe3f0, #c7cde0);
+  filter: none;
+}
+
+.sr-day.is-locked .sr-day-reward {
+  color: var(--ink-soft);
+}
+
+/* Today: bright ring, a lift, and a soft glow. */
+.sr-day.is-today {
+  border-color: var(--sunshine);
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow:
+    var(--shadow-soft),
+    0 10px 0 rgba(196, 130, 14, 0.18),
+    0 0 0 4px rgba(255, 216, 77, 0.4);
+}
+
+/* Milestone gift days (10 and 20) — same size, themed to the buddy's colours. */
+.sr-day--gift {
+  border-color: color-mix(in srgb, var(--c, #7aa8ff) 50%, transparent);
+}
+
+.sr-day--gift.is-earned {
+  background: linear-gradient(160deg, var(--c, #7aa8ff), var(--c2, #3155c7));
+  border-color: transparent;
+  box-shadow:
+    var(--shadow-soft),
+    0 8px 0 color-mix(in srgb, var(--c2, #3155c7) 45%, rgba(0, 0, 0, 0.12));
+}
+
+.sr-day--gift.is-earned .sr-day-num,
+.sr-day--gift.is-earned .sr-gift-name,
+.sr-day--gift.is-earned .sr-day-reward {
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+
+.sr-gift-ribbon {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--c, #7aa8ff), var(--c2, #3155c7));
+  border-radius: 999px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.sr-gift-stage {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+.sr-gift-img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.22));
+}
+
+.sr-day--gift.is-locked .sr-gift-img {
+  filter: grayscale(0.85) opacity(0.75);
+}
+
+.sr-gift-name {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--ink);
+}

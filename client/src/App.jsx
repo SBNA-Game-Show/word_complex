@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { AuthProvider, LoginPage, useAuth } from "./auth";
+import { ProgressProvider, StreakToast } from "./progress";
 import VideoBackground from "./components/VideoBackground";
 import Launcher from "./components/Launcher";
 import GameScreen from "./components/GameScreen";
 import HowToPlay from "./components/HowToPlay";
 import AboutPage from "./components/AboutPage";
 import CharacterSelect from "./components/CharacterSelect";
+import StreakRewards from "./components/StreakRewards";
 import StoryPicker from "./storyPicker/StoryPicker";
 import {
   getSelectedStoryId,
@@ -18,21 +20,28 @@ import { getSceneConfig } from "./scenes/sceneConfig";
 import { usePreloadImages } from "./preloadImages";
 import "./App.css";
 import AdminPage from "./components/AdminPage";
+import TokenizedEditor from "./components/TokenizedEditor";
 
 const CHARACTER_STORAGE_KEY = "wc:selectedCharacter";
 
 export default function App() {
   return (
     <AuthProvider>
-      <AuthenticatedApp />
+      <ProgressProvider>
+        <AuthenticatedApp />
+      </ProgressProvider>
     </AuthProvider>
   );
 }
 
 function AuthenticatedApp() {
   const { isAuthenticated, isInitializing } = useAuth();
-  const isAdminRoute =
-    typeof window !== "undefined" && window.location.pathname === "/admin";
+  // const isAdminRoute =
+  //   typeof window !== "undefined" && window.location.pathname === "/admin";
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+    const isAdminRoute = pathname === "/admin";
+    const isTokenizedEditorRoute =
+      pathname === "/tokenized-editor";
   const [screen, setScreen] = useState("launcher");
   const [activeGameId, setActiveGameId] = useState("sentence-builder");
   const [selectedCharacterId, setSelectedCharacterId] = useState(() => {
@@ -74,6 +83,9 @@ function AuthenticatedApp() {
   // Admins skip the game shell entirely (after all hooks have run).
   if (isAdminRoute) {
     return <AdminPage />;
+  }
+  if (isTokenizedEditorRoute) {
+    return <TokenizedEditor />;
   }
 
   function openGame(gameId) {
@@ -128,12 +140,14 @@ function AuthenticatedApp() {
       }`}
     >
       <VideoBackground />
+      {/* Hold the daily-streak celebration until the player is past the story
+          gate, so it lands on the launcher after they pick a story rather than
+          on the picker itself. The award is already waiting in context. */}
+      {isAuthenticated && selectedStoryId && <StreakToast />}
       {isInitializing ? (
         <div className="auth-splash" role="status" aria-live="polite">
-          <span className="auth-splash-logo" aria-hidden="true">
-            W
-          </span>
-          <p>Loading...</p>
+          <p className="splash-word">Word Complex</p>
+          <p className="splash-sub">Getting your adventure ready…</p>
         </div>
       ) : !isAuthenticated ? (
         <LoginPage />
@@ -161,10 +175,13 @@ function AuthenticatedApp() {
           onChooseCharacter={openCharacters}
           onChooseStory={() => setScreen("story")}
           onLeaderboard={() => setScreen("leaderboard")}
+          onOpenStreak={() => setScreen("streak")}
           isZooming={transitionPhase === "zoom-in"}
         />
       ) : screen === "leaderboard" ? (
         <LeaderboardPage onBack={() => setScreen("launcher")} />
+      ) : screen === "streak" ? (
+        <StreakRewards onBack={() => setScreen("launcher")} />
       ) : screen === "characters" ? (
         <CharacterSelect
           selectedId={selectedCharacterId}
