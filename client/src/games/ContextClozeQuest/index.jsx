@@ -994,7 +994,9 @@ export default createZimGame({
             emit("wrong");
           }
 
-          if (filledCount === totalQuestions && authUser?.id) {
+          // Guests are excluded from the leaderboard (anonymous users still
+          // have a UID, so the id check alone doesn't stop them).
+          if (filledCount === totalQuestions && authUser?.id && !authUser.isGuest) {
             const elapsedSeconds =
               timeLimits[selectedDifficulty] - Math.max(0, remainingTime);
 

@@ -6,13 +6,19 @@
  *   getLeaderboard({ game, limit })  -> the top N rows for a board
  *   getPlayerRank({ uuid, game })    -> a single player's position ("you're #12")
  *
- * "Master" sorts by masterScore; a game board sorts by that game's score, with
- * bestTime as the tiebreaker (faster wins).
+ * "Master" is FEDERATED (see masterLeaderboardService.js): built by merging
+ * each game's own top-X function, normalized to 0–100 per game. Game boards
+ * still read the legacy `players` collection until each game's own endpoint
+ * is wired in on the frontend.
  * --------------------------------------------------------------------------
  */
 
 const { getPlayersCollection } = require("../db/playersCollection");
 const { GAME_KEYS, MASTER_KEY } = require("../leaderboardConfig");
+const {
+  getMasterLeaderboard,
+  getMasterPlayerRank,
+} = require("./masterLeaderboardService");
 
 /**
  * Translate a board name into how we sort/read it.
@@ -56,6 +62,10 @@ const toRow = (doc, gamePath, rank) => {
  * @param {number} [args.limit=100]      How many rows to return (1-500).
  */
 const getLeaderboard = async ({ game = MASTER_KEY, limit = 100 } = {}) => {
+  if (game === MASTER_KEY) {
+    return getMasterLeaderboard({ limit });
+  }
+
   const { sort, gamePath } = resolveBoard(game);
   const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 500);
 
@@ -78,6 +88,10 @@ const readScoreField = (doc, scoreField) =>
  */
 const getPlayerRank = async ({ uuid, game = MASTER_KEY } = {}) => {
   if (!uuid) throw new Error("uuid is required");
+  if (game === MASTER_KEY) {
+    return getMasterPlayerRank({ uuid });
+  }
+
   const { scoreField } = resolveBoard(game);
 
   const players = await getPlayersCollection();
