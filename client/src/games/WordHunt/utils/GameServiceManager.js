@@ -6,6 +6,7 @@ import {
 import GameManager from "./GameManager";
 
 import { getStorySets } from "../../../services/admin/StorySetService";
+import { StoryInfo } from "../DTO/StoryInfo";
 /**
  * The following class will be responsible for connecting with services to make api calls to retrieve data from database
  */
@@ -186,10 +187,39 @@ class GameServiceManager {
       // console.log("Active Game:", activeStorySet);
       // console.log("Game Id:", this.game.currentGameId);
 
-      return this.game.currentGameId;
+      await this.writeStoryInfo();
+
+      return null;
     } catch (error) {
       console.error("Failed to extract game id:", error);
       throw error;
+    }
+  }
+
+  async writeStoryInfo() {
+    try {
+      if (this.nounCount <= 0 || this.verbCount <= 0 || this.adjCount <= 0) {
+        throw new Error("Noun Count or Verb count or Adjective count is Null");
+      }
+      if (this.nounHint < 1 || this.verbHint < 1 || this.adjHint < 1) {
+        throw new Error("Noun Hint or Verb Hint or Adjective Hint is Null");
+      }
+
+      const storyInfo = new StoryInfo(
+        this.game.currentGameId,
+        this.game.currentStoryId,
+        this.nounCount,
+        this.nounHint,
+        this.verbCount,
+        this.verbHint,
+        this.adjCount,
+        this.adjHint,
+      );
+
+      const response = await writeStoryInformation(storyInfo);
+      console.log(response);
+    } catch (e) {
+      throw error(e.message);
     }
   }
 }

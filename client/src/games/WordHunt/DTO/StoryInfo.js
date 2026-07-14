@@ -1,4 +1,4 @@
-class StoryInfo {
+export class StoryInfo {
   constructor(
     gameId,
     storyId,
@@ -19,5 +19,3 @@ class StoryInfo {
     this.adjGameHints = adjGameHints;
   }
 }
-
-module.exports = StoryInfo;
