@@ -114,10 +114,10 @@ class Game {
       try {
         // 🛠️ FIXED: Flow control intercepts language configuration on click execution
         if (this.LANGUAGE === "SA") {
-          console.log("Loading Sanskrit pipeline data assets...");
+          // console.log("Loading Sanskrit pipeline data assets...");
           await this.serviceManager.getPassageByIdSanskrit();
         } else {
-          console.log("Loading English pipeline data assets...");
+          // console.log("Loading English pipeline data assets...");
           await this.serviceManager.getPassageByIdEnglish();
         }
 

@@ -303,7 +303,7 @@ class FindNounsGame {
   //-----------------------------------
   // WIN
   //-----------------------------------
-  checkWin() {
+  async checkWin() {
     console.log("NOUN CHECKWIN", this.foundWords.length, this.nouns.length);
     if (this.foundWords.length === this.nouns.length) {
       this.gameOver = true;
@@ -334,6 +334,13 @@ class FindNounsGame {
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
       this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
+      const res = await this.manager.writeGameInformation(
+        completionTime,
+        this.hintsUsed,
+        this.foundWords.length,
+        this.game.nounGameKey,
+      );
+      console.log(res);
       this.game.hasGameStarted = false;
       emit("complete");
     }

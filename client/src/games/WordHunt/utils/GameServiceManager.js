@@ -2,6 +2,7 @@ import {
   retrieveEnglishVersion,
   retrieveSanskritVersion,
   writeStoryInformation,
+  writeGameInformation,
 } from "../../../services/wordHuntService";
 import GameManager from "./GameManager";
 
@@ -187,9 +188,9 @@ class GameServiceManager {
       // console.log("Active Game:", activeStorySet);
       // console.log("Game Id:", this.game.currentGameId);
 
-      await this.writeStoryInfo();
+      const write_response = await this.writeStoryInfo();
 
-      return null;
+      return write_response;
     } catch (error) {
       console.error("Failed to extract game id:", error);
       throw error;
@@ -217,7 +218,16 @@ class GameServiceManager {
       );
 
       const response = await writeStoryInformation(storyInfo);
-      console.log(response);
+      return response;
+    } catch (e) {
+      throw error(e.message);
+    }
+  }
+
+  async writeGameInfo(gameInfo) {
+    try {
+      const response = await writeGameInformation(gameInfo);
+      return response;
     } catch (e) {
       throw error(e.message);
     }
