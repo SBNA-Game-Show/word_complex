@@ -16,7 +16,7 @@
 
 const {
     getAllGameInfo,
-} = require("../repository/wordhuntRepo");
+} = require("../repository/wordhuntrepo");
 /**
  * Converts "m:ss" or "mm:ss" into total seconds.
  * Example:
