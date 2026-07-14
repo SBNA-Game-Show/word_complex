@@ -1,9 +1,18 @@
 const express = require("express");
 const storiesRouter = express.Router();
 
-const { getActiveStories } = require("../controller/storiescontroller");
+const {
+  getActiveStories,
+  getAllTokenizedStories,
+  updateTokenizedStory,
+} = require("../controller/storiescontroller");
 
-// Public read: the story picker fetches the admin-selected stories from here.
+// Story Picker
 storiesRouter.get("/active", getActiveStories);
+
+// Tokenized Story Editor
+storiesRouter.get("/tokenized", getAllTokenizedStories);
+
+storiesRouter.put( "/tokenized/:id",  updateTokenizedStory);
 
 module.exports = storiesRouter;
