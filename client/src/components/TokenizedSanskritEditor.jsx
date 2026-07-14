@@ -30,6 +30,8 @@ export default function TokenizedSanskritEditor({
                 return "#ffe5cc";      // Light Orange
             case "PRON":
                 return "#fde2f3";      // Light Pink
+            case "SCONJ":
+                return "#d1f2eb"; // Light Aqua
             default:
                 return "#ffffff";      // white
         }
@@ -280,6 +282,8 @@ const addSentence = (sentenceIndex) => {
                                 ? "2px solid #fd7e14"
                                 : word.upos === "PRON"
                                 ? "2px solid #e83e8c"
+                                : word.upos === "SCONJ"
+                                ? "2px solid #1565c0"
                                 : "1px solid #ddd",
                         borderRadius: "10px",
                         padding: "15px",
@@ -307,6 +311,8 @@ const addSentence = (sentenceIndex) => {
                                     ? "#d35400"
                                     : word.upos === "PRON"
                                     ? "#c2185b"
+                                    : word.upos === "SCONJ"
+                                    ? "#1565c0"
                                     : "#1f2b6b",
                         }}
                     >
