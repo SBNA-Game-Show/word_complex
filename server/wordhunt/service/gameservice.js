@@ -3,6 +3,7 @@ const {
   getAllGameInfo,
   initializeStoryInfo,
   registerGameData,
+  retrievePlayerInfoByStory,
 } = require("../repository/wordhuntrepo");
 
 const GameData = require("../models/GameData");
@@ -103,10 +104,36 @@ const insertGameData = async (
     throw new Error(e.message);
   }
 };
+const getPlayerInfoByStory = async (gameId, storyId, playerId) => {
+  try {
+    if (!gameId) {
+      throw new Error("Game Id is Required");
+    }
+    if (!storyId) {
+      throw new Error("Story Id is Required");
+    }
+    if (!playerId) {
+      throw new Error("Player Id is Required");
+    }
+
+    const response = await retrievePlayerInfoByStory(gameId, storyId, playerId);
+
+    const games = response.games;
+
+    const nounData = games.Noun;
+
+    console.log(nounData);
+
+    return response;
+  } catch (e) {
+    throw new Error(e.message);
+  }
+};
 
 module.exports = {
   initWordHuntRepo,
   retrieveAllMetaData,
   insertStroyInfo,
   insertGameData,
+  getPlayerInfoByStory,
 };
