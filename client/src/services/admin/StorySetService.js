@@ -3,9 +3,7 @@
 // Render Backend API
 // ======================================================
 
-const API_BASE =
-    import.meta.env.VITE_API_URL ||
-    "http://localhost:5000/api/v1";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 const STORY_SET_API = `${API_BASE}/admin/storySets`;
 
@@ -13,18 +11,16 @@ const STORY_SET_API = `${API_BASE}/admin/storySets`;
  * Get all Story Sets
  */
 export async function getStorySets() {
+  const response = await fetch(STORY_SET_API);
 
-    const response = await fetch(STORY_SET_API);
+  const result = await response.json();
+  console.log("Story Set Results: ", result);
 
-    const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to load Story Sets");
+  }
 
-    if (!response.ok) {
-        throw new Error(
-            result.message || "Failed to load Story Sets"
-        );
-    }
-
-    return result;
+  return result;
 }
 
 /**
@@ -34,108 +30,75 @@ export async function getStorySets() {
  * storyIds: array of story ids
  */
 export async function createStorySet(name, storyIds) {
+  const response = await fetch(STORY_SET_API, {
+    method: "POST",
 
-    const response = await fetch(STORY_SET_API, {
+    headers: {
+      "Content-Type": "application/json",
+    },
 
-        method: "POST",
+    body: JSON.stringify({
+      name,
 
-        headers: {
-            "Content-Type": "application/json",
-        },
+      storyIds,
+    }),
+  });
 
-        body: JSON.stringify({
+  const result = await response.json();
 
-            name,
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to create Story Set");
+  }
 
-            storyIds,
-
-        }),
-
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-
-        throw new Error(
-            result.message || "Failed to create Story Set"
-        );
-
-    }
-
-    return result;
+  return result;
 }
 
 /**
  * Activate Story Set
  */
 export async function activateStorySet(setId) {
+  const response = await fetch(
+    `${STORY_SET_API}/active`,
 
-    const response = await fetch(
+    {
+      method: "PUT",
 
-        `${STORY_SET_API}/active`,
+      headers: {
+        "Content-Type": "application/json",
+      },
 
-        {
+      body: JSON.stringify({
+        setId,
+      }),
+    },
+  );
 
-            method: "PUT",
+  const result = await response.json();
 
-            headers: {
-                "Content-Type": "application/json",
-            },
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to activate Story Set");
+  }
 
-            body: JSON.stringify({
-
-                setId,
-
-            }),
-
-        }
-
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-
-        throw new Error(
-
-            result.message || "Failed to activate Story Set"
-
-        );
-
-    }
-
-    return result;
+  return result;
 }
 
 /**
  * Delete Story Set
  */
 export async function deleteStorySet(setId) {
+  const response = await fetch(
+    `${STORY_SET_API}/${setId}`,
 
-    const response = await fetch(
+    {
+      method: "DELETE",
+    },
+  );
 
-        `${STORY_SET_API}/${setId}`,
+  const result = await response.json();
 
-        {
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to delete Story Set");
+  }
 
-            method: "DELETE",
-
-        }
-
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-
-        throw new Error(
-
-            result.message || "Failed to delete Story Set"
-
-        );
-
-    }
-
-    return result;
+  return result;
 }

@@ -39,6 +39,7 @@ class Game {
     // game logic variables
     // Story is whatever the player chose on the picker this session.
     this.currentStoryId = getSelectedStoryId();
+    this.currentGameId = null;
     this.gameTime = 0;
     this.isInputLocked = false;
 
@@ -134,19 +135,17 @@ class Game {
     this.isInputLocked = true;
     this.messageBar?.clearActiveMessages?.();
 
-    [
-      this.findNounsGame,
-      this.findVerbGame,
-      this.findAdjectiveGame,
-    ].forEach((activeGame) => {
-      activeGame?.timer?.stop?.();
-      if (activeGame?.controlPanel?.hintAutoCloseTimer) {
-        clearTimeout(activeGame.controlPanel.hintAutoCloseTimer);
-        activeGame.controlPanel.hintAutoCloseTimer = null;
-      }
-      activeGame?.messageBar?.clearActiveMessages?.();
-      activeGame?.passageDisplay?.destroy?.();
-    });
+    [this.findNounsGame, this.findVerbGame, this.findAdjectiveGame].forEach(
+      (activeGame) => {
+        activeGame?.timer?.stop?.();
+        if (activeGame?.controlPanel?.hintAutoCloseTimer) {
+          clearTimeout(activeGame.controlPanel.hintAutoCloseTimer);
+          activeGame.controlPanel.hintAutoCloseTimer = null;
+        }
+        activeGame?.messageBar?.clearActiveMessages?.();
+        activeGame?.passageDisplay?.destroy?.();
+      },
+    );
 
     this.stage.removeAllChildren();
     this.stage.update();

@@ -88,6 +88,16 @@ class GameManager {
     // );
   }
 
+  calculateHints(wordCount) {
+    const tenWordBlocks = Math.floor(wordCount / 10);
+    const baseHints = this.game.BASE_HINTS ?? 1;
+
+    if (tenWordBlocks > 0) {
+      return baseHints + tenWordBlocks;
+    }
+    return baseHints;
+  }
+
   setInitialGameTime(gameType) {
     const targetCount = this.getTargetWordCount(gameType);
 

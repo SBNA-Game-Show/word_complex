@@ -1,8 +1,11 @@
 import {
   retrieveEnglishVersion,
   retrieveSanskritVersion,
+  writeStoryInformation,
 } from "../../../services/wordHuntService";
 import GameManager from "./GameManager";
+
+import { getStorySets } from "../../../services/admin/StorySetService";
 /**
  * The following class will be responsible for connecting with services to make api calls to retrieve data from database
  */
@@ -12,6 +15,16 @@ class GameServiceManager {
     this.manager = new GameManager(game);
     this.storyId = null;
     this.data = null;
+
+    // Story Data
+    this.nounCount = null;
+    this.nounHint = null;
+
+    this.verbCount = null;
+    this.verbHint = null;
+
+    this.adjCount = null;
+    this.adjHint = null;
   }
 
   // English Version
@@ -19,12 +32,12 @@ class GameServiceManager {
   async getPassageByIdEnglish() {
     try {
       this.storyId = this.game.currentStoryId;
-      console.log("Story Id: ", this.storyId);
       const response = await retrieveEnglishVersion(this.storyId);
       console.log("RESPONSE:", response);
 
       this.data = response;
       this.processDataEnglish();
+      await this.extractGameId();
 
       return response;
     } catch (error) {
@@ -45,7 +58,13 @@ class GameServiceManager {
     this.game.tokenizedArray = this.data.tokenizedPassage;
     // console.log("Tokenized Array : ", this.tokenizedArray);
     this.game.wordTypes = this.splitPOSByTypeEnglish();
-    // console.log("Word Types:", this.wordTypes);
+    console.log("Word Types:", this.game.wordTypes);
+    this.nounCount = this.game.wordTypes.nouns.length;
+    this.verbCount = this.game.wordTypes.verbs.length;
+    this.adjCount = this.game.wordTypes.adjectives.length;
+    this.nounHint = this.manager.calculateHints(this.nounCount);
+    this.verbHint = this.manager.calculateHints(this.verbCount);
+    this.adjHint = this.manager.calculateHints(this.adjCount);
   }
 
   splitPOSByTypeEnglish() {
@@ -112,7 +131,7 @@ class GameServiceManager {
     const verbSet = new Set();
     const adjSet = new Set();
 
-    console.log("tokenizedArray =", this.game.tokenizedArray);
+    // console.log("tokenizedArray =", this.game.tokenizedArray);
 
     this.game.tokenizedArray.forEach((sentence) => {
       // Ensure the sentence structure is valid before looping
@@ -144,6 +163,34 @@ class GameServiceManager {
       verbs: Array.from(verbSet),
       adjectives: Array.from(adjSet),
     };
+  }
+
+  async extractGameId() {
+    try {
+      const response = await getStorySets();
+
+      if (!response || !Array.isArray(response.data)) {
+        throw new Error("Invalid response from getStorySets()");
+      }
+
+      const activeStorySet = response.data.find(
+        (storySet) => storySet.isActive,
+      );
+
+      if (!activeStorySet) {
+        throw new Error("No active game found");
+      }
+
+      this.game.currentGameId = activeStorySet._id;
+
+      // console.log("Active Game:", activeStorySet);
+      // console.log("Game Id:", this.game.currentGameId);
+
+      return this.game.currentGameId;
+    } catch (error) {
+      console.error("Failed to extract game id:", error);
+      throw error;
+    }
   }
 }
 

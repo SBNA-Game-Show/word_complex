@@ -196,6 +196,7 @@ const retrievePlayerInfoByStory = async (gameId, storyId, playerName) => {
   const player = story.gameInfo.find(
     (player) => player.playerName === playerName,
   );
+  console.log(player);
 
   if (!player) {
     throw new Error("No Player Found By Given Name");

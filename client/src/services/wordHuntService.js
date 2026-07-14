@@ -53,4 +53,30 @@ export const retrieveSanskritVersion = async (storyId) => {
   }
 };
 
-export default { retrieveEnglishVersion, retrieveSanskritVersion };
+export const writeStoryInformation = async (storyInfo) => {
+  try {
+    const response = await fetch(`${API_BASE}/wordHunt/addStoryInfo`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(storyInfo),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to save story information");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to save story information:", error);
+    throw error;
+  }
+};
+
+export default {
+  retrieveEnglishVersion,
+  retrieveSanskritVersion,
+  writeStoryInformation,
+};

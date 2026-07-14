@@ -33,7 +33,7 @@ class ControlPanel {
   }
 
   create() {
-    console.log("Control panel Created");
+    // console.log("Control panel Created");
     const panelWidth = 350;
     const panelHeight = 100;
     const panel = new ZimContainer(

@@ -34,7 +34,7 @@ wordHuntRouter.get("/leaderboard/player/:playerName", getPlayerRank);
 
 //POST ROUTES
 wordHuntRouter.post("/initGame", initGame);
-wordHuntRouter.post("/addGameInfo", addStoryInfo);
+wordHuntRouter.post("/addStoryInfo", addStoryInfo);
 wordHuntRouter.post("/addGameData", addGameData);
 
 //GET ROUTES
