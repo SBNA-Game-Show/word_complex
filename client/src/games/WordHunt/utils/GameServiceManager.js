@@ -107,6 +107,9 @@ class GameServiceManager {
       this.data = response;
       this.processDataSanskrit();
 
+      await this.extractGameId();
+      await this.retrievePlayerInfo();
+
       return response;
     } catch (error) {
       console.error("Failed to load story:", error);
@@ -125,49 +128,83 @@ class GameServiceManager {
 
     this.game.passageArray = this.data.passageArray;
     this.game.tokenizedArray = this.data.tokenizedPassage;
+    // console.log("Tokenized Passage: ", this.game.tokenizedArray);
     this.game.wordTypes = this.splitPOSByTypeSanskrit();
     console.log("Word Types:", this.game.wordTypes);
+    this.nounCount = this.game.wordTypes.nouns.length;
+    this.verbCount = this.game.wordTypes.verbs.length;
+    this.adjCount = this.game.wordTypes.adjectives.length;
+    this.nounHint = this.manager.calculateHints(this.nounCount);
+    this.verbHint = this.manager.calculateHints(this.verbCount);
+    this.adjHint = this.manager.calculateHints(this.adjCount);
   }
 
   splitPOSByTypeSanskrit() {
-    // Use Sets internally to automatically avoid duplicate words
-    const nounSet = new Set();
-    const verbSet = new Set();
-    const adjSet = new Set();
+    const nouns = [];
+    const verbs = [];
+    const adjectives = [];
 
-    // console.log("tokenizedArray =", this.game.tokenizedArray);
+    this.game.tokenizedArray.forEach((item) => {
+      // console.log("ITEM 0 IN TOKENZIED ARRAY:", item.text);
+      if (item.upos === "NOUN") {
+        nouns.push(item.text);
+      }
+      if (item.upos === "VERB") {
+        verbs.push(item.text);
+      }
 
-    this.game.tokenizedArray.forEach((sentence) => {
-      // Ensure the sentence structure is valid before looping
-      if (!Array.isArray(sentence)) return;
-
-      sentence.forEach((token) => {
-        if (!token || !token.text) return;
-
-        // 🛠️ FIXED: Pass raw text into the normalizer function
-        const normalizedWord = this.manager.normalize(token.text);
-
-        // Skip the word if normalization renders it empty (e.g., pure punctuation like "।")
-        if (!normalizedWord) return;
-
-        // 🛠️ FIXED: Read the '.upos' property directly from the 'token' object, NOT the string
-        if (token.upos === "NOUN") {
-          nounSet.add(normalizedWord);
-        } else if (token.upos === "VERB") {
-          verbSet.add(normalizedWord);
-        } else if (token.upos === "ADJ") {
-          adjSet.add(normalizedWord);
-        }
-      });
+      if (item.upos === "ADJ") {
+        adjectives.push(item.text);
+      }
     });
 
-    // Convert sets back to arrays for the final expected return structure
     return {
-      nouns: Array.from(nounSet),
-      verbs: Array.from(verbSet),
-      adjectives: Array.from(adjSet),
+      nouns,
+      verbs,
+      adjectives,
     };
   }
+
+  // splitPOSByTypeSanskrit() {
+  //   // Use Sets internally to automatically avoid duplicate words
+  //   const nounSet = new Set();
+  //   const verbSet = new Set();
+  //   const adjSet = new Set();
+
+  //   // console.log("tokenizedArray =", this.game.tokenizedArray);
+
+  //   this.game.tokenizedArray.forEach((sentence) => {
+  //     // Ensure the sentence structure is valid before looping
+  //     if (!Array.isArray(sentence)) return;
+
+  //     sentence.forEach((token) => {
+  //       if (!token || !token.text) return;
+
+  //       // 🛠️ FIXED: Pass raw text into the normalizer function
+  //       const normalizedWord = this.manager.normalize(token.text);
+  //       // console.log("Normalized Word: ", normalizedWord);
+
+  //       // Skip the word if normalization renders it empty (e.g., pure punctuation like "।")
+  //       if (!normalizedWord) return;
+
+  //       // 🛠️ FIXED: Read the '.upos' property directly from the 'token' object, NOT the string
+  //       if (token.upos === "NOUN") {
+  //         nounSet.add(normalizedWord);
+  //       } else if (token.upos === "VERB") {
+  //         verbSet.add(normalizedWord);
+  //       } else if (token.upos === "ADJ") {
+  //         adjSet.add(normalizedWord);
+  //       }
+  //     });
+  //   });
+
+  //   // Convert sets back to arrays for the final expected return structure
+  //   return {
+  //     nouns: Array.from(nounSet),
+  //     verbs: Array.from(verbSet),
+  //     adjectives: Array.from(adjSet),
+  //   };
+  // }
 
   async extractGameId() {
     try {

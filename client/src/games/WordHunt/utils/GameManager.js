@@ -122,38 +122,6 @@ class GameManager {
   /**
    * Load best time from player history
    */
-  // setGameTimeFromBestHistory(gameType) {
-  //   const playerInfo = this.game.playerInfo;
-  //   if (!Array.isArray(playerInfo)) return null;
-
-  //   const storyData = playerInfo.find(
-  //     (item) => item.storyId === this.game.currentStoryId,
-  //   );
-  //   if (!storyData) return null;
-
-  //   const bestTime = storyData?.games?.[gameType]?.bestTime;
-  //   if (bestTime == null) return null;
-
-  //   const timeStr = String(bestTime);
-  //   const [minStr, secStr] = timeStr.split(".");
-
-  //   const minutes = Number(minStr) || 0;
-  //   const seconds = Number(secStr) || 0;
-
-  //   const totalMinutes = minutes + seconds / 60;
-  //   if (isNaN(totalMinutes)) return null;
-
-  //   this.game.gameTime = totalMinutes;
-  //   // console.log(
-  //   //   `BestTime ${bestTime} → ${minutes}m ${seconds}s → ${totalMinutes} min`,
-  //   // );
-
-  //   // 🛠️ INTEGRATED: Run structural hint math block scaling for history paths too!
-  //   const targetCount = this.getTargetWordCount(gameType);
-  //   this.calculateDynamicHintsAndPenalties(targetCount);
-
-  //   return this.game.gameTime;
-  // }
   setGameTimeFromBestHistory(gameType) {
     const playerInfo = this.game.playerInfo;
 
