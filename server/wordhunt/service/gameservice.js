@@ -104,7 +104,7 @@ const insertGameData = async (
     throw new Error(e.message);
   }
 };
-const getPlayerInfoByStory = async (gameId, storyId, playerId) => {
+const getPlayerInfoByStory = async (gameId, storyId, playerName) => {
   try {
     if (!gameId) {
       throw new Error("Game Id is Required");
@@ -112,11 +112,15 @@ const getPlayerInfoByStory = async (gameId, storyId, playerId) => {
     if (!storyId) {
       throw new Error("Story Id is Required");
     }
-    if (!playerId) {
+    if (!playerName) {
       throw new Error("Player Id is Required");
     }
 
-    const response = await retrievePlayerInfoByStory(gameId, storyId, playerId);
+    const response = await retrievePlayerInfoByStory(
+      gameId,
+      storyId,
+      playerName,
+    );
 
     const nounWords = response.nounWords;
     const verbWords = response.verbWords;
@@ -124,10 +128,14 @@ const getPlayerInfoByStory = async (gameId, storyId, playerId) => {
 
     const retrievedGames = response.gameInfo;
 
-    const playerInfo = retrievedGames.find((player) => player._id === playerId);
+    const playerInfo = retrievedGames.find(
+      (player) => player.playerName === playerName,
+    );
     const playersCoins = playerInfo.totalCoins;
+
+    console.log("Player Coins: ", playersCoins);
     const playersScore = playerInfo.totalScore;
-    // console.log("Player Info: ", playerInfo);
+    console.log("Player Score: ", playersScore);
 
     const nounData = playerInfo.games.Noun.history;
     // console.log(nounData);
@@ -142,8 +150,8 @@ const getPlayerInfoByStory = async (gameId, storyId, playerId) => {
 
     return {
       storyId: storyId,
-      earnedCoins: playersCoins,
-      earnedScore: playersScore,
+      // earnedCoins: playersCoins,
+      // earnedScore: playersScore,
       games: {
         Noun: sortedNoun,
         Verb: sortedVerb,

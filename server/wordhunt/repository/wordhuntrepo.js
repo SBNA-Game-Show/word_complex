@@ -170,7 +170,7 @@ const registerGameData = async (
   }
 };
 
-const retrievePlayerInfoByStory = async (gameId, storyId, playerId) => {
+const retrievePlayerInfoByStory = async (gameId, storyId, playerName) => {
   if (!gameId) {
     throw new Error("Game Id is required");
   }
@@ -179,8 +179,8 @@ const retrievePlayerInfoByStory = async (gameId, storyId, playerId) => {
     throw new Error("Story Id is Required");
   }
 
-  if (!playerId) {
-    throw new Error("Player Id is Required");
+  if (!playerName) {
+    throw new Error("Player Name is Required");
   }
 
   const game = await WordHunt.findById(gameId);
@@ -195,7 +195,9 @@ const retrievePlayerInfoByStory = async (gameId, storyId, playerId) => {
     throw new Error("No Story Found By Given Id");
   }
 
-  const player = story.gameInfo.find((player) => player._id === playerId);
+  const player = story.gameInfo.find(
+    (player) => player.playerName === playerName,
+  );
 
   return story;
 };

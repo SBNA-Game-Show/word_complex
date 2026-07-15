@@ -125,9 +125,9 @@ const addGameData = async (req, res) => {
 
 const fetchPlayerData = async (req, res) => {
   try {
-    const { gameId, storyId, playerId } = req.body;
+    const { gameId, storyId, playerName } = req.body;
 
-    const response = await getPlayerInfoByStory(gameId, storyId, playerId);
+    const response = await getPlayerInfoByStory(gameId, storyId, playerName);
 
     return res.status(200).json({
       success: true,

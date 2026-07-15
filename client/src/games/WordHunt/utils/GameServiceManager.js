@@ -3,6 +3,7 @@ import {
   retrieveSanskritVersion,
   writeStoryInformation,
   writeGameInformation,
+  getPlayerInfo,
 } from "../../../services/wordHuntService";
 import GameManager from "./GameManager";
 
@@ -40,6 +41,7 @@ class GameServiceManager {
       this.data = response;
       this.processDataEnglish();
       await this.extractGameId();
+      await this.retrievePlayerInfo();
 
       return response;
     } catch (error) {
@@ -227,9 +229,34 @@ class GameServiceManager {
   async writeGameInfo(gameInfo) {
     try {
       const response = await writeGameInformation(gameInfo);
+
+      await this.retrievePlayerInfo();
       return response;
     } catch (e) {
       throw error(e.message);
+    }
+  }
+
+  async retrievePlayerInfo() {
+    try {
+      const response = await getPlayerInfo(
+        this.game.currentGameId,
+        this.game.currentStoryId,
+        this.game.player,
+      );
+
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+
+      this.game.playerInfo = response.message;
+
+      console.log("Player Info:", this.game.playerInfo);
+
+      return response;
+    } catch (e) {
+      console.error("Failed to retrieve player information:", e);
+      throw e;
     }
   }
 }

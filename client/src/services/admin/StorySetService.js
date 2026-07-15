@@ -14,7 +14,6 @@ export async function getStorySets() {
   const response = await fetch(STORY_SET_API);
 
   const result = await response.json();
-  console.log("Story Set Results: ", result);
 
   if (!response.ok) {
     throw new Error(result.message || "Failed to load Story Sets");
