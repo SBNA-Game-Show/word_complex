@@ -125,25 +125,28 @@ const getPlayerInfoByStory = async (gameId, storyId, playerName) => {
       playerName,
     );
 
-    const nounWords = response.nounWords ?? [];
-    const verbWords = response.verbWords ?? [];
-    const adjWords = response.adjWords ?? [];
+    const nounWords = response.nounWords ?? 0;
+    const verbWords = response.verbWords ?? 0;
+    const adjWords = response.adjWords ?? 0;
 
     const retrievedGames = response.gameInfo ?? [];
 
     const playerInfo = retrievedGames.find(
       (player) => player.playerName === playerName,
     );
+    // console.log(playerInfo);
 
     // New player default data
     const playersCoins = playerInfo?.totalCoins ?? 0;
     const playersScore = playerInfo?.totalScore ?? 0;
 
     const nounData = playerInfo?.games?.Noun?.history ?? [];
+    // console.log(nounData);
     const verbData = playerInfo?.games?.Verb?.history ?? [];
     const adjData = playerInfo?.games?.Adjective?.history ?? [];
 
     const sortedNoun = arraySorter(nounData, nounWords);
+    console.log(sortedNoun);
     const sortedVerb = arraySorter(verbData, verbWords);
     const sortedAdj = arraySorter(adjData, adjWords);
 
@@ -162,21 +165,34 @@ const getPlayerInfoByStory = async (gameId, storyId, playerName) => {
   }
 };
 
+const convertTimeToSeconds = (time) => {
+  if (!time) {
+    return Infinity;
+  }
+
+  const [minutes, seconds] = time.split(":").map(Number);
+
+  return minutes * 60 + seconds;
+};
+
 const arraySorter = (data = [], wordCount = 0) => {
-  // No game history yet
+  // No history
   if (!Array.isArray(data) || data.length === 0) {
-    return [];
+    return null;
   }
 
-  const lowestTime = data.sort((a, b) => a.bestTime - b.bestTime)[0];
+  const lowestTime = [...data].sort(
+    (a, b) =>
+      convertTimeToSeconds(a.bestTime) - convertTimeToSeconds(b.bestTime),
+  )[0];
 
-  // Safety check
-  if (!lowestTime || !lowestTime.foundWords) {
-    return [];
+  if (!lowestTime) {
+    return null;
   }
 
-  if (lowestTime.foundWords < wordCount) {
-    return [];
+  // Did not complete game
+  if ((lowestTime.foundWords ?? 0) < wordCount) {
+    return null;
   }
 
   return lowestTime;
