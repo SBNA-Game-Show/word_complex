@@ -99,6 +99,7 @@ class Game {
 
   async start() {
     console.log("Player Info: ", this.player);
+    await this.serviceManager.extractGameId();
     this.hasGameStarted = false; // Reset explicitly on menu returns
     this.landingPage = new LandingPage(this).createLandingPage();
 
@@ -121,6 +122,8 @@ class Game {
           // console.log("Loading English pipeline data assets...");
           await this.serviceManager.getPassageByIdEnglish();
         }
+        await this.serviceManager.writeStoryInfo();
+        await this.serviceManager.retrievePlayerInfo();
 
         this.landingPage.hide();
         this.startNounGame();

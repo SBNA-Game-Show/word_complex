@@ -40,8 +40,8 @@ class GameServiceManager {
 
       this.data = response;
       this.processDataEnglish();
-      await this.extractGameId();
-      await this.retrievePlayerInfo();
+      // await this.extractGameId();
+      // await this.retrievePlayerInfo();
 
       return response;
     } catch (error) {
@@ -107,8 +107,8 @@ class GameServiceManager {
       this.data = response;
       this.processDataSanskrit();
 
-      await this.extractGameId();
-      await this.retrievePlayerInfo();
+      // await this.extractGameId();
+      // await this.retrievePlayerInfo();
 
       return response;
     } catch (error) {
@@ -140,28 +140,31 @@ class GameServiceManager {
   }
 
   splitPOSByTypeSanskrit() {
-    const nouns = [];
-    const verbs = [];
-    const adjectives = [];
+    const nounSet = new Set();
+    const verbSet = new Set();
+    const adjSet = new Set();
 
     this.game.tokenizedArray.forEach((item) => {
+      const normalizedWord = this.manager.normalize(item.text);
+      // console.log("Normalized Word: ", normalizedWord);
+
       // console.log("ITEM 0 IN TOKENZIED ARRAY:", item.text);
       if (item.upos === "NOUN") {
-        nouns.push(item.text);
+        nounSet.add(normalizedWord);
       }
       if (item.upos === "VERB") {
-        verbs.push(item.text);
+        verbSet.add(normalizedWord);
       }
 
       if (item.upos === "ADJ") {
-        adjectives.push(item.text);
+        adjSet.add(normalizedWord);
       }
     });
 
     return {
-      nouns,
-      verbs,
-      adjectives,
+      nouns: Array.from(nounSet),
+      verbs: Array.from(verbSet),
+      adjectives: Array.from(adjSet),
     };
   }
 
@@ -224,45 +227,35 @@ class GameServiceManager {
 
       this.game.currentGameId = activeStorySet._id;
 
-      // console.log("Active Game:", activeStorySet);
-      // console.log("Game Id:", this.game.currentGameId);
+      console.log("Active Game:", activeStorySet);
+      console.log("Game Id:", this.game.currentGameId);
 
-      const write_response = await this.writeStoryInfo();
+      // const write_response = await this.writeStoryInfo();
 
-      return write_response;
+      // return write_response;
     } catch (error) {
-      console.error("Failed to extract game id:", error);
-      throw error;
+      throw new Error(error.message);
     }
   }
 
   async writeStoryInfo() {
     try {
-      if (this.nounCount <= 0 || this.verbCount <= 0 || this.adjCount <= 0) {
-        throw new Error("Noun Count or Verb count or Adjective count is Null");
-      }
-      if (this.nounHint < 1 || this.verbHint < 1 || this.adjHint < 1) {
-        throw new Error("Noun Hint or Verb Hint or Adjective Hint is Null");
-      }
-
       const storyInfo = new StoryInfo(
         this.game.currentGameId,
         this.game.currentStoryId,
-        this.nounCount,
-        this.nounHint,
-        this.verbCount,
-        this.verbHint,
-        this.adjCount,
-        this.adjHint,
+        this.nounCount ?? 0,
+        this.nounHint ?? 0,
+        this.verbCount ?? 0,
+        this.verbHint ?? 0,
+        this.adjCount ?? 0,
+        this.adjHint ?? 0,
       );
 
-      const response = await writeStoryInformation(storyInfo);
-      return response;
+      return await writeStoryInformation(storyInfo);
     } catch (e) {
-      throw error(e.message);
+      throw new Error(e.message);
     }
   }
-
   async writeGameInfo(gameInfo) {
     try {
       const response = await writeGameInformation(gameInfo);
@@ -270,7 +263,7 @@ class GameServiceManager {
       await this.retrievePlayerInfo();
       return response;
     } catch (e) {
-      throw error(e.message);
+      throw new Error(e.message);
     }
   }
 
@@ -292,8 +285,7 @@ class GameServiceManager {
 
       return response;
     } catch (e) {
-      console.error("Failed to retrieve player information:", e);
-      throw e;
+      throw new Error(e.message);
     }
   }
 }

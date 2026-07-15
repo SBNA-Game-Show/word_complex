@@ -104,14 +104,17 @@ const insertGameData = async (
     throw new Error(e.message);
   }
 };
+
 const getPlayerInfoByStory = async (gameId, storyId, playerName) => {
   try {
     if (!gameId) {
       throw new Error("Game Id is Required");
     }
+
     if (!storyId) {
       throw new Error("Story Id is Required");
     }
+
     if (!playerName) {
       throw new Error("Player Id is Required");
     }
@@ -122,36 +125,32 @@ const getPlayerInfoByStory = async (gameId, storyId, playerName) => {
       playerName,
     );
 
-    const nounWords = response.nounWords;
-    const verbWords = response.verbWords;
-    const adjWords = response.adjWords;
+    const nounWords = response.nounWords ?? [];
+    const verbWords = response.verbWords ?? [];
+    const adjWords = response.adjWords ?? [];
 
-    const retrievedGames = response.gameInfo;
+    const retrievedGames = response.gameInfo ?? [];
 
     const playerInfo = retrievedGames.find(
       (player) => player.playerName === playerName,
     );
-    const playersCoins = playerInfo.totalCoins;
 
-    console.log("Player Coins: ", playersCoins);
-    const playersScore = playerInfo.totalScore;
-    console.log("Player Score: ", playersScore);
+    // New player default data
+    const playersCoins = playerInfo?.totalCoins ?? 0;
+    const playersScore = playerInfo?.totalScore ?? 0;
 
-    const nounData = playerInfo.games.Noun.history;
-    // console.log(nounData);
-    const verbData = playerInfo.games.Verb.history;
-    const adjData = playerInfo.games.Adjective.history;
+    const nounData = playerInfo?.games?.Noun?.history ?? [];
+    const verbData = playerInfo?.games?.Verb?.history ?? [];
+    const adjData = playerInfo?.games?.Adjective?.history ?? [];
 
     const sortedNoun = arraySorter(nounData, nounWords);
     const sortedVerb = arraySorter(verbData, verbWords);
     const sortedAdj = arraySorter(adjData, adjWords);
 
-    // return response;
-
     return {
       storyId: storyId,
-      // earnedCoins: playersCoins,
-      // earnedScore: playersScore,
+      earnedCoins: playersCoins,
+      earnedScore: playersScore,
       games: {
         Noun: sortedNoun,
         Verb: sortedVerb,
@@ -163,11 +162,21 @@ const getPlayerInfoByStory = async (gameId, storyId, playerName) => {
   }
 };
 
-const arraySorter = (data, wordCount) => {
+const arraySorter = (data = [], wordCount = 0) => {
+  // No game history yet
+  if (!Array.isArray(data) || data.length === 0) {
+    return [];
+  }
+
   const lowestTime = data.sort((a, b) => a.bestTime - b.bestTime)[0];
 
+  // Safety check
+  if (!lowestTime || !lowestTime.foundWords) {
+    return [];
+  }
+
   if (lowestTime.foundWords < wordCount) {
-    return null;
+    return [];
   }
 
   return lowestTime;
