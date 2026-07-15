@@ -145,11 +145,15 @@ class FindNounsGame {
     };
 
     this.controlPanel.onNextClicked = () => {
+      if (this.game.isInputLocked) return;
+      this.game.isInputLocked = true;
+      console.count("Next button clicked");
       this.gameOver = true;
       this.game.hasGameStarted = false;
       this.timer.stop();
       this.game.stage.removeAllChildren();
-      this.game.startVerbGame();
+      // this.game.startVerbGame();
+      this.game.nextGame();
     };
 
     // 1. Highlight nouns as green when clicked

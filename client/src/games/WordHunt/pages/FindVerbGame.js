@@ -137,11 +137,14 @@ class FindVerbGame {
     };
 
     this.controlPanel.onNextClicked = () => {
+      if (this.game.isInputLocked) return;
+      this.game.isInputLocked = true;
       this.gameOver = true;
       this.timer.stop();
       this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
-      this.game.startAdjectiveGame();
+      // this.game.startAdjectiveGame();
+      this.game.nextGame();
     };
 
     this.controlPanel.hintClicked = () => {

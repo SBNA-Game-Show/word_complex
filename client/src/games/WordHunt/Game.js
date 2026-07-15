@@ -59,6 +59,9 @@ class Game {
     this.TOTAL_SCORE = 0;
     this.EARNED_COINS = 0;
 
+    this.gameQueue = [];
+    this.currentGameIndex = 0;
+
     // Player
     this.playerId = this.authUser.id;
     this.player = this.authUser.name;
@@ -184,27 +187,49 @@ class Game {
       return;
     }
 
-    const games = [];
+    this.gameQueue = [];
 
     if (this.wordTypes.nouns.length > 0) {
-      games.push(() => this.startNounGame());
+      this.gameQueue.push(this.nounGameKey);
     }
 
     if (this.wordTypes.verbs.length > 0) {
-      games.push(() => this.startVerbGame());
+      this.gameQueue.push(this.verbGameKey);
     }
 
     if (this.wordTypes.adjectives.length > 0) {
-      games.push(() => this.startAdjectiveGame());
+      this.gameQueue.push(this.adjGameKey);
     }
 
-    if (games.length === 0) {
+    if (this.gameQueue.length === 0) {
       console.log("GAME HAS ENDED - NO WORDS FOUND");
       return;
     }
 
-    // Start first available game
-    games[0]();
+    this.currentGameIndex = 0;
+    this.startCurrentGame();
+  }
+  startCurrentGame() {
+    const currentGame = this.gameQueue[this.currentGameIndex];
+
+    console.log("Starting:", currentGame);
+
+    switch (currentGame) {
+      case this.nounGameKey:
+        this.startNounGame();
+        break;
+
+      case this.verbGameKey:
+        this.startVerbGame();
+        break;
+
+      case this.adjGameKey:
+        this.startAdjectiveGame();
+        break;
+
+      default:
+        console.log("No game found");
+    }
   }
 
   //----------------------------------
@@ -253,6 +278,23 @@ class Game {
 
       this.stage.update();
     });
+  }
+
+  nextGame() {
+    this.currentGameIndex++;
+    this.hasGameStarted = false;
+    this.gameOver = true;
+    this.isInputLocked = true;
+
+    this.destroy(); // cleanup timers/listeners
+
+    if (this.currentGameIndex >= this.gameQueue.length) {
+      console.log("All Games Completed");
+      this.start();
+      return;
+    }
+
+    this.startCurrentGame();
   }
 }
 
