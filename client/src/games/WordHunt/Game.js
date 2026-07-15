@@ -101,7 +101,7 @@ class Game {
   //----------------------------------
 
   async start() {
-    console.log("Player Info: ", this.player);
+    // console.log("Player Info: ", this.player);
     await this.serviceManager.extractGameId();
     this.hasGameStarted = false; // Reset explicitly on menu returns
     this.landingPage = new LandingPage(this).createLandingPage();
@@ -164,23 +164,6 @@ class Game {
   }
   // Initializing the Games Based on Story Data to Handle No Words to Find
 
-  // initGame() {
-  //   const nounCount = this.wordTypes.nouns.length;
-  //   const verbCount = this.wordTypes.verbs.length;
-  //   const adjCount = this.wordTypes.adjectives.length;
-
-  //   if (nounCount == 0) {
-  //     this.startVerbGame();
-  //   }
-  //   if (verbCount == 0) {
-  //     this.startAdjectiveGame();
-  //   }
-  //   if (adjCount == 0) {
-  //     console.log("GAM HAS ENDED");
-  //   }
-
-  //   this.startNounGame();
-  // }
   initGame() {
     if (!this.wordTypes) {
       console.error("Missing word types");

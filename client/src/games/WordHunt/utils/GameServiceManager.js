@@ -229,7 +229,7 @@ class GameServiceManager {
 
       this.game.playerInfo = response.message;
 
-      // console.log("Player Info:", this.game.playerInfo);
+      console.log("Player Info:", this.game.playerInfo);
 
       return response;
     } catch (e) {

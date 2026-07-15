@@ -1,7 +1,6 @@
 import ZimLabel from "../ZimComponents/ZimLabelNew";
 import Blackboard from "../UI/Blackboard";
 import BackButton from "../ZimComponents/BackButton";
-import Chalk from "../UI/Chalk";
 import ProgressBar from "../UI/ProgressBar";
 import MessageBar from "../UI/MessageBar";
 import Timer from "../utils/Timer";

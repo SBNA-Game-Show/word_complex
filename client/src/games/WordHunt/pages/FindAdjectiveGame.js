@@ -1,6 +1,5 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
-import Chalk from "../UI/Chalk";
 import { emit } from "../../../scenes/sceneBus";
 import GameManager from "../utils/GameManager";
 import Timer from "../utils/Timer";
