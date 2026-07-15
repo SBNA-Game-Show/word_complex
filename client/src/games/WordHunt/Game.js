@@ -126,7 +126,8 @@ class Game {
         await this.serviceManager.retrievePlayerInfo();
 
         this.landingPage.hide();
-        this.startNounGame();
+        this.initGame();
+        // this.startNounGame();
       } catch (error) {
         console.error("Failed loading backend content: ", error);
         this.landingPage.button.mouseEnabled = true;
@@ -157,6 +158,53 @@ class Game {
 
     this.stage.removeAllChildren();
     this.stage.update();
+  }
+  // Initializing the Games Based on Story Data to Handle No Words to Find
+
+  // initGame() {
+  //   const nounCount = this.wordTypes.nouns.length;
+  //   const verbCount = this.wordTypes.verbs.length;
+  //   const adjCount = this.wordTypes.adjectives.length;
+
+  //   if (nounCount == 0) {
+  //     this.startVerbGame();
+  //   }
+  //   if (verbCount == 0) {
+  //     this.startAdjectiveGame();
+  //   }
+  //   if (adjCount == 0) {
+  //     console.log("GAM HAS ENDED");
+  //   }
+
+  //   this.startNounGame();
+  // }
+  initGame() {
+    if (!this.wordTypes) {
+      console.error("Missing word types");
+      return;
+    }
+
+    const games = [];
+
+    if (this.wordTypes.nouns.length > 0) {
+      games.push(() => this.startNounGame());
+    }
+
+    if (this.wordTypes.verbs.length > 0) {
+      games.push(() => this.startVerbGame());
+    }
+
+    if (this.wordTypes.adjectives.length > 0) {
+      games.push(() => this.startAdjectiveGame());
+    }
+
+    if (games.length === 0) {
+      console.log("GAME HAS ENDED - NO WORDS FOUND");
+      return;
+    }
+
+    // Start first available game
+    games[0]();
   }
 
   //----------------------------------

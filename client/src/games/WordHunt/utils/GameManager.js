@@ -16,6 +16,11 @@ class GameManager {
     this.definitions = new Definitions(game);
     this.controlPanel = new ControlPanel(game);
     this.service = this.game.serviceManager;
+    this.gameTypesArray = [
+      this.game.nounGameKey,
+      this.game.verbGameKey,
+      this.game.adjGameKey,
+    ];
 
     this.wordTypes = null;
     this.totalWordsToFind = 0;
@@ -32,6 +37,17 @@ class GameManager {
    * MAIN ENTRY
    * decides whether to use history OR passage length
    */
+
+  initGame() {
+    let gameType = "";
+    this.gameTypesArray.forEach((game) => {
+      gameType = game;
+    });
+    this.getTargetWordCount(gameType);
+    if (this.nounCount == 0) {
+      console.log("Noun Game Has No Play");
+    }
+  }
   setGameTime(gameType) {
     const data = this.game?.storyData?.story;
     if (!data) return 0;
@@ -111,7 +127,7 @@ class GameManager {
 
     this.game.gameTime = targetCount * wordTiming;
     // console.log("Game Time: ", this.game.gameTime.toFixed(2));
-    // console.log("Target Count: ", targetCount);
+    console.log("Target Count: ", targetCount);
 
     // 🛠️ INTEGRATED: Run hints system logic for initial setup path
     this.calculateDynamicHintsAndPenalties(targetCount);

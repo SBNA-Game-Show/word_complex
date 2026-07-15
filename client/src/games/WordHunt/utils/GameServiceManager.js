@@ -40,9 +40,6 @@ class GameServiceManager {
 
       this.data = response;
       this.processDataEnglish();
-      // await this.extractGameId();
-      // await this.retrievePlayerInfo();
-
       return response;
     } catch (error) {
       console.error("Failed to load story:", error);
@@ -107,9 +104,6 @@ class GameServiceManager {
       this.data = response;
       this.processDataSanskrit();
 
-      // await this.extractGameId();
-      // await this.retrievePlayerInfo();
-
       return response;
     } catch (error) {
       console.error("Failed to load story:", error);
@@ -167,48 +161,6 @@ class GameServiceManager {
       adjectives: Array.from(adjSet),
     };
   }
-
-  // splitPOSByTypeSanskrit() {
-  //   // Use Sets internally to automatically avoid duplicate words
-  //   const nounSet = new Set();
-  //   const verbSet = new Set();
-  //   const adjSet = new Set();
-
-  //   // console.log("tokenizedArray =", this.game.tokenizedArray);
-
-  //   this.game.tokenizedArray.forEach((sentence) => {
-  //     // Ensure the sentence structure is valid before looping
-  //     if (!Array.isArray(sentence)) return;
-
-  //     sentence.forEach((token) => {
-  //       if (!token || !token.text) return;
-
-  //       // 🛠️ FIXED: Pass raw text into the normalizer function
-  //       const normalizedWord = this.manager.normalize(token.text);
-  //       // console.log("Normalized Word: ", normalizedWord);
-
-  //       // Skip the word if normalization renders it empty (e.g., pure punctuation like "।")
-  //       if (!normalizedWord) return;
-
-  //       // 🛠️ FIXED: Read the '.upos' property directly from the 'token' object, NOT the string
-  //       if (token.upos === "NOUN") {
-  //         nounSet.add(normalizedWord);
-  //       } else if (token.upos === "VERB") {
-  //         verbSet.add(normalizedWord);
-  //       } else if (token.upos === "ADJ") {
-  //         adjSet.add(normalizedWord);
-  //       }
-  //     });
-  //   });
-
-  //   // Convert sets back to arrays for the final expected return structure
-  //   return {
-  //     nouns: Array.from(nounSet),
-  //     verbs: Array.from(verbSet),
-  //     adjectives: Array.from(adjSet),
-  //   };
-  // }
-
   async extractGameId() {
     try {
       const response = await getStorySets();
@@ -229,10 +181,6 @@ class GameServiceManager {
 
       console.log("Active Game:", activeStorySet);
       console.log("Game Id:", this.game.currentGameId);
-
-      // const write_response = await this.writeStoryInfo();
-
-      // return write_response;
     } catch (error) {
       throw new Error(error.message);
     }
