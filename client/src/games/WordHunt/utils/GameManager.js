@@ -250,7 +250,15 @@ class GameManager {
    */
   async addGameData(bestTime, hintsUsed, foundWords, gameInstance) {
     try {
+      // console.log("Player:", this.game.player);
+      // console.log("Language:", this.game.LANGUAGE);
+
+      // console.log("Verify Player:", this.verifyPlayer());
+      // console.log("Verify Language:", this.verifyLanguage());
+
       if (this.verifyPlayer() && this.verifyLanguage()) {
+        // console.log("Writing game information...");
+
         const response = await this.writeGameInformation(
           bestTime,
           hintsUsed,
@@ -261,9 +269,9 @@ class GameManager {
         return response;
       }
 
-      console.log(
-        "Game information not saved. Player must be signed in and language must be Sanskrit.",
-      );
+      // console.log(
+      //   "Game information not saved. Player must be signed in and language must be Sanskrit.",
+      // );
 
       return null;
     } catch (e) {

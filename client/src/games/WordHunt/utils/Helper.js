@@ -60,9 +60,9 @@ class Helper {
       baseWordValue - totalDeduction,
     );
 
-    console.log(
-      `[Score Calc] Active Hints: ${hintsUsed} | Calculated Word Value: ${thisWordValue.toFixed(2)}`,
-    );
+    // console.log(
+    //   `[Score Calc] Active Hints: ${hintsUsed} | Calculated Word Value: ${thisWordValue.toFixed(2)}`,
+    // );
 
     return thisWordValue;
   }
