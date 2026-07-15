@@ -150,7 +150,7 @@ class GameServiceManager {
         verbSet.add(normalizedWord);
       }
 
-      if (item.upos === "aDJ") {
+      if (item.upos === "ADJ") {
         adjSet.add(normalizedWord);
       }
     });
