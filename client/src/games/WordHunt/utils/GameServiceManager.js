@@ -52,7 +52,11 @@ class GameServiceManager {
       return;
     }
     this.game.storyData = {
-      story: this.data.passage,
+      story: this.data.passage
+        .replace(/-/g, " ") // remove hyphens and replace with space
+        .replace(/\n/g, " ") // remove new lines
+        .replace(/\s+/g, " ") // collapse multiple spaces
+        .trim(), // remove leading/trailing spaces
     };
 
     this.game.passageArray = this.data.passageArray;
