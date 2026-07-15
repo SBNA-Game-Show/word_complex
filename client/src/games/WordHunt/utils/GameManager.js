@@ -161,12 +161,12 @@ class GameManager {
 
     this.game.gameTime = totalMinutes;
 
-    console.log(
-      `${gameType} best time loaded:`,
-      gameData.bestTime,
-      "=>",
-      totalMinutes,
-    );
+    // console.log(
+    //   `${gameType} best time loaded:`,
+    //   gameData.bestTime,
+    //   "=>",
+    //   totalMinutes,
+    // );
 
     const targetCount = this.getTargetWordCount(gameType);
 

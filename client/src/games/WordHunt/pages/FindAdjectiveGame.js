@@ -216,13 +216,20 @@ class FindAdjectiveGame {
 
         this.messageBar.showTimeOverMessage(this.timeUpKey);
         if (this.foundWords.length >= 2) {
-          const res = await this.manager.writeGameInformation(
+          // writing to DB for only sanskrit version and signed in player
+          const res = await this.manager.addGameData(
             completionTime,
             this.hintsUsed,
             this.foundWords.length,
             this.game.adjGameKey,
           );
-          // console.log(res);
+          // sending data to backend irrespective user [guest, signed in user]
+          // const res = await this.manager.writeGameInformation(
+          //   completionTime,
+          //   this.hintsUsed,
+          //   this.foundWords.length,
+          //   this.game.adjGameKey,
+          // );
         }
 
         emit("hint", { text: this.timeUpKey });
@@ -344,12 +351,20 @@ class FindAdjectiveGame {
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
       this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
-      const res = await this.manager.writeGameInformation(
+      // writing to DB for only sanskrit version and signed in player
+      const res = await this.manager.addGameData(
         completionTime,
         this.hintsUsed,
         this.foundWords.length,
         this.game.adjGameKey,
       );
+      // sending data to backend irrespective user [guest, signed in user]
+      // const res = await this.manager.writeGameInformation(
+      //   completionTime,
+      //   this.hintsUsed,
+      //   this.foundWords.length,
+      //   this.game.adjGameKey,
+      // );
       this.game.hasGameStarted = false;
       emit("complete");
     }

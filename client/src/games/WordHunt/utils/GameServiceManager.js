@@ -36,7 +36,7 @@ class GameServiceManager {
     try {
       this.storyId = this.game.currentStoryId;
       const response = await retrieveEnglishVersion(this.storyId);
-      console.log("RESPONSE:", response);
+      // console.log("RESPONSE:", response);
 
       this.data = response;
       this.processDataEnglish();
@@ -63,7 +63,7 @@ class GameServiceManager {
     this.game.tokenizedArray = this.data.tokenizedPassage;
     // console.log("Tokenized Array : ", this.tokenizedArray);
     this.game.wordTypes = this.splitPOSByTypeEnglish();
-    console.log("Word Types:", this.game.wordTypes);
+    // console.log("Word Types:", this.game.wordTypes);
     this.nounCount = this.game.wordTypes.nouns.length;
     this.verbCount = this.game.wordTypes.verbs.length;
     this.adjCount = this.game.wordTypes.adjectives.length;
@@ -233,7 +233,7 @@ class GameServiceManager {
 
       this.game.playerInfo = response.message;
 
-      console.log("Player Info:", this.game.playerInfo);
+      // console.log("Player Info:", this.game.playerInfo);
 
       return response;
     } catch (e) {
