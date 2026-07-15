@@ -118,13 +118,13 @@ class GameServiceManager {
     this.game.storyData = {
       story: this.data.passage,
     };
-    console.log("STORY DATA: ", this.game.storyData);
+    // console.log("STORY DATA: ", this.game.storyData);
 
     this.game.passageArray = this.data.passageArray;
     this.game.tokenizedArray = this.data.tokenizedPassage;
     // console.log("Tokenized Passage: ", this.game.tokenizedArray);
     this.game.wordTypes = this.splitPOSByTypeSanskrit();
-    console.log("Word Types:", this.game.wordTypes);
+    // console.log("Word Types:", this.game.wordTypes);
     this.nounCount = this.game.wordTypes.nouns.length;
     this.verbCount = this.game.wordTypes.verbs.length;
     this.adjCount = this.game.wordTypes.adjectives.length;
@@ -179,8 +179,8 @@ class GameServiceManager {
 
       this.game.currentGameId = activeStorySet._id;
 
-      console.log("Active Game:", activeStorySet);
-      console.log("Game Id:", this.game.currentGameId);
+      // console.log("Active Game:", activeStorySet);
+      // console.log("Game Id:", this.game.currentGameId);
     } catch (error) {
       throw new Error(error.message);
     }
@@ -229,7 +229,7 @@ class GameServiceManager {
 
       this.game.playerInfo = response.message;
 
-      console.log("Player Info:", this.game.playerInfo);
+      // console.log("Player Info:", this.game.playerInfo);
 
       return response;
     } catch (e) {

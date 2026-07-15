@@ -39,7 +39,7 @@ class FoundContainer {
   // UPDATE DISPLAY
   // -----------------------------------
   update() {
-    console.log("FoundContainer Update called. Words:", this.words);
+    // console.log("FoundContainer Update called. Words:", this.words);
 
     let hasParent = false;
     let parentNode = null;

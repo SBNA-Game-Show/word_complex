@@ -147,7 +147,7 @@ class FindNounsGame {
     this.controlPanel.onNextClicked = () => {
       if (this.game.isInputLocked) return;
       this.game.isInputLocked = true;
-      console.count("Next button clicked");
+      // console.count("Next button clicked");
       this.gameOver = true;
       this.game.hasGameStarted = false;
       this.timer.stop();

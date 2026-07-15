@@ -127,7 +127,7 @@ class GameManager {
 
     this.game.gameTime = targetCount * wordTiming;
     // console.log("Game Time: ", this.game.gameTime.toFixed(2));
-    console.log("Target Count: ", targetCount);
+    // console.log("Target Count: ", targetCount);
 
     // 🛠️ INTEGRATED: Run hints system logic for initial setup path
     this.calculateDynamicHintsAndPenalties(targetCount);

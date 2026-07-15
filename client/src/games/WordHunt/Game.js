@@ -212,7 +212,7 @@ class Game {
   startCurrentGame() {
     const currentGame = this.gameQueue[this.currentGameIndex];
 
-    console.log("Starting:", currentGame);
+    // console.log("Starting:", currentGame);
 
     switch (currentGame) {
       case this.nounGameKey:
