@@ -189,7 +189,7 @@ class LandingPage {
         );
       }
 
-      console.log("Language updated successfully:", this.game.LANGUAGE);
+      // console.log("Language updated successfully:", this.game.LANGUAGE);
 
       // Force canvas screen layout repaint render pass
       this.game.stage.update();
