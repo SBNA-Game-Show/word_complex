@@ -101,17 +101,20 @@ export const writeGameInformation = async (gameInfo) => {
 
 export const getPlayerInfo = async (gameId, storyId, playerName) => {
   try {
-    const response = await fetch(`${API_BASE}/wordHunt/playerData`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        gameId,
-        storyId,
-        playerName,
-      }),
+    const params = new URLSearchParams({
+      gameId,
+      storyId,
+      playerName,
     });
+    const response = await fetch(
+      `${API_BASE}/wordHunt/playerData?${params.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || "Failed to Retrieve Player Information");
