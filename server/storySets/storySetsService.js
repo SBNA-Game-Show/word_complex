@@ -154,8 +154,8 @@ async function createSet({ name, storyIds }) {
 
   // initializing word hunt repo
 
-  wordunt_Ids = [...storyIds];
-  wordHuntService = initWordHuntRepo(wordunt_Ids, doc._id);
+  wordHunt_Ids = [...storyIds];
+  wordHuntService = initWordHuntRepo(wordHunt_Ids, doc._id); // must be await initWordHuntRepo
 
   return doc;
 }

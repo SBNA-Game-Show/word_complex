@@ -119,11 +119,7 @@ const getPlayerInfoByStory = async (gameId, storyId, playerName) => {
       throw new Error("Player Id is Required");
     }
 
-    const response = await retrievePlayerInfoByStory(
-      gameId,
-      storyId,
-      playerName,
-    );
+    const response = await retrievePlayerInfoByStory(gameId, storyId);
 
     const nounWords = response.nounWords ?? 0;
     const verbWords = response.verbWords ?? 0;
@@ -146,7 +142,7 @@ const getPlayerInfoByStory = async (gameId, storyId, playerName) => {
     const adjData = playerInfo?.games?.Adjective?.history ?? [];
 
     const sortedNoun = arraySorter(nounData, nounWords);
-    console.log(sortedNoun);
+    // console.log(sortedNoun);
     const sortedVerb = arraySorter(verbData, verbWords);
     const sortedAdj = arraySorter(adjData, adjWords);
 

@@ -178,7 +178,7 @@ const registerGameData = async (
   }
 };
 
-const retrievePlayerInfoByStory = async (gameId, storyId, playerName) => {
+const retrievePlayerInfoByStory = async (gameId, storyId) => {
   const game = await WordHunt.findById(gameId);
 
   if (!game) {
