@@ -26,7 +26,17 @@ const initWordHuntRepo = async (storyId, gameId) => {
     }
     const game = await initializeGame(storyId, gameId);
 
-    return game;
+    if (!game) {
+      return {
+        success: false,
+        message: "Unable to initialize Word Hunt Repository",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Word Hunt Repository Initialized Successfully",
+    };
   } catch (e) {
     throw new Error(e.message);
   }
@@ -56,7 +66,17 @@ const insertStroyInfo = async (gameId, storyId, storyInfo) => {
 
     const response = initializeStoryInfo(gameId, storyId, storyInfo);
 
-    return response;
+    if (!response) {
+      return {
+        success: false,
+        message: "Unable to Insert Stroy Info",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Story Info Registered Successfully",
+    };
   } catch (e) {
     throw new Error(e.message);
   }
@@ -99,7 +119,17 @@ const insertGameData = async (
       gameInstance,
     );
 
-    return response;
+    if (!response) {
+      return {
+        success: false,
+        message: "Unable to Write Game Data",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Game Data registered successfully",
+    };
   } catch (e) {
     throw new Error(e.message);
   }

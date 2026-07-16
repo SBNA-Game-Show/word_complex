@@ -87,9 +87,7 @@ const initializeStoryInfo = async (gameId, storyId, storyInfo) => {
         return "Story Information Already Initialized";
       }
 
-      throw new Error(
-        "Story Information has been Initialized with different values",
-      );
+      return "Story Information Already Initialized in Sanskrit";
     }
 
     const response = game.initializeStoryInfo(story, storyInfo);
