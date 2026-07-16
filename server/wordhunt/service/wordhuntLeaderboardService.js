@@ -14,33 +14,26 @@
  * ============================================================
  */
 
-const fs = require("fs");
-const path = require("path");
-
+const {
+    getAllGameInfo,
+} = require("../repository/wordhuntrepo");
 /**
- * Location of the mock JSON.
- *
- * Change this path if your JSON file is stored somewhere else.
+ * Converts "m:ss" or "mm:ss" into total seconds.
+ * Example:
+ * "0:16" -> 16
+ * "1:05" -> 65
  */
-const DATA_PATH = path.join(
-    __dirname,
-    "..",
-    "wordhuntLeaderboardMock.json"
-);
-/**
- * Reads the mock JSON from disk.
- */
-const readLeaderboardData = () => {
+const convertTimeToSeconds = (time) => {
 
-    if (!fs.existsSync(DATA_PATH)) {
-        throw new Error(`Leaderboard JSON not found: ${DATA_PATH}`);
+    if (!time) {
+        return Number.MAX_SAFE_INTEGER;
     }
 
-    const rawData = fs.readFileSync(DATA_PATH, "utf8");
+    const [minutes, seconds] = time.split(":").map(Number);
 
-    return JSON.parse(rawData);
+    return (minutes * 60) + seconds;
+
 };
-
 /**
  * ============================================================
  * Compare two attempts.
@@ -56,8 +49,8 @@ const compareAttempts = (attemptA, attemptB) => {
     // Rule 1
     // Lowest Best Time
     //--------------------------------------------
-    const timeA = Number(attemptA.bestTime ?? Number.MAX_SAFE_INTEGER);
-    const timeB = Number(attemptB.bestTime ?? Number.MAX_SAFE_INTEGER);
+    const timeA = convertTimeToSeconds(attemptA.bestTime);
+    const timeB = convertTimeToSeconds(attemptB.bestTime);
 
     if (timeA !== timeB) {
         return timeA - timeB;
@@ -172,7 +165,7 @@ const buildLeaderboardRow = (
 
         playerName,
 
-        bestTime: Number(bestAttempt?.bestTime ?? 0),
+        bestTime: bestAttempt?.bestTime ?? "0:00",
 
         hintsUsed: Number(bestAttempt?.hintsUsed ?? 0),
 
@@ -190,71 +183,53 @@ const buildLeaderboardRow = (
  * Build leaderboard from every story.
  * ============================================================
  */
-const buildLeaderboard = () => {
+const buildLeaderboard = async () => {
 
-    const stories = readLeaderboardData();
+    const games = await getAllGameInfo();
 
     /*
      * Store one record per player.
      */
     const playerMap = new Map();
+        //----------------------------------------------------------
+        // Read every game
+        //----------------------------------------------------------
+        for (const game of games) {
 
-    //----------------------------------------------------------
-    // Read every story
-    //----------------------------------------------------------
-    for (const story of stories) {
+            for (const story of game.stories || []) {
 
-        const players = story.info || [];
+                const players = story.gameInfo || [];
 
-        //------------------------------------------------------
-        // Read every player inside the story
-        //------------------------------------------------------
-        for (const player of players) {
+                for (const player of players) {
 
-            const name = player.playerName;
+                    const name = player.playerName;
 
-            if (!playerMap.has(name)) {
+                    if (!playerMap.has(name)) {
 
-                playerMap.set(name, {
+                        playerMap.set(name, {
+                            playerName: name,
+                            nounHistory: [],
+                            verbHistory: [],
+                            adjectiveHistory: [],
+                        });
 
-                    playerName: name,
+                    }
 
-                    nounHistory: [],
+                    const currentPlayer = playerMap.get(name);
 
-                    verbHistory: [],
+                    currentPlayer.nounHistory.push(
+                        ...(player.games?.Noun?.history || [])
+                    );
 
-                    adjectiveHistory: [],
+                    currentPlayer.verbHistory.push(
+                        ...(player.games?.Verb?.history || [])
+                    );
 
-                });
-
+                    currentPlayer.adjectiveHistory.push(
+                        ...(player.games?.Adjective?.history || [])
+                    );
+                }
             }
-
-            const currentPlayer = playerMap.get(name);
-
-            //--------------------------------------------------
-            // Merge all histories
-            //--------------------------------------------------
-
-            currentPlayer.nounHistory.push(
-
-                ...(player.game?.Noun?.history || [])
-
-            );
-
-            currentPlayer.verbHistory.push(
-
-                ...(player.game?.Verb?.history || [])
-
-            );
-
-            currentPlayer.adjectiveHistory.push(
-
-                ...(player.game?.Adjective?.history || [])
-
-            );
-
-        }
-
     }
 
     //----------------------------------------------------------
@@ -342,9 +317,9 @@ const sortLeaderboard = (leaderboard = []) => {
  * Returns the complete Word Hunt leaderboard.
  * ============================================================
  */
-const getWordHuntLeaderboard = () => {
+const getWordHuntLeaderboard = async () => {
 
-    const leaderboard = buildLeaderboard();
+    const leaderboard = await buildLeaderboard();
 
     return sortLeaderboard(leaderboard);
 
@@ -362,9 +337,9 @@ const getWordHuntLeaderboard = () => {
  * contain a unique playerId.
  * ============================================================
  */
-const getPlayerRank = (playerName) => {
+const getPlayerRank = async (playerName) => {
 
-    const leaderboard = getWordHuntLeaderboard();
+    const leaderboard = await getWordHuntLeaderboard();
 
     const player = leaderboard.find(
         (row) => row.playerName.toLowerCase() === playerName.toLowerCase()
@@ -385,9 +360,9 @@ const getPlayerRank = (playerName) => {
  * Returns the Top N players.
  * ============================================================
  */
-const getTopPlayers = (limit = 10) => {
+const getTopPlayers = async (limit = 10) => {
 
-    const leaderboard = getWordHuntLeaderboard();
+    const leaderboard = await getWordHuntLeaderboard();
 
     return leaderboard.slice(0, limit);
 
@@ -398,9 +373,9 @@ const getTopPlayers = (limit = 10) => {
  * Returns leaderboard statistics.
  * ============================================================
  */
-const getLeaderboardStats = () => {
+const getLeaderboardStats = async () => {
 
-    const leaderboard = getWordHuntLeaderboard();
+    const leaderboard = await getWordHuntLeaderboard();
 
     return {
 
