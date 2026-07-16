@@ -197,7 +197,7 @@ class GameServiceManager {
 
   async writeStoryInfoOnlySA() {
     try {
-      if (this.manager.verifyLanguage()) {
+      if (this.manager.verifyLanguage() && this.manager.verifyPlayer()) {
         const response = await this.writeStoryInfo();
 
         return response;
@@ -224,8 +224,9 @@ class GameServiceManager {
         this.adjCount ?? 0,
         this.adjHint ?? 0,
       );
+      const result = await writeStoryInformation(storyInfo);
 
-      return await writeStoryInformation(storyInfo);
+      return result;
     } catch (e) {
       throw new Error(e.message);
     }

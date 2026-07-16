@@ -365,7 +365,6 @@ class FindNounsGame {
         this.foundWords.length,
         this.game.nounGameKey,
       );
-      console.log(res);
       // sending data to backend irrespective user [guest, signed in user]
       // const res = await this.manager.writeGameInformation(
       //   completionTime,

@@ -127,6 +127,9 @@ class Game {
         }
         // writing if the story information only if the language is SA
         await this.serviceManager.writeStoryInfoOnlySA();
+        //Writes the story info irrespective of any language
+        //NOTE: Before switching Database reset is a must to avoid Conflicts
+        // await this.serviceManager.writeStoryInfo();
         await this.serviceManager.retrievePlayerInfo();
 
         this.landingPage.hide();
