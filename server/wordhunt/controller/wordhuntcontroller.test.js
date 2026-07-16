@@ -7,6 +7,22 @@ jest.mock("../service/findNounsVerbsAndAdjectivesGameSanskrit");
 const findNounVerbAndAdjEnglish = require("../service/findNounsVerbsAndAdjectivesGameEnglish");
 const findNounVerbAndAdjSanskrit = require("../service/findNounsVerbsAndAdjectivesGameSanskrit");
 
+const {
+  initWordHuntRepo,
+  retrieveAllMetaData,
+  insertStroyInfo,
+  insertGameData,
+  getPlayerInfoByStory,
+} = require("../service/gameservice");
+
+jest.mock("../service/gameservice.js", () => ({
+  initWordHuntRepo: jest.fn(),
+  retrieveAllMetaData: jest.fn(),
+  insertStroyInfo: jest.fn(),
+  insertGameData: jest.fn(),
+  getPlayerInfoByStory: jest.fn(),
+}));
+
 afterEach(() => {
   jest.clearAllMocks();
 });

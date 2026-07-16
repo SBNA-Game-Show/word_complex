@@ -11,6 +11,7 @@ const {
   getAll,
   addStoryInfo,
   addGameData,
+  fetchPlayerData,
 } = require("../controller/gamecontroller");
 
 const {
@@ -36,6 +37,7 @@ wordHuntRouter.get("/leaderboard/player/:playerName", getPlayerRank);
 wordHuntRouter.post("/initGame", initGame);
 wordHuntRouter.post("/addStoryInfo", addStoryInfo);
 wordHuntRouter.post("/addGameData", addGameData);
+wordHuntRouter.post("/playerData", fetchPlayerData);
 
 //GET ROUTES
 wordHuntRouter.get("/allGameData", getAll);

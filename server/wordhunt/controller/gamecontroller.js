@@ -6,6 +6,7 @@ const {
   retrieveAllMetaData,
   insertStroyInfo,
   insertGameData,
+  getPlayerInfoByStory,
 } = require("../service/gameservice");
 
 const initGame = async (req, res) => {
@@ -122,4 +123,28 @@ const addGameData = async (req, res) => {
   }
 };
 
-module.exports = { initGame, getAll, addStoryInfo, addGameData };
+const fetchPlayerData = async (req, res) => {
+  try {
+    const { gameId, storyId, playerName } = req.body;
+
+    const response = await getPlayerInfoByStory(gameId, storyId, playerName);
+
+    return res.status(200).json({
+      success: true,
+      message: response,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+module.exports = {
+  initGame,
+  getAll,
+  addStoryInfo,
+  addGameData,
+  fetchPlayerData,
+};

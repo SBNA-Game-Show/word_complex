@@ -182,6 +182,18 @@ class ControlPanel {
 
     return panel;
   }
+  disableNextButton() {
+    if (!this.nextButton) return;
+
+    this.nextButton.mouseEnabled = false;
+    this.nextButton.alpha = 0.5;
+  }
+  enableNextButton() {
+    if (!this.nextButton) return;
+
+    this.nextButton.mouseEnabled = true;
+    this.nextButton.alpha = 1;
+  }
 }
 
 export default ControlPanel;

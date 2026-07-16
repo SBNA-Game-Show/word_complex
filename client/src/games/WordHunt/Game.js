@@ -59,6 +59,9 @@ class Game {
     this.TOTAL_SCORE = 0;
     this.EARNED_COINS = 0;
 
+    this.gameQueue = [];
+    this.currentGameIndex = 0;
+
     // Player
     this.playerId = this.authUser.id;
     this.player = this.authUser.name;
@@ -67,28 +70,29 @@ class Game {
     this.maxScore = 0;
     this.allowedHints = 0;
     this.hintPenalty = 0;
-    this.playerInfo = [
-      // {
-      //   storyId: "04e9ae48-5570-4cd0-8968-a2179353164b",
-      //   games: {
-      //     Noun: {
-      //       bestTime: "0.13",
-      //       coins: 0,
-      //       totalScore: 0,
-      //     },
-      //     Verb: {
-      //       bestTime: "0.25",
-      //       coins: 0,
-      //       totalScore: 0,
-      //     },
-      //     Adjective: {
-      //       bestTime: "0.10",
-      //       coins: 0,
-      //       totalScore: 0,
-      //     },
-      //   },
-      // },
-    ];
+    // this.playerInfo = [
+    //   // {
+    //   //   storyId: "04e9ae48-5570-4cd0-8968-a2179353164b",
+    //   //   games: {
+    //   //     Noun: {
+    //   //       bestTime: "0.13",
+    //   //       coins: 0,
+    //   //       totalScore: 0,
+    //   //     },
+    //   //     Verb: {
+    //   //       bestTime: "0.25",
+    //   //       coins: 0,
+    //   //       totalScore: 0,
+    //   //     },
+    //   //     Adjective: {
+    //   //       bestTime: "0.10",
+    //   //       coins: 0,
+    //   //       totalScore: 0,
+    //   //     },
+    //   //   },
+    //   // },
+    // ];
+    this.playerInfo = {};
     this.hasGameStarted = false;
   }
 
@@ -97,7 +101,8 @@ class Game {
   //----------------------------------
 
   async start() {
-    console.log("Player Info: ", this.player);
+    // console.log("Player Info: ", this.player);
+    await this.serviceManager.extractGameId();
     this.hasGameStarted = false; // Reset explicitly on menu returns
     this.landingPage = new LandingPage(this).createLandingPage();
 
@@ -120,9 +125,12 @@ class Game {
           // console.log("Loading English pipeline data assets...");
           await this.serviceManager.getPassageByIdEnglish();
         }
+        await this.serviceManager.writeStoryInfo();
+        await this.serviceManager.retrievePlayerInfo();
 
         this.landingPage.hide();
-        this.startNounGame();
+        this.initGame();
+        // this.startNounGame();
       } catch (error) {
         console.error("Failed loading backend content: ", error);
         this.landingPage.button.mouseEnabled = true;
@@ -153,6 +161,58 @@ class Game {
 
     this.stage.removeAllChildren();
     this.stage.update();
+  }
+  // Initializing the Games Based on Story Data to Handle No Words to Find
+
+  initGame() {
+    if (!this.wordTypes) {
+      console.error("Missing word types");
+      return;
+    }
+
+    this.gameQueue = [];
+
+    if (this.wordTypes.nouns.length > 0) {
+      this.gameQueue.push(this.nounGameKey);
+    }
+
+    if (this.wordTypes.verbs.length > 0) {
+      this.gameQueue.push(this.verbGameKey);
+    }
+
+    if (this.wordTypes.adjectives.length > 0) {
+      this.gameQueue.push(this.adjGameKey);
+    }
+
+    if (this.gameQueue.length === 0) {
+      console.log("GAME HAS ENDED - NO WORDS FOUND");
+      return;
+    }
+
+    this.currentGameIndex = 0;
+    this.startCurrentGame();
+  }
+  startCurrentGame() {
+    const currentGame = this.gameQueue[this.currentGameIndex];
+
+    // console.log("Starting:", currentGame);
+
+    switch (currentGame) {
+      case this.nounGameKey:
+        this.startNounGame();
+        break;
+
+      case this.verbGameKey:
+        this.startVerbGame();
+        break;
+
+      case this.adjGameKey:
+        this.startAdjectiveGame();
+        break;
+
+      default:
+        console.log("No game found");
+    }
   }
 
   //----------------------------------
@@ -201,6 +261,23 @@ class Game {
 
       this.stage.update();
     });
+  }
+
+  nextGame() {
+    this.currentGameIndex++;
+    this.hasGameStarted = false;
+    this.gameOver = true;
+    this.isInputLocked = true;
+
+    this.destroy(); // cleanup timers/listeners
+
+    if (this.currentGameIndex >= this.gameQueue.length) {
+      console.log("All Games Completed");
+      this.start();
+      return;
+    }
+
+    this.startCurrentGame();
   }
 }
 

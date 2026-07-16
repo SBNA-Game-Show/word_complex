@@ -1,6 +1,5 @@
 import ZimLabel from "../../../zimcomponents/ZimLabel";
 import Blackboard from "../UI/Blackboard";
-import Chalk from "../UI/Chalk";
 import { emit } from "../../../scenes/sceneBus";
 import Timer from "../utils/Timer";
 import GameManager from "../utils/GameManager";
@@ -137,11 +136,14 @@ class FindVerbGame {
     };
 
     this.controlPanel.onNextClicked = () => {
+      if (this.game.isInputLocked) return;
+      this.game.isInputLocked = true;
       this.gameOver = true;
       this.timer.stop();
       this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
-      this.game.startAdjectiveGame();
+      // this.game.startAdjectiveGame();
+      this.game.nextGame();
     };
 
     this.controlPanel.hintClicked = () => {
@@ -211,13 +213,20 @@ class FindVerbGame {
 
         this.messageBar.showTimeOverMessage(this.timeUpKey);
         if (this.foundWords.length >= 2) {
-          const res = await this.manager.writeGameInformation(
+          // writing to DB for only sanskrit version and signed in player
+          const res = await this.manager.addGameData(
             completionTime,
             this.hintsUsed,
             this.foundWords.length,
             this.game.verbGameKey,
           );
-          // console.log(res);
+          // sending data to backend irrespective user [guest, signed in user]
+          // const res = await this.manager.writeGameInformation(
+          //   completionTime,
+          //   this.hintsUsed,
+          //   this.foundWords.length,
+          //   this.game.verbGameKey,
+          // );
         }
         emit("hint", { text: this.timeUpKey });
 
@@ -317,13 +326,21 @@ class FindVerbGame {
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
       this.messageBar.showWinningMessage(this.game.verbGameKey, completionTime);
-      const res = await this.manager.writeGameInformation(
+      // writing to DB for only sanskrit version and signed in player
+      const res = await this.manager.addGameData(
         completionTime,
         this.hintsUsed,
         this.foundWords.length,
         this.game.verbGameKey,
       );
-      s;
+      // sending data to backend irrespective user [guest, signed in user]
+      // const res = await this.manager.writeGameInformation(
+      //   completionTime,
+      //   this.hintsUsed,
+      //   this.foundWords.length,
+      //   this.game.verbGameKey,
+      // );
+
       this.game.hasGameStarted = false;
       emit("complete");
     }

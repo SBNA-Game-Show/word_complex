@@ -13,37 +13,41 @@ const MAXIMUM_STORIES_TO_HAVE_IN_A_GAME = 4;
  * @returns
  */
 const initializeGame = async (storyId, gameId) => {
-  if (!Array.isArray(storyId)) {
-    throw new Error(
-      "Story ID's Must be Passed as an Array. To Initialize Word Hunt DB",
-    );
+  try {
+    if (!Array.isArray(storyId)) {
+      throw new Error(
+        "Story ID's Must be Passed as an Array. To Initialize Word Hunt DB",
+      );
+    }
+
+    if (storyId.length === 0) {
+      throw new Error("No Story Id is Passed. To Initialize Word Hunt DB");
+    }
+
+    if (storyId.length > MAXIMUM_STORIES_TO_HAVE_IN_A_GAME) {
+      throw new Error(
+        `Maximum Limit of Stories in a Game is ${MAXIMUM_STORIES_TO_HAVE_IN_A_GAME}. Instead ${storyId.length} were Provided. To Initialize Word Hunt DB`,
+      );
+    }
+
+    if (!gameId) {
+      throw new Error("Game Id is required. To Initialize Word Hunt DB");
+    }
+
+    const stories = storyId.map((id) => ({
+      storyId: id,
+      gameInfo: [],
+    }));
+
+    const game = new WordHunt({
+      _id: gameId,
+      stories,
+    });
+
+    return await game.save();
+  } catch (e) {
+    throw new Error(e.message);
   }
-
-  if (storyId.length === 0) {
-    throw new Error("No Story Id is Passed. To Initialize Word Hunt DB");
-  }
-
-  if (storyId.length > MAXIMUM_STORIES_TO_HAVE_IN_A_GAME) {
-    throw new Error(
-      `Maximum Limit of Stories in a Game is ${MAXIMUM_STORIES_TO_HAVE_IN_A_GAME}. Instead ${storyId.length} were Provided. To Initialize Word Hunt DB`,
-    );
-  }
-
-  if (!gameId) {
-    throw new Error("Game Id is required. To Initialize Word Hunt DB");
-  }
-
-  const stories = storyId.map((id) => ({
-    storyId: id,
-    gameInfo: [],
-  }));
-
-  const game = new WordHunt({
-    _id: gameId,
-    stories,
-  });
-
-  return await game.save();
 };
 /**
  *
@@ -51,9 +55,13 @@ const initializeGame = async (storyId, gameId) => {
  * data purposes
  */
 const getAllGameInfo = async () => {
-  const games = await WordHunt.find();
+  try {
+    const games = await WordHunt.find();
 
-  return games;
+    return games;
+  } catch (e) {
+    throw new Error(e.message);
+  }
 };
 /**
  * According to given game id, story id and data like number of words to find in the story.
@@ -170,19 +178,7 @@ const registerGameData = async (
   }
 };
 
-const retrievePlayerInfoByStory = async (gameId, storyId, playerName) => {
-  if (!gameId) {
-    throw new Error("Game Id is required");
-  }
-
-  if (!storyId) {
-    throw new Error("Story Id is Required");
-  }
-
-  if (!playerName) {
-    throw new Error("Player Name is Required");
-  }
-
+const retrievePlayerInfoByStory = async (gameId, storyId) => {
   const game = await WordHunt.findById(gameId);
 
   if (!game) {
@@ -195,16 +191,7 @@ const retrievePlayerInfoByStory = async (gameId, storyId, playerName) => {
     throw new Error("No Story Found By Given Id");
   }
 
-  const player = story.gameInfo.find(
-    (player) => player.playerName === playerName,
-  );
-  console.log(player);
-
-  if (!player) {
-    throw new Error("No Player Found By Given Name");
-  }
-
-  return player;
+  return story;
 };
 
 module.exports = {
@@ -212,4 +199,5 @@ module.exports = {
   getAllGameInfo,
   initializeStoryInfo,
   registerGameData,
+  retrievePlayerInfoByStory,
 };
