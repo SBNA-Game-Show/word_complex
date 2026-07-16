@@ -125,7 +125,8 @@ class Game {
           // console.log("Loading English pipeline data assets...");
           await this.serviceManager.getPassageByIdEnglish();
         }
-        await this.serviceManager.writeStoryInfo();
+        // writing if the story information only if the language is SA
+        await this.serviceManager.writeStoryInfoOnlySA();
         await this.serviceManager.retrievePlayerInfo();
 
         this.landingPage.hide();
