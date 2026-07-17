@@ -111,6 +111,18 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     setError("");
+
+    // E2E AUTH BYPASS:
+    // The E2E user exists only in React state and is not registered with
+    // Firebase. Clear that local test user directly so Playwright can verify
+    // logout and session-reset behaviour without changing production auth.
+    if (E2E_AUTH_BYPASS) {
+      setUser(null);
+      setStatus("idle");
+      setIsInitializing(false);
+      return;
+    }
+
     try {
       await firebaseLogout();
     } catch (logoutError) {

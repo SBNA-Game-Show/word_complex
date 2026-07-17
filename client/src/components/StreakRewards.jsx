@@ -8,17 +8,26 @@ import "./StreakRewards.css";
 // including the two buddies gifted at day 10 and day 20. All the numbers come
 // from useProgress() (served by the backend), so nothing is hardcoded here.
 
-const characterById = (id) => CHARACTERS.find((character) => character.id === id) ?? null;
+const characterById = (id) =>
+  CHARACTERS.find((character) => character.id === id) ?? null;
 
 export default function StreakRewards({ onBack }) {
   const { streak, stars, ladder, loading } = useProgress();
 
+  // E2E TEST SELECTORS:
+  // These attributes expose the existing reward ladder states to Playwright.
+  // They do not change streak calculations, rewards, or player interactions.
   return (
-    <main className="streak-rewards">
+    <main className="streak-rewards" data-testid="streak-rewards-page">
       <BackgroundDecor />
 
       <header className="game-header">
-        <button className="back-button" type="button" onClick={onBack}>
+        <button
+          className="back-button"
+          data-testid="streak-rewards-back-button"
+          type="button"
+          onClick={onBack}
+        >
           <span className="back-arrow" aria-hidden="true">
             &larr;
           </span>
@@ -29,11 +38,13 @@ export default function StreakRewards({ onBack }) {
           <h1>Your Streak</h1>
         </div>
         <div className="sr-stats">
-          <span className="sr-stat">
-            <span aria-hidden="true">🔥</span> {streak} day{streak === 1 ? "" : "s"}
+          <span className="sr-stat" data-testid="streak-rewards-streak">
+            <span aria-hidden="true">🔥</span> {streak} day
+            {streak === 1 ? "" : "s"}
           </span>
-          <span className="sr-stat alt">
-            <span aria-hidden="true">⭐</span> {stars} star{stars === 1 ? "" : "s"}
+          <span className="sr-stat alt" data-testid="streak-rewards-stars">
+            <span aria-hidden="true">⭐</span> {stars} star
+            {stars === 1 ? "" : "s"}
           </span>
         </div>
       </header>
@@ -51,7 +62,9 @@ export default function StreakRewards({ onBack }) {
 
       <section className="sr-ladder" aria-label="Reward ladder">
         {loading && ladder.length === 0 ? (
-          <p className="sr-loading">Loading your rewards…</p>
+          <p className="sr-loading" data-testid="streak-rewards-loading">
+            Loading your rewards…
+          </p>
         ) : (
           <ol className="sr-grid">
             {ladder.map(({ day, stars: dayStars, gift }) => {
@@ -71,7 +84,13 @@ export default function StreakRewards({ onBack }) {
                 <li
                   key={day}
                   className={className}
-                  style={buddy ? { "--c": buddy.c, "--c2": buddy.c2 } : undefined}
+                  data-testid={`streak-reward-day-${day}`}
+                  data-earned={earned ? "true" : "false"}
+                  data-today={isToday ? "true" : "false"}
+                  data-gift={buddy?.id ?? ""}
+                  style={
+                    buddy ? { "--c": buddy.c, "--c2": buddy.c2 } : undefined
+                  }
                 >
                   <span className="sr-day-num">Day {day}</span>
 

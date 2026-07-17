@@ -244,13 +244,22 @@ export default function HowToPlay({
   const { logout, user } = useAuth();
   const guide = guides[gameId] ?? guides["sentence-builder"];
 
+  // E2E TEST SELECTORS:
+  // The How-to-Play page is shared by all games. These selectors let Playwright
+  // verify the selected guide and its existing Back/Play actions without relying
+  // on CSS classes or changing player-facing behaviour.
   return (
-    <main className="how-to-play">
+    <main className="how-to-play" data-testid={`how-to-play-page-${gameId}`}>
       <BackgroundDecor />
 
       <header className="htp-header">
         <div className="htp-nav-left">
-          <button className="back-button" type="button" onClick={onBack}>
+          <button
+            className="back-button"
+            data-testid={`how-to-play-back-${gameId}`}
+            type="button"
+            onClick={onBack}
+          >
             <span className="back-arrow" aria-hidden="true">
               &larr;
             </span>
@@ -269,7 +278,11 @@ export default function HowToPlay({
           <p className="htp-section-label">The 3 steps</p>
           <div className="htp-steps">
             {guide.steps.map((step, index) => (
-              <div className="htp-step-card" key={step.title}>
+              <div
+                className="htp-step-card"
+                data-testid={`how-to-play-step-${gameId}-${index + 1}`}
+                key={step.title}
+              >
                 <div className={`htp-art ${step.artClass}`} aria-hidden="true">
                   {step.art}
                 </div>
@@ -290,7 +303,11 @@ export default function HowToPlay({
           <p className="htp-section-label">Good to know</p>
           <div className="htp-tips">
             {guide.tips.map(([title, copy], index) => (
-              <div className="htp-tip" key={title}>
+              <div
+                className="htp-tip"
+                data-testid={`how-to-play-tip-${gameId}-${index + 1}`}
+                key={title}
+              >
                 <span
                   className="htp-tip-icon"
                   style={{ background: tipColors[index] }}
@@ -307,7 +324,12 @@ export default function HowToPlay({
         </section>
 
         <div className="htp-footer">
-          <button className="btn-primary" type="button" onClick={onPlay}>
+          <button
+            className="btn-primary"
+            data-testid={`how-to-play-play-${gameId}`}
+            type="button"
+            onClick={onPlay}
+          >
             Play {guide.title}
             <span className="btn-arrow" aria-hidden="true">
               &rarr;

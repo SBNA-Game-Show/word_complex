@@ -65,7 +65,9 @@ function Avatar({ row, className = "" }) {
       </span>
     );
   }
-  return <span className={`lb-avatar lb-avatar--initials ${className}`}>{tag}</span>;
+  return (
+    <span className={`lb-avatar lb-avatar--initials ${className}`}>{tag}</span>
+  );
 }
 
 export default function LeaderboardPage({ onBack }) {
@@ -125,6 +127,10 @@ export default function LeaderboardPage({ onBack }) {
   // need to pin a duplicate "you" row at the bottom.
   const youInList = user?.id && rows.some((r) => r.uuid === user.id);
 
+  // E2E TEST SELECTORS:
+  // These attributes expose the existing leaderboard states, board tabs, player
+  // rows, and navigation actions to Playwright. They do not change ranking,
+  // score formatting, request behaviour, or player-facing interactions.
   return (
     <main className="lb-page" data-testid="leaderboard-page">
       {/* Layer 1 + 2: background scene and the wizard mascot (separate so the
@@ -136,7 +142,12 @@ export default function LeaderboardPage({ onBack }) {
 
       <div className="lb-content">
         <header className="lb-header">
-          <button className="lb-back" type="button" onClick={onBack}>
+          <button
+            className="lb-back"
+            data-testid="leaderboard-back-button"
+            type="button"
+            onClick={onBack}
+          >
             <span aria-hidden="true">&larr;</span> Back
           </button>
           <div className="lb-titles">
@@ -154,26 +165,35 @@ export default function LeaderboardPage({ onBack }) {
               className={`lb-tab${board === b.key ? " is-active" : ""}${
                 b.key === "master" ? " lb-tab--master" : ""
               }`}
+              data-testid={`leaderboard-tab-${b.key}`}
+              data-board-key={b.key}
               aria-pressed={board === b.key}
               onClick={() => setBoard(b.key)}
             >
-              {b.key === "master" && <span className="lb-star" aria-hidden="true">★</span>}
+              {b.key === "master" && (
+                <span className="lb-star" aria-hidden="true">
+                  ★
+                </span>
+              )}
               {b.label}
             </button>
           ))}
         </nav>
 
-        <section className="lb-card">
+        <section className="lb-card" data-testid="leaderboard-card">
           <div className="lb-card-head">
             <div className="lb-card-title">
-              <span className="lb-trophy" aria-hidden="true">🏆</span>
-              <h2>
+              <span className="lb-trophy" aria-hidden="true">
+                🏆
+              </span>
+              <h2 data-testid="leaderboard-board-title">
                 {BOARDS.find((b) => b.key === board)?.label} — Top Players
               </h2>
             </div>
             <button
               type="button"
               className="lb-refresh"
+              data-testid="leaderboard-refresh-button"
               onClick={() => loadBoard("refresh")}
               disabled={refreshing || status === "loading"}
               aria-label="Refresh leaderboard"
@@ -189,17 +209,28 @@ export default function LeaderboardPage({ onBack }) {
           </div>
 
           {status === "loading" && (
-            <div className="lb-state">Loading the board…</div>
+            <div
+              className="lb-state"
+              data-testid="leaderboard-loading"
+              role="status"
+              aria-live="polite"
+            >
+              Loading the board…
+            </div>
           )}
 
           {status === "error" && (
-            <div className="lb-state lb-state--error">
+            <div
+              className="lb-state lb-state--error"
+              data-testid="leaderboard-error"
+              role="alert"
+            >
               Couldn’t load the leaderboard. {error}
             </div>
           )}
 
           {status === "ready" && rows.length === 0 && (
-            <div className="lb-state">
+            <div className="lb-state" data-testid="leaderboard-empty">
               No scores yet — be the first to climb the tower!
             </div>
           )}
@@ -207,24 +238,42 @@ export default function LeaderboardPage({ onBack }) {
           {status === "ready" && rows.length > 0 && (
             <>
               {/* Podium: top 3, arranged silver / gold / bronze */}
-              <div className="lb-podium">
+              <div className="lb-podium" data-testid="leaderboard-podium">
                 {PODIUM_LAYOUT.map((idx) => {
                   const row = podium[idx];
-                  if (!row) return <div key={idx} className="lb-podium-slot is-empty" />;
+                  if (!row) {
+                    return (
+                      <div
+                        key={idx}
+                        className="lb-podium-slot is-empty"
+                        data-testid={`leaderboard-podium-rank-${idx + 1}`}
+                        data-empty="true"
+                      />
+                    );
+                  }
                   const tier = PODIUM_TIERS[idx];
                   return (
                     <div
                       key={row.uuid}
                       className={`lb-podium-slot lb-podium-slot--${tier}`}
+                      data-testid={`leaderboard-podium-rank-${idx + 1}`}
+                      data-player-id={row.uuid}
+                      data-rank={idx + 1}
                     >
                       <span className="lb-podium-rank">{idx + 1}</span>
                       <Avatar row={row} className="lb-avatar--podium" />
                       <span className="lb-podium-name">
-                        {row.uuid === user?.id ? "You" : row.displayName || "Player"}
+                        {row.uuid === user?.id
+                          ? "You"
+                          : row.displayName || "Player"}
                       </span>
-                      <span className="lb-podium-score">{formatScore(row.score)}</span>
+                      <span className="lb-podium-score">
+                        {formatScore(row.score)}
+                      </span>
                       {!isMaster && row.bestTime != null && (
-                        <span className="lb-podium-time">{formatTime(row.bestTime)}</span>
+                        <span className="lb-podium-time">
+                          {formatTime(row.bestTime)}
+                        </span>
                       )}
                     </div>
                   );
@@ -233,7 +282,7 @@ export default function LeaderboardPage({ onBack }) {
 
               {/* Ranked list, rank 4 onward */}
               {listRows.length > 0 && (
-                <div className="lb-list">
+                <div className="lb-list" data-testid="leaderboard-ranked-list">
                   <div className="lb-list-head">
                     <span>Rank</span>
                     <span>Player</span>
@@ -245,19 +294,28 @@ export default function LeaderboardPage({ onBack }) {
                     <div
                       key={row.uuid}
                       className={`lb-row${row.uuid === user?.id ? " is-you" : ""}`}
+                      data-testid={`leaderboard-row-${row.uuid}`}
+                      data-player-id={row.uuid}
+                      data-rank={row.rank}
                     >
                       <span className="lb-rank">{row.rank}</span>
                       <span className="lb-player">
                         <Avatar row={row} />
                         <span className="lb-player-name">
-                          {row.uuid === user?.id ? "You" : row.displayName || "Player"}
+                          {row.uuid === user?.id
+                            ? "You"
+                            : row.displayName || "Player"}
                         </span>
-                        {row.uuid === user?.id && <span className="lb-you-tag">YOU</span>}
+                        {row.uuid === user?.id && (
+                          <span className="lb-you-tag">YOU</span>
+                        )}
                       </span>
                       <span className="lb-col-score">
                         <strong>{formatScore(row.score)}</strong>
                         {!isMaster && row.bestTime != null && (
-                          <em className="lb-time">{formatTime(row.bestTime)}</em>
+                          <em className="lb-time">
+                            {formatTime(row.bestTime)}
+                          </em>
                         )}
                       </span>
                     </div>
@@ -267,7 +325,12 @@ export default function LeaderboardPage({ onBack }) {
 
               {/* Pinned "you" row — only when the player isn't already shown above */}
               {you && !youInList && (
-                <div className="lb-row lb-row--pinned is-you">
+                <div
+                  className="lb-row lb-row--pinned is-you"
+                  data-testid="leaderboard-pinned-player"
+                  data-player-id={you.uuid}
+                  data-rank={you.rank}
+                >
                   <span className="lb-rank">{you.rank}</span>
                   <span className="lb-player">
                     <Avatar row={{ displayName: user?.name, uuid: user?.id }} />
@@ -282,7 +345,10 @@ export default function LeaderboardPage({ onBack }) {
 
               {/* Signed in but no record yet */}
               {user?.id && !you && !youInList && (
-                <div className="lb-state lb-state--hint">
+                <div
+                  className="lb-state lb-state--hint"
+                  data-testid="leaderboard-no-player-record"
+                >
                   Play a game to claim your spot on the board.
                 </div>
               )}
