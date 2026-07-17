@@ -402,7 +402,7 @@ class FindNounsGame {
       this.foundWordsCont = null;
     }
 
-    this.messageBar.reset();
+    this.messageBar = null;
     this.controlPanel = null;
     this.playerInformation = null;
 
