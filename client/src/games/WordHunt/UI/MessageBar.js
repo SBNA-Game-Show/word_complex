@@ -519,6 +519,42 @@ class MessageBar {
 
     showNext();
   }
+  reset() {
+    this.clearActiveMessages();
+
+    this.countdownRunning = false;
+
+    this.countdownTimeouts.forEach((id) => {
+      clearTimeout(id);
+    });
+
+    this.countdownTimeouts = [];
+
+    if (this.countdownFlareIntervalId) {
+      clearInterval(this.countdownFlareIntervalId);
+      this.countdownFlareIntervalId = null;
+    }
+
+    if (this.winningContainer) {
+      this.winningContainer.removeFrom();
+      this.winningContainer = null;
+    }
+
+    if (this.timeOverContainer) {
+      this.timeOverContainer.removeFrom();
+      this.timeOverContainer = null;
+    }
+
+    this.continueButton = null;
+    this.exitButton = null;
+    this.restartButton = null;
+
+    this.onContinue = null;
+    this.onExit = null;
+    this.onRestart = null;
+
+    this.game.stage.update();
+  }
 }
 
 export default MessageBar;

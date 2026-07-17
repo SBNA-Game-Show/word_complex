@@ -96,6 +96,7 @@ class FindVerbGame {
       this.gameOver = true;
       this.timer.stop(); // Clear out loop strictly
       this.foundWordsCont.reset();
+      this.game.isStartingGame = false;
       this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
       this.game.isInputLocked = false;
@@ -116,7 +117,7 @@ class FindVerbGame {
       this.game.isInputLocked = false;
 
       this.game.stage.removeAllChildren();
-      this.displayPassage();
+      this.game.findVerbGame.displayPassage();
     };
 
     //-----------------------------------

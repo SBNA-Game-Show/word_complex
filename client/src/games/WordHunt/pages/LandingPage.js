@@ -128,7 +128,7 @@ class LandingPage {
     this.button.label.size = 32;
     this.button.label.bold = true;
 
-     //---------------------------------
+    //---------------------------------
     // TOGGLE BUTTON (ENGLISH VS SANSKRIT Switching)
     //---------------------------------
     const btnWidth = 80;
@@ -211,8 +211,14 @@ class LandingPage {
   }
 
   hide() {
+    // console.log("Landing hide called", this.container);
+
     if (this.container) {
       this.container.removeFrom();
+
+      this.container = null;
+
+      this.game.stage.update();
     }
   }
 }

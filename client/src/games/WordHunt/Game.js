@@ -94,6 +94,7 @@ class Game {
     // ];
     this.playerInfo = {};
     this.hasGameStarted = false;
+    this.isStartingGame = false;
   }
 
   //----------------------------------
@@ -104,6 +105,10 @@ class Game {
     // console.log("Player Info: ", this.player);
     await this.serviceManager.extractGameId();
     this.hasGameStarted = false; // Reset explicitly on menu returns
+    if (this.landingPage) {
+      this.landingPage.hide();
+      this.landingPage = null;
+    }
     this.landingPage = new LandingPage(this).createLandingPage();
 
     // 🛠️ FIXED: Removed early API calls from here.
@@ -150,8 +155,7 @@ class Game {
     this.hasGameStarted = false;
     this.isInputLocked = true;
     this.messageBar?.clearActiveMessages?.();
-
-    [this.findNounsGame, this.findVerbGame, this.findAdjectiveGame].forEach(
+    [(this.findNounsGame, this.findVerbGame, this.findAdjectiveGame)].forEach(
       (activeGame) => {
         activeGame?.timer?.stop?.();
         if (activeGame?.controlPanel?.hintAutoCloseTimer) {
@@ -224,9 +228,14 @@ class Game {
   //----------------------------------
 
   startNounGame() {
-    if (this.hasGameStarted) return;
-    this.hasGameStarted = true;
+    if (this.hasGameStarted || this.isStartingGame) return;
+    this.isStartingGame = true;
     this.messageBar.countdownTimer(() => {
+      this.isStartingGame = false;
+      if (this.hasGameStarted) {
+        return;
+      }
+      this.hasGameStarted = true;
       this.findNounsGame = new FindNounsGame(this);
 
       this.findNounsGame.displayPassage();
@@ -240,9 +249,16 @@ class Game {
   //----------------------------------
 
   startVerbGame() {
-    if (this.hasGameStarted) return;
-    this.hasGameStarted = true;
+    if (this.hasGameStarted || this.isStartingGame) return;
+
+    this.isStartingGame = true;
+
     this.messageBar.countdownTimer(() => {
+      this.isStartingGame = false;
+      if (this.hasGameStarted) {
+        return;
+      }
+      this.hasGameStarted = true;
       this.findVerbGame = new FindVerbGame(this);
 
       this.findVerbGame.displayPassage();
@@ -256,9 +272,14 @@ class Game {
   //----------------------------------
 
   startAdjectiveGame() {
-    if (this.hasGameStarted) return;
-    this.hasGameStarted = true;
+    if (this.hasGameStarted || this.isStartingGame) return;
+    this.isStartingGame = true;
     this.messageBar.countdownTimer(() => {
+      this.isStartingGame = false;
+      if (this.hasGameStarted) {
+        return;
+      }
+      this.hasGameStarted = true;
       this.findAdjectiveGame = new FindAdjectiveGame(this);
 
       this.findAdjectiveGame.displayPassage();
