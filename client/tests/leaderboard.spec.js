@@ -134,6 +134,8 @@ test.describe("Standalone leaderboard", () => {
 
     await selectBoard(page, "WordHunt", "Word Hunt — Top Players");
 
+    await expect.poll(() => calls.board.WordHunt ?? 0).toBeGreaterThan(0);
+
     await expect(page.getByTestId("leaderboard-podium-rank-1")).toContainText(
       "Word Winner",
     );
@@ -193,6 +195,14 @@ test.describe("Standalone leaderboard", () => {
         ({ board, url }) =>
           board === "ContextQuiz" &&
           url.includes("/api/v1/fillInBlanks/leaderboard?limit=10"),
+      ),
+    ).toBe(true);
+
+    expect(
+      calls.lastBoardRequests.some(
+        ({ board, url }) =>
+          board === "WordHunt" &&
+          url.includes("/api/v1/wordHunt/leaderboard?limit=10"),
       ),
     ).toBe(true);
 

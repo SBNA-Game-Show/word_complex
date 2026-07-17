@@ -461,6 +461,81 @@ export async function mockLeaderboardApis(page, options = {}) {
     );
   }
 
+  /**
+   * WORD HUNT LEADERBOARD MOCK:
+   * Word Hunt now reads from its dedicated leaderboard endpoint and returns
+   * playerName/totalScore fields with bestTime formatted as "m:ss".
+   * Convert the shared deterministic fixture rows into that real API shape.
+   */
+  await page.route(
+    /\/api\/v1\/wordHunt\/leaderboard(?:\?|$)/,
+    async (route) => {
+      const board = "WordHunt";
+
+      increment(calls.board, board);
+
+      calls.lastBoardRequests.push({
+        board,
+        url: route.request().url(),
+      });
+
+      const waitMs = delayMsByBoard[board] ?? 0;
+
+      if (waitMs > 0) {
+        await delay(waitMs);
+      }
+
+      const status = statusByBoard[board] ?? 200;
+      const rows = rowsByBoard[board] ?? [];
+
+      const toWordHuntTime = (value) => {
+        if (value == null) {
+          return null;
+        }
+
+        if (typeof value === "string") {
+          return value;
+        }
+
+        const totalSeconds = Number(value) / 1000;
+
+        if (!Number.isFinite(totalSeconds)) {
+          return null;
+        }
+
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds - minutes * 60;
+
+        const secondsText = Number.isInteger(seconds)
+          ? String(seconds).padStart(2, "0")
+          : seconds.toFixed(1).padStart(4, "0");
+
+        return `${minutes}:${secondsText}`;
+      };
+
+      await fulfillJson(
+        route,
+        status === 200
+          ? {
+              success: true,
+              data: rows.map((row) => ({
+                rank: row.rank,
+                uuid: row.uuid,
+                playerName: row.displayName,
+                avatar: row.avatar ?? null,
+                totalScore: row.score,
+                bestTime: toWordHuntTime(row.bestTime),
+              })),
+            }
+          : {
+              success: false,
+              message: `${board} leaderboard unavailable.`,
+            },
+        status,
+      );
+    },
+  );
+
   await page.route(/\/api\/v1\/leaderboard\/rank(?:\?|$)/, async (route) => {
     const url = new URL(route.request().url());
     const board = url.searchParams.get("game") || "master";
