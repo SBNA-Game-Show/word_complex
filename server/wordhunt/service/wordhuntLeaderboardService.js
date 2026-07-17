@@ -2,7 +2,9 @@
  * ============================================================
  * Word Hunt Leaderboard Service
  * ------------------------------------------------------------
- * This service builds the leaderboard from the mock JSON data.
+ * This service builds the leaderboard from the live Word Hunt collection
+ * (via getAllGameInfo -> WordHunt.find()), aggregating each player's best
+ * Noun/Verb/Adjective attempts across every story.
  *
  * Ranking Rules
  * ------------------------------------------------------------
@@ -207,6 +209,10 @@ const buildLeaderboard = async () => {
                     if (!playerMap.has(name)) {
 
                         playerMap.set(name, {
+                            // Firebase UID (stored as gameInfo _id) — needed so
+                            // the master board can merge this player with their
+                            // other-game scores instead of dropping the row.
+                            uuid: player._id ?? null,
                             playerName: name,
                             nounHistory: [],
                             verbHistory: [],
@@ -269,9 +275,11 @@ const buildLeaderboard = async () => {
             [...attempts]
                 .sort(compareAttempts)[0];
 
-        leaderboard.push(
+        leaderboard.push({
 
-            buildLeaderboardRow(
+            uuid: player.uuid ?? null,
+
+            ...buildLeaderboardRow(
 
                 player.playerName,
 
@@ -281,9 +289,9 @@ const buildLeaderboard = async () => {
 
                 totalCoins
 
-            )
+            ),
 
-        );
+        });
 
     }
 
