@@ -46,12 +46,12 @@ class Game {
     this.isInputLocked = false;
 
     // BASE SETTINGS
-    this.WORD_TIMING = 2 / 60;
-    this.BASE_SCORE = 1;
+    this.WORD_TIMING = 5 / 60; // five seconds per word to find
+    this.BASE_SCORE = 10;
     this.BASE_PENALTY = 0.25;
     this.BASE_HINTS = 1;
-    this.BASE_COIN = 2; // FOR EACH 10 points 2 coins
-    this.BASE_COIN_SCORE = 10;
+    this.BASE_COIN = 2; // FOR EACH 20 points 2 coins
+    this.BASE_COIN_SCORE = 20;
     this.languages = ["EN", "SA"];
     this.LANGUAGE = this.languages[0];
 

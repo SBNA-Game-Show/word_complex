@@ -368,6 +368,8 @@ class FindNounsGame {
         this.foundWords.length,
         this.game.nounGameKey,
       );
+      this.game.TOTAL_SCORE = 0;
+      this.game.EARNED_COINS = 0;
       // sending data to backend irrespective user [guest, signed in user]
       // const res = await this.manager.writeGameInformation(
       //   completionTime,
