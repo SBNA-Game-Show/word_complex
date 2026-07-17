@@ -4,17 +4,18 @@ on:
   push:
     branches:
       - development
-      - main
+      - playwright-tests-Nawaf
     paths:
       - "client/**"
       - ".github/workflows/playwright-non-game.yml"
+
   pull_request:
     branches:
       - development
-      - main
     paths:
       - "client/**"
       - ".github/workflows/playwright-non-game.yml"
+
   workflow_dispatch:
 
 permissions:
@@ -72,7 +73,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-non-game-diagnostics
+          name: playwright-non-game-diagnostics-${{ github.run_id }}
           path: |
             client/playwright-report/
             client/test-results/

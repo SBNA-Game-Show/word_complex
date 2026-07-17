@@ -505,6 +505,55 @@ export async function mockLeaderboardApis(page, options = {}) {
     handleBoardRequest(route, "ContextQuiz"),
   );
 
+  /**
+   * MEANING BRIDGE LEADERBOARD MOCK:
+   * Meaning Bridge now reads from its own score collection and returns `scores`
+   * using playerName/totalScore fields. Mirror that real service contract here
+   * while keeping the shared deterministic leaderboard test data.
+   */
+  await page.route(
+    /\/api\/v1\/meaningBridge\/score\/leaderboard(?:\?|$)/,
+    async (route) => {
+      const board = "MeaningBridge";
+
+      increment(calls.board, board);
+
+      calls.lastBoardRequests.push({
+        board,
+        url: route.request().url(),
+      });
+
+      const waitMs = delayMsByBoard[board] ?? 0;
+
+      if (waitMs > 0) {
+        await delay(waitMs);
+      }
+
+      const status = statusByBoard[board] ?? 200;
+      const rows = rowsByBoard[board] ?? [];
+
+      await fulfillJson(
+        route,
+        status === 200
+          ? {
+              success: true,
+              scores: rows.map((row) => ({
+                uuid: row.uuid,
+                playerName: row.displayName,
+                avatar: row.avatar ?? null,
+                totalScore: row.score,
+                bestTime: row.bestTime ?? null,
+              })),
+            }
+          : {
+              success: false,
+              message: `${board} leaderboard unavailable.`,
+            },
+        status,
+      );
+    },
+  );
+
   await page.route(
     /\/api\/v1\/passageReconstruct\/leaderboard(?:\?|$)/,
     (route) => handleBoardRequest(route, "PassageReconstruction"),

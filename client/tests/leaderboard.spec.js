@@ -175,10 +175,8 @@ test.describe("Standalone leaderboard", () => {
     expect(
       calls.lastBoardRequests.some(
         ({ board, url }) =>
-          board === "WordHunt" &&
-          url.includes("/api/v1/leaderboard?") &&
-          url.includes("game=WordHunt") &&
-          url.includes("limit=100"),
+          board === "MeaningBridge" &&
+          url.includes("/api/v1/meaningBridge/score/leaderboard?limit=100"),
       ),
     ).toBe(true);
 
@@ -198,10 +196,43 @@ test.describe("Standalone leaderboard", () => {
       ),
     ).toBe(true);
 
+    await selectBoard(page, "MeaningBridge", "Meaning Bridge — Top Players");
+
+    await expect.poll(() => calls.board.MeaningBridge ?? 0).toBeGreaterThan(0);
+
+    await expect(page.getByTestId("leaderboard-podium-rank-1")).toContainText(
+      "Meaning Master",
+    );
+
+    await expect.poll(() => calls.board.WordHunt ?? 0).toBeGreaterThan(0);
+
+    await expect
+      .poll(() => calls.board.PassageReconstruction ?? 0)
+      .toBeGreaterThan(0);
+
+    await expect.poll(() => calls.board.ContextQuiz ?? 0).toBeGreaterThan(0);
+
     expect(
       calls.lastBoardRequests.some(
         ({ board, url }) =>
-          board === "MeaningBridge" && url.includes("game=MeaningBridge"),
+          board === "MeaningBridge" &&
+          url.includes("/api/v1/meaningBridge/score/leaderboard?limit=100"),
+      ),
+    ).toBe(true);
+
+    expect(
+      calls.lastBoardRequests.some(
+        ({ board, url }) =>
+          board === "PassageReconstruction" &&
+          url.includes("/api/v1/passageReconstruct/leaderboard?limit=10"),
+      ),
+    ).toBe(true);
+
+    expect(
+      calls.lastBoardRequests.some(
+        ({ board, url }) =>
+          board === "ContextQuiz" &&
+          url.includes("/api/v1/fillInBlanks/leaderboard?limit=10"),
       ),
     ).toBe(true);
   });
