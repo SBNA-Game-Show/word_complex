@@ -64,7 +64,7 @@ const insertStroyInfo = async (gameId, storyId, storyInfo) => {
       throw new Error("Incorrect Story Information Passed ");
     }
 
-    const response = initializeStoryInfo(gameId, storyId, storyInfo);
+    const response = await initializeStoryInfo(gameId, storyId, storyInfo);
 
     if (!response) {
       return {

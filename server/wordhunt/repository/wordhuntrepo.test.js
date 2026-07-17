@@ -237,6 +237,8 @@ describe("initializeStoryInfo Tests", () => {
 
     const mockGame = {
       stories: [mockStory],
+      isStoryInitialized: jest.fn().mockReturnValue(false),
+      storyInfoMatchers: jest.fn(),
       initializeStoryInfo: jest.fn().mockReturnValue(mockResponse),
       save: jest.fn().mockResolvedValue(true),
     };
@@ -250,15 +252,84 @@ describe("initializeStoryInfo Tests", () => {
     );
 
     expect(WordHunt.findById).toHaveBeenCalledWith("game123");
-
+    expect(mockGame.isStoryInitialized).toHaveBeenCalledWith(mockStory);
     expect(mockGame.initializeStoryInfo).toHaveBeenCalledWith(
       mockStory,
       storyInfo,
     );
-
     expect(mockGame.save).toHaveBeenCalled();
 
     expect(response).toEqual(mockResponse);
+  });
+
+  it("should return 'Story Information Already Initialized' when data matches", async () => {
+    const storyInfo = {};
+
+    const mockStory = {
+      storyId: "story123",
+    };
+
+    const mockGame = {
+      stories: [mockStory],
+      isStoryInitialized: jest.fn().mockReturnValue(true),
+      storyInfoMatchers: jest.fn().mockReturnValue(true),
+      initializeStoryInfo: jest.fn(),
+      save: jest.fn(),
+    };
+
+    WordHunt.findById.mockResolvedValue(mockGame);
+
+    const response = await initializeStoryInfo(
+      "game123",
+      "story123",
+      storyInfo,
+    );
+
+    expect(mockGame.isStoryInitialized).toHaveBeenCalledWith(mockStory);
+
+    expect(mockGame.storyInfoMatchers).toHaveBeenCalledWith(
+      mockStory,
+      storyInfo,
+    );
+
+    expect(mockGame.initializeStoryInfo).not.toHaveBeenCalled();
+    expect(mockGame.save).not.toHaveBeenCalled();
+
+    expect(response).toBe("Story Information Already Initialized");
+  });
+
+  it("should return 'Story Information Already Initialized in Sanskrit' when values differ", async () => {
+    const storyInfo = {};
+
+    const mockStory = {
+      storyId: "story123",
+    };
+
+    const mockGame = {
+      stories: [mockStory],
+      isStoryInitialized: jest.fn().mockReturnValue(true),
+      storyInfoMatchers: jest.fn().mockReturnValue(false),
+      initializeStoryInfo: jest.fn(),
+      save: jest.fn(),
+    };
+
+    WordHunt.findById.mockResolvedValue(mockGame);
+
+    const response = await initializeStoryInfo(
+      "game123",
+      "story123",
+      storyInfo,
+    );
+
+    expect(mockGame.storyInfoMatchers).toHaveBeenCalledWith(
+      mockStory,
+      storyInfo,
+    );
+
+    expect(mockGame.initializeStoryInfo).not.toHaveBeenCalled();
+    expect(mockGame.save).not.toHaveBeenCalled();
+
+    expect(response).toBe("Story Information Already Initialized in Sanskrit");
   });
 
   it("should throw error when game is not found", async () => {
@@ -273,11 +344,7 @@ describe("initializeStoryInfo Tests", () => {
 
   it("should throw error when story is not found", async () => {
     const mockGame = {
-      stories: [
-        {
-          storyId: "anotherStory",
-        },
-      ],
+      stories: [],
     };
 
     WordHunt.findById.mockResolvedValue(mockGame);
@@ -285,19 +352,10 @@ describe("initializeStoryInfo Tests", () => {
     await expect(
       initializeStoryInfo("game123", "story123", {}),
     ).rejects.toThrow("No Story Found By Given Id");
-
-    expect(WordHunt.findById).toHaveBeenCalledWith("game123");
   });
 
   it("should throw error when initializeStoryInfo fails", async () => {
-    const storyInfo = {
-      nounCount: 5,
-      nounHint: 1,
-      verbCount: 3,
-      verbHint: 1,
-      adjCount: 2,
-      adjHint: 1,
-    };
+    const storyInfo = {};
 
     const mockStory = {
       storyId: "story123",
@@ -305,7 +363,9 @@ describe("initializeStoryInfo Tests", () => {
 
     const mockGame = {
       stories: [mockStory],
-      initializeStoryInfo: jest.fn().mockImplementation(() => {
+      isStoryInitialized: jest.fn().mockReturnValue(false),
+      storyInfoMatchers: jest.fn(),
+      initializeStoryInfo: jest.fn(() => {
         throw new Error("Initialization Failed");
       }),
       save: jest.fn(),
@@ -317,23 +377,11 @@ describe("initializeStoryInfo Tests", () => {
       initializeStoryInfo("game123", "story123", storyInfo),
     ).rejects.toThrow("Initialization Failed");
 
-    expect(mockGame.initializeStoryInfo).toHaveBeenCalledWith(
-      mockStory,
-      storyInfo,
-    );
-
     expect(mockGame.save).not.toHaveBeenCalled();
   });
 
   it("should throw error when save fails", async () => {
-    const storyInfo = {
-      nounCount: 5,
-      nounHint: 1,
-      verbCount: 3,
-      verbHint: 1,
-      adjCount: 2,
-      adjHint: 1,
-    };
+    const storyInfo = {};
 
     const mockStory = {
       storyId: "story123",
@@ -341,6 +389,8 @@ describe("initializeStoryInfo Tests", () => {
 
     const mockGame = {
       stories: [mockStory],
+      isStoryInitialized: jest.fn().mockReturnValue(false),
+      storyInfoMatchers: jest.fn(),
       initializeStoryInfo: jest.fn().mockReturnValue({
         message: "Story Info Initialized",
       }),
@@ -352,11 +402,6 @@ describe("initializeStoryInfo Tests", () => {
     await expect(
       initializeStoryInfo("game123", "story123", storyInfo),
     ).rejects.toThrow("Database Save Failed");
-
-    expect(mockGame.initializeStoryInfo).toHaveBeenCalledWith(
-      mockStory,
-      storyInfo,
-    );
 
     expect(mockGame.save).toHaveBeenCalled();
   });

@@ -321,17 +321,13 @@ describe("Find Nouns Verbs and Adjectives Game Sanskrit Service", () => {
 
 describe("Game Service Tests", () => {
   describe("initWordHuntRepo Tests", () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
-
     it("should initialize the Word Hunt repository successfully", async () => {
       const storyIds = ["story1", "story2"];
       const gameId = "game123";
 
       const mockResponse = {
-        _id: gameId,
-        stories: storyIds,
+        success: true,
+        message: "Word Hunt Repository Initialized Successfully",
       };
 
       initializeGame.mockResolvedValue(mockResponse);
@@ -464,11 +460,9 @@ describe("Game Service Tests", () => {
 
       const storyInfo = new StoryInfo(5, 1, 3, 1, 2, 1);
 
-      const mockResponse = {
-        message: "Story Info Initialized",
-      };
-
-      initializeStoryInfo.mockResolvedValue(mockResponse);
+      initializeStoryInfo.mockResolvedValue(
+        "Story Information Already Initialized",
+      );
 
       const response = await insertStroyInfo(gameId, storyId, storyInfo);
 
@@ -480,7 +474,25 @@ describe("Game Service Tests", () => {
         storyInfo,
       );
 
-      expect(response).toEqual(mockResponse);
+      expect(response).toEqual({
+        success: true,
+        message: "Story Info Registered Successfully",
+      });
+    });
+
+    it("should return failure response when repository returns null", async () => {
+      const storyInfo = new StoryInfo(5, 1, 3, 1, 2, 1);
+
+      initializeStoryInfo.mockResolvedValue(null);
+
+      const response = await insertStroyInfo("game123", "story123", storyInfo);
+
+      expect(initializeStoryInfo).toHaveBeenCalled();
+
+      expect(response).toEqual({
+        success: false,
+        message: "Unable to Insert Stroy Info",
+      });
     });
 
     it("should throw error when gameId is missing", async () => {
@@ -539,6 +551,8 @@ describe("Game Service Tests", () => {
       await expect(
         insertStroyInfo(undefined, "story123", storyInfo),
       ).rejects.toThrow("Game Id is Required");
+
+      expect(initializeStoryInfo).not.toHaveBeenCalled();
     });
 
     it("should reject undefined storyId", async () => {
@@ -547,6 +561,8 @@ describe("Game Service Tests", () => {
       await expect(
         insertStroyInfo("game123", undefined, storyInfo),
       ).rejects.toThrow("Story Id is Required");
+
+      expect(initializeStoryInfo).not.toHaveBeenCalled();
     });
   });
   describe("insertGameData Tests", () => {
@@ -559,9 +575,8 @@ describe("Game Service Tests", () => {
       const gameData = new GameData("0:30", 2, 10, 1, 5);
 
       const mockResponse = {
-        playerName: "Jack",
-        totalScore: 10,
-        totalCoins: 2,
+        success: true,
+        message: "Game Data registered successfully",
       };
 
       registerGameData.mockResolvedValue(mockResponse);
