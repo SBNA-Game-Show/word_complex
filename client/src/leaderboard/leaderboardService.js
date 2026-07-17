@@ -36,6 +36,29 @@ export async function fetchLeaderboard(board = "master", limit = 100) {
 
     return json.data ?? [];
   }
+  if (board === "MeaningBridge") {
+    // Meaning Bridge is federated like the other games: scores live in its
+    // own `meaning-bridge` collection, exposed at /meaningBridge/score/leaderboard.
+    // Its rows are pre-shaped for the game scene (playerName/totalScore), so
+    // map them to the generic leaderboard row shape here.
+    const response = await fetch(
+      `${API_BASE}/meaningBridge/score/leaderboard?limit=${limit}`
+    );
+
+    const json = await readJson(
+      response,
+      "Failed to load Meaning Bridge leaderboard"
+    );
+
+    return (json.scores ?? []).map((row, i) => ({
+      rank: i + 1,
+      uuid: row.uuid,
+      displayName: row.playerName ?? null,
+      avatar: row.avatar ?? null,
+      score: row.totalScore ?? 0,
+      bestTime: row.bestTime ?? null,
+    }));
+  }
   if (board === "PassageReconstruction") {
     const response = await fetch(
       `${API_BASE}/passageReconstruct/leaderboard?limit=10`
