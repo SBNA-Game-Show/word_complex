@@ -123,7 +123,7 @@ class ControlPanel {
 
           this.remainingHints = this.maxHints - this.hintCounter;
 
-          console.log("Hint Counter:", this.hintCounter);
+          // console.log("Hint Counter:", this.hintCounter);
         }
 
         // Auto close after 2 seconds
@@ -138,7 +138,7 @@ class ControlPanel {
 
           this.game.stage.update();
 
-          console.log("Hint expired and closed automatically.");
+          // console.log("Hint expired and closed automatically.");
 
           this.hintAutoCloseTimer = null;
         }, 2000);
@@ -153,7 +153,7 @@ class ControlPanel {
           this.onHintExpired();
         }
 
-        console.log("Hint Hidden.");
+        // console.log("Hint Hidden.");
       }
 
       this.game.stage.update();
