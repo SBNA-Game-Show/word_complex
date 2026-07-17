@@ -5,14 +5,24 @@ import UserBadge from "./UserBadge";
 export default function AboutPage({ onBack, onPlay }) {
   const { logout, user } = useAuth();
 
+  // E2E TEST SELECTORS:
+  // These attributes give Playwright stable targets for the About page and its
+  // existing navigation actions. They do not change page content or behaviour.
   return (
-    <main className="about-page">
+    <main className="about-page" data-testid="about-page">
       <BackgroundDecor />
 
       <header className="htp-header">
         <div className="htp-nav-left">
-          <button className="back-button" type="button" onClick={onBack}>
-            <span className="back-arrow" aria-hidden="true">&larr;</span>
+          <button
+            className="back-button"
+            data-testid="about-back-button"
+            type="button"
+            onClick={onBack}
+          >
+            <span className="back-arrow" aria-hidden="true">
+              &larr;
+            </span>
             Back
           </button>
           <div className="header-titles">
@@ -32,9 +42,16 @@ export default function AboutPage({ onBack, onPlay }) {
             that help learners understand vocabulary, sentence order, context,
             and story structure.
           </p>
-          <button className="btn-primary" type="button" onClick={onPlay}>
+          <button
+            className="btn-primary"
+            data-testid="about-play-button"
+            type="button"
+            onClick={onPlay}
+          >
             Play now
-            <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+            <span className="btn-arrow" aria-hidden="true">
+              &rarr;
+            </span>
           </button>
         </div>
 
@@ -42,17 +59,26 @@ export default function AboutPage({ onBack, onPlay }) {
           <article className="about-card">
             <span className="about-card-icon">1</span>
             <h3>Practice with purpose</h3>
-            <p>Each game focuses on a reading skill learners can reuse in real passages.</p>
+            <p>
+              Each game focuses on a reading skill learners can reuse in real
+              passages.
+            </p>
           </article>
           <article className="about-card">
             <span className="about-card-icon">2</span>
             <h3>Short, friendly rounds</h3>
-            <p>Games are designed to feel approachable, repeatable, and easy to jump into.</p>
+            <p>
+              Games are designed to feel approachable, repeatable, and easy to
+              jump into.
+            </p>
           </article>
           <article className="about-card">
             <span className="about-card-icon">3</span>
             <h3>Progress feels visible</h3>
-            <p>Scores, attempts, and stars give learners feedback as they keep improving.</p>
+            <p>
+              Scores, attempts, and stars give learners feedback as they keep
+              improving.
+            </p>
           </article>
         </div>
       </section>

@@ -28,10 +28,18 @@ export default function StreakToast() {
   const { streak, awardedStars, giftedCharacters } = dailyAward;
   const gifted = giftedCharacters?.length > 0;
 
+  // E2E TEST SELECTOR:
+  // The streak celebration appears asynchronously after story selection.
+  // These attributes let Playwright verify and dismiss the real toast without
+  // changing its timing, reward logic, or player-facing behaviour.
   return (
     <button
       type="button"
       className="streak-toast"
+      data-testid="streak-toast"
+      data-streak={streak}
+      data-awarded-stars={awardedStars}
+      data-gifted={gifted ? "true" : "false"}
       onClick={dismissAward}
       role="status"
       aria-live="polite"

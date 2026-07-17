@@ -1,179 +1,260 @@
-# Client End-to-End Testing Guide
+# Word Complex Non-Game Playwright E2E Tests
 
-This folder contains Playwright end-to-end tests for the client application.
+## Status
 
-The goal of these tests is to verify important user flows from the browser's point of view while keeping selectors stable as the UI changes. Following Jacob's guidance, tests should prefer `data-testid` attributes instead of fragile selectors based on CSS classes, text positioning, or visual layout.
-
-## Location
+Verified locally on July 17, 2026:
 
 ```text
-client/
-  playwright.config.js
-  tests/
-    README_e2e.md
-    README_MEANING_BRIDGE_e2e_TESTS.md
-    meaning-bridge.spec.js
+Client build:                    GREEN
+Non-game Playwright tests:       102 passed
+Playwright browser:              Chromium
+Execution mode:                  sequential / one worker
+Backend required for E2E:        No
+Live MongoDB required for E2E:   No
+Live Python story API required:  No
 ```
 
-## Running the tests
+The non-game suite validates the player-facing site shell, progress features,
+leaderboards, Admin page, Story Set management, and Tokenized Story Editor.
+External APIs are intercepted with deterministic Playwright route mocks.
 
-From the client folder:
+## Test inventory
+
+| Spec | Tests | Primary scope |
+|---|---:|---|
+| `site-navigation.spec.js` | 14 | Guest login, Story Picker, launcher, shared GameScene navigation, logout, progress fallback |
+| `platform-pages.spec.js` | 9 | About page and approved How-to-Play flows |
+| `progress-and-character.spec.js` | 12 | Daily rewards, streak toast, character selection, persistence, purchases |
+| `leaderboard.spec.js` | 13 | Board switching, loading, errors, podium/list rendering, rank pinning, refresh |
+| `admin.spec.js` | 22 | Story sources, downloads, metadata, uploads, tokenized stories, Story Sets |
+| `tokenized-editor.spec.js` | 32 | Loading, filtering, dirty state, save/discard, English tokens, Sanskrit sentences and words |
+| **Total** | **102** | **Completed non-game milestone** |
+
+## Files
+
+```text
+client/tests/
+├── helpers/
+│   ├── app-fixtures.js
+│   └── admin-fixtures.js
+├── site-navigation.spec.js
+├── platform-pages.spec.js
+├── progress-and-character.spec.js
+├── leaderboard.spec.js
+├── admin.spec.js
+└── tokenized-editor.spec.js
+```
+
+## Install
+
+From `client`:
 
 ```powershell
-cd C:\Users\Nawaf\Desktop\word_complex\client
-npm run test:e2e
+npm ci
+npx playwright install chromium
 ```
 
-Run with the browser visible:
+For Linux CI, Playwright also installs operating-system dependencies:
+
+```bash
+npx playwright install --with-deps chromium
+```
+
+## Run the completed non-game suite
+
+From `client`:
 
 ```powershell
-npm run test:e2e:headed
+npm run test:e2e -- `
+  tests/site-navigation.spec.js `
+  tests/platform-pages.spec.js `
+  tests/progress-and-character.spec.js `
+  tests/leaderboard.spec.js `
+  tests/admin.spec.js `
+  tests/tokenized-editor.spec.js `
+  --workers=1
 ```
 
-Run with the Playwright UI:
+Bash:
+
+```bash
+npm run test:e2e --   tests/site-navigation.spec.js   tests/platform-pages.spec.js   tests/progress-and-character.spec.js   tests/leaderboard.spec.js   tests/admin.spec.js   tests/tokenized-editor.spec.js   --workers=1
+```
+
+## Run a focused suite
 
 ```powershell
-npm run test:e2e:ui
+npm run test:e2e -- tests/site-navigation.spec.js
+npm run test:e2e -- tests/platform-pages.spec.js
+npm run test:e2e -- tests/progress-and-character.spec.js
+npm run test:e2e -- tests/leaderboard.spec.js
+npm run test:e2e -- tests/admin.spec.js
+npm run test:e2e -- tests/tokenized-editor.spec.js
 ```
 
-Build check:
-
-```powershell
-npm run build
-```
-
-## Playwright configuration
-
-The project uses:
-
-```text
-client/playwright.config.js
-```
-
-The config starts the Vite development server automatically and runs tests against:
-
-```text
-http://127.0.0.1:5173
-```
-
-The config also sets:
-
-```js
-testIdAttribute: "data-testid"
-```
-
-This lets tests use:
-
-```js
-page.getByTestId("some-stable-id")
-```
-
-## Selector strategy
-
-Use stable test IDs for regular DOM elements:
-
-```jsx
-<input data-testid="username-input" />
-<button data-testid="login-button" />
-<section data-testid="canvas-shell-meaning-bridge" />
-```
-
-This is preferred because CSS classes, layout, button text, and styling can change without breaking the tests.
-
-Avoid selectors like these unless there is no better option:
-
-```js
-page.locator(".some-css-class")
-page.getByText("Exact text that may change")
-page.mouse.click(400, 300)
-```
-
-## Canvas-based games
-
-Some games, especially Meaning Bridge, render their gameplay inside a ZIMJS canvas. Playwright can see the canvas holder, but it cannot directly select individual ZIMJS cards and buttons because they are drawn inside the canvas, not represented as normal HTML elements.
-
-For canvas games, use this strategy:
-
-```text
-1. Use data-testid for the outer React/DOM wrapper.
-2. Use keyboard shortcuts for game actions.
-3. Use a stable debug object for state assertions.
-```
-
-Meaning Bridge exposes:
-
-```js
-window.__meaningBridgeZimDebug
-```
-
-This allows tests to assert stable game state without relying on fragile canvas coordinates.
-
-## API mocking
-
-The Meaning Bridge tests currently mock the API routes used by the game:
-
-```text
-POST /api/v1/meaningBridge/generate
-POST /api/v1/meaningBridge/submit
-GET  /api/v1/meaningBridge/leaderboard
-```
-
-This keeps the client E2E tests stable and independent from MongoDB or the Express backend.
-
-## What these tests are meant to catch
-
-The E2E tests should catch issues such as:
-
-```text
-- Login flow breaking
-- Game launcher navigation breaking
-- The ZIMJS game not mounting
-- Keyboard shortcuts breaking
-- Setup flow breaking
-- Timer setup breaking
-- Round start breaking
-- Match state breaking
-- Submit/result flow breaking
-- Leaderboard navigation breaking
-```
-
-## What these tests are not meant to do
-
-These tests are not a replacement for backend unit tests. They do not fully validate the real dictionary, real passage extraction, real database persistence, or all scoring edge cases.
-
-Those should be covered by backend tests and later integration tests.
-
-## Current status
-
-Current Meaning Bridge Playwright coverage:
-
-```text
-Smoke tests: GREEN
-Timed/custom timer tests: GREEN
-Match/submit/result tests: GREEN
-Total: 15 passing tests
-```
-
-## Recommended workflow
-
-Before making frontend changes:
+## Build validation
 
 ```powershell
 npm run build
-npm run test:e2e
 ```
 
-After changing Meaning Bridge or shared game shell code:
+The client build and the 102-test suite should both pass before a pull request is
+opened or merged.
 
-```powershell
-npm run build
-npm run test:e2e
-```
+## Test architecture
 
-If a Playwright test fails, check:
+### Deterministic API mocks
+
+`helpers/app-fixtures.js` mocks shared platform routes, including:
 
 ```text
+active stories
+progress configuration
+daily progress visit
+character purchase
+leaderboards and player rank
+```
+
+`helpers/admin-fixtures.js` mocks Admin and editor routes, including:
+
+```text
+LearnSanskrit and Sanskrit source APIs
+story download and metadata actions
+story upload
+tokenized-story retrieval
+Story Set create/activate/delete
+Tokenized Editor GET and PUT
+```
+
+The Playwright web server starts the Vite client only. Tests never depend on
+MongoDB, the Express server, or the external Python service.
+
+### Stable selectors
+
+Production components expose commented `data-testid` attributes around normal
+DOM controls and around shared wrappers for ZIM canvases. The selectors do not
+bypass player/admin rules.
+
+### Browser dialogs
+
+Admin and editor tests attach the Playwright dialog listener before triggering
+`alert()` or `confirm()`. The dialog and action are handled concurrently because
+browser dialogs block the originating click handler.
+
+### Native details elements
+
+Download controls inside `<details>` are tested by opening the corresponding
+`<summary>` before clicking the hidden button.
+
+## Coverage highlights
+
+### Site and platform
+
+- mandatory Story Picker after guest authentication
+- loading, API error, and empty Story Picker states
+- single story selection and session persistence
+- launcher registration for all four games
+- shared GameScene launch and Back behaviour
+- duplicate-launch protection
+- logout and story-session reset
+- About and approved How-to-Play navigation
+
+### Progress and characters
+
+- streak and star totals
+- reward ladder and milestone gifts
+- new-day reward toast and dismissal
+- free, purchasable, and milestone characters
+- local-storage selection persistence
+- affordability rules
+- purchase success and server-error handling
+
+### Leaderboards
+
+- Master and four game boards
+- specialized Passage Reconstruction and Context Quiz endpoints
+- loading, empty, and error states
+- podium and ranked rows
+- score/time formatting
+- current-player `You` state
+- pinned current-player rank
+- refresh and stale-response protection
+
+### Admin and Story Sets
+
+- lazy story-source loading
+- source request deduplication
+- story download and failure handling
+- metadata workflow requests
+- multipart upload and validation
+- tokenized-story selection
+- maximum of four selected stories
+- Story Set creation and automatic activation
+- existing-set activation
+- cancel/confirm deletion
+- active-set deletion protection
+- Tokenized Editor navigation
+
+### Tokenized Story Editor
+
+- initial load, refresh, failures, searching, and category filters
+- story expansion and collapse
+- general fields, dirty state, discard, successful save, and failed save
+- English text, lemma, POS, definition, synonyms, and antonyms
+- Sanskrit text, lemma, UPOS, XPOS, features, and definition
+- nested sentence and word additions/deletions
+- minimum word/sentence protections
+- empty Sanskrit recovery
+- legacy flat Sanskrit array normalization
+- simultaneous English/Sanskrit payload preservation
+
+## Scope boundary
+
+This workflow intentionally runs the six verified non-game specs explicitly.
+Historical or game-specific specs are not automatically included in this
+milestone. Passage Reconstruction and Context Cloze Quest gameplay suites will
+be added after their ZIM E2E hooks are implemented and verified.
+
+## Known audit item
+
+At the time of this milestone, `/admin` and `/tokenized-editor` are rendered
+before the normal authentication gate in `App.jsx`. The current E2E tests verify
+existing functionality; they do not declare anonymous Admin access to be the
+desired security policy. Authorization should be handled in a separate,
+explicit security change.
+
+## Troubleshooting
+
+### `test.describe()` was not expected here
+
+Remove stale dependencies and restore the lockfile installation:
+
+```powershell
+Remove-Item node_modules -Recurse -Force
+npm ci
+npx playwright install chromium
+```
+
+Confirm that `@playwright/test`, `playwright`, and `playwright-core` resolve to
+one matching version.
+
+### Single-select option assertions
+
+Use `locator("option").evaluateAll(...)` or `toHaveValue()` for a normal
+single-select. `toHaveValues()` is for `<select multiple>`.
+
+### Rejected checkbox actions
+
+Use `click()` when the application intentionally prevents the checked state.
+`check()` requires the checkbox to become checked.
+
+### Reports
+
+Local output is written under:
+
+```text
+client/playwright-report/
 client/test-results/
 ```
 
-Playwright stores screenshots, traces, and error context there when available.
+The GitHub workflow uploads these directories only when the job fails.

@@ -54,6 +54,10 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
+    // E2E TEST SELECTORS:
+    // Playwright needs stable DOM targets around the shared GameScene because the
+    // individual games render inside ZIM canvases. These selectors expose only the
+    // scene wrapper, Back button, and canvas region; they do not alter game behavior.
     return () => cancelAnimationFrame(raf);
   }, []);
 
@@ -106,6 +110,7 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
   return (
     <main
       className={`game-scene${entered ? " is-entered" : ""}`}
+      data-testid={`game-scene-${gameId}`}
       style={{
         // ── ZIM canvas size + horizontal offset (tune in sceneConfig.js) ───
         "--scene-canvas-max-width": `${config?.canvas?.maxWidth ?? 760}px`,
@@ -139,7 +144,12 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
 
       {/* Lightweight scene chrome overlaid on the environment. */}
       <header className="scene-topbar">
-        <button className="back-button" type="button" onClick={onBack}>
+        <button
+          className="back-button"
+          data-testid={`game-scene-back-${gameId}`}
+          type="button"
+          onClick={onBack}
+        >
           <span className="back-arrow" aria-hidden="true">
             &larr;
           </span>
@@ -155,7 +165,10 @@ export default function GameScene({ gameId, selectedCharacterId, onBack }) {
 
       <div className="scene-stage">
         {/* Left: the ZIM canvas (fades in after the background settles). */}
-        <section className="scene-canvas">
+        <section
+          className="scene-canvas"
+          data-testid={`scene-canvas-${gameId}`}
+        >
           <div className="scene-canvas-frame">
             {Game ? (
               // key on the uid: ZIM games capture authUser once at setup, so

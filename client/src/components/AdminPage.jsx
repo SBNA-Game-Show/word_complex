@@ -11,10 +11,10 @@ import {
 } from "../services/admin/AdminControls";
 // imports from StorySetService
 import {
-    getStorySets,
-    createStorySet,
-    activateStorySet,
-    deleteStorySet,
+  getStorySets,
+  createStorySet,
+  activateStorySet,
+  deleteStorySet,
 } from "../services/admin/StorySetService";
 
 export default function AdminPage() {
@@ -35,71 +35,54 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   // Story Sets States
-  const [storySets, setStorySets] = useState([]);  
+  const [storySets, setStorySets] = useState([]);
   const [selectedStories, setSelectedStories] = useState([]);
   const [storySetName, setStorySetName] = useState("");
   const [storySetLoading, setStorySetLoading] = useState(false);
-  
+
   async function loadLearnStories() {
     if (learnLoaded) {
-        return;
+      return;
     }
     setLoading(true);
     try {
+      const response = await getAllStories();
 
-        const response = await getAllStories();
-
-        const stories =
-            (response.data || []).flatMap(
-                (collection) =>
-                    collection.story_description || []
-            );
-        setLearnStories(stories);
-        setLearnLoaded(true);
+      const stories = (response.data || []).flatMap(
+        (collection) => collection.story_description || [],
+      );
+      setLearnStories(stories);
+      setLearnLoaded(true);
     } catch (error) {
+      console.error(error);
 
-        console.error(error);
-
-        alert("Failed to load LearnSanskrit stories");
-
+      alert("Failed to load LearnSanskrit stories");
     } finally {
-
-        setLoading(false);
-
+      setLoading(false);
+    }
+  }
+  async function loadSanskritStories() {
+    if (sanskritLoaded) {
+      return;
     }
 
+    setLoading(true);
+
+    try {
+      const response = await getUnusedStories();
+
+      setSanskritStories(response.data || []);
+
+      setSanskritLoaded(true);
+    } catch (error) {
+      console.error(error);
+
+      alert("Failed to load Sanskrit stories");
+    } finally {
+      setLoading(false);
     }
-    async function loadSanskritStories() {
-
-        if (sanskritLoaded) {
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-
-            const response = await getUnusedStories();
-
-            setSanskritStories(response.data || []);
-
-            setSanskritLoaded(true);
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert("Failed to load Sanskrit stories");
-
-        } finally {
-
-            setLoading(false);
-
-        }
-
-    }
-    async function refreshStories() {
-
+  }
+  async function refreshStories() {
     setLearnLoaded(false);
 
     setSanskritLoaded(false);
@@ -109,152 +92,109 @@ export default function AdminPage() {
     setSanskritStories([]);
 
     if (learnExpanded) {
-
-        await loadLearnStories();
-
+      await loadLearnStories();
     }
 
     if (sanskritExpanded) {
-
-        await loadSanskritStories();
-
+      await loadSanskritStories();
     }
-
-}
-async function toggleLearnStories() {
-
+  }
+  async function toggleLearnStories() {
     const next = !learnExpanded;
 
     setLearnExpanded(next);
 
     if (next) {
-
-        await loadLearnStories();
-
+      await loadLearnStories();
     }
-
-}
-async function toggleSanskritStories() {
-
+  }
+  async function toggleSanskritStories() {
     const next = !sanskritExpanded;
 
     setSanskritExpanded(next);
 
     if (next) {
-
-        await loadSanskritStories();
-
+      await loadSanskritStories();
     }
-
-}
+  }
   async function handleDownloadLearnStory(story) {
-
     try {
+      const result = await addNewStory(story._id);
 
-        const result = await addNewStory(story._id);
-
-        alert(
-
-            result?.data?.message ||
-
-            result?.message ||
-
-            "Story downloaded successfully"
-
-        );
-
+      alert(
+        result?.data?.message ||
+          result?.message ||
+          "Story downloaded successfully",
+      );
     } catch (error) {
+      console.error(error);
 
-        console.error(error);
-
-        alert("Failed to download story");
-
+      alert("Failed to download story");
     }
-
-}
-async function handleDownloadSanskritStory(story) {
-
+  }
+  async function handleDownloadSanskritStory(story) {
     try {
+      const result = await addNewSamskrutamStory(story._id);
 
-        const result = await addNewSamskrutamStory(story._id);
-
-        alert(
-
-            result?.data?.message ||
-
-            result?.message ||
-
-            "Story downloaded successfully"
-
-        );
-
+      alert(
+        result?.data?.message ||
+          result?.message ||
+          "Story downloaded successfully",
+      );
     } catch (error) {
+      console.error(error);
 
-        console.error(error);
-
-        alert("Failed to download story");
-
+      alert("Failed to download story");
     }
-
-}
-// handler function for learn sanskrit stories write meta data
+  }
+  // handler function for learn sanskrit stories write meta data
   async function handleWriteLearnMeta() {
     try {
-        setLoading(true);
-        const result = await writeLearnSanskritMeta();
-        alert(
-            result.message ||
-            "LearnSanskrit metadata generated successfully."
-        );
+      setLoading(true);
+      const result = await writeLearnSanskritMeta();
+      alert(result.message || "LearnSanskrit metadata generated successfully.");
+    } catch (error) {
+      console.error(error);
+      alert("LearnSanskrit metadata generation failed.");
+    } finally {
+      setLoading(false);
     }
-    catch (error) {
-        console.error(error);
-        alert("LearnSanskrit metadata generation failed.");
-    }
-    finally {
-        setLoading(false);
-    }
-}
+  }
   // handler function to write meta data for samskrutam stories
   async function handleWriteSamskrutamMeta() {
     try {
-        setLoading(true);
-        const result = await writeSamskrutamMeta();
-        alert(
-            result.message ||
-            "Samskrutam metadata generated successfully."
-        );
+      setLoading(true);
+      const result = await writeSamskrutamMeta();
+      alert(result.message || "Samskrutam metadata generated successfully.");
+    } catch (error) {
+      console.error(error);
+      alert("Samskrutam metadata generation failed.");
+    } finally {
+      setLoading(false);
     }
-    catch (error) {
-        console.error(error);
-        alert("Samskrutam metadata generation failed.");
+  }
+  // handler for upload
+  async function handleUpload() {
+    if (!uploadFile) {
+      alert("Please choose a file.");
+      return;
     }
-    finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      const result = await uploadStory(uploadFile);
+      if (result.success) {
+        alert(result.result.message);
+        setUploadFile(null);
+        await refreshStories();
+      } else {
+        alert("Upload failed.");
+      }
+    } catch (error) {
+      alert(error.message || "Upload failed.");
+    } finally {
+      setLoading(false);
     }
-}
-// handler for upload
-    async function handleUpload() {
-        if (!uploadFile) {
-            alert("Please choose a file.");
-            return;
-        }
-        try {
-            setLoading(true);
-            const result = await uploadStory(uploadFile);
-            if(result.success){
-                alert(result.result.message);
-                setUploadFile(null);
-                await refreshStories();
-            }else{
-                alert("Upload failed.");
-            }
-        }catch(error){
-            alert(error.message || "Upload failed.");
-        }finally{
-            setLoading(false);
-        }
-    }
+  }
   async function handleGetTokenizedStories() {
     try {
       setLoading(true);
@@ -271,91 +211,82 @@ async function handleDownloadSanskritStory(story) {
     }
   }
   async function loadStorySets() {
-        try {
-            setStorySetLoading(true);
-            const result = await getStorySets();
-            setStorySets(result.data || []);
-        }
-        catch (error) {
-            console.error(error);
-            alert(error.message);
-        }
-        finally {
-            setStorySetLoading(false);
-        }
+    try {
+      setStorySetLoading(true);
+      const result = await getStorySets();
+      setStorySets(result.data || []);
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    } finally {
+      setStorySetLoading(false);
     }
-    function toggleStorySelection(storyId) {
-        setSelectedStories((previous) => {
-            if (previous.includes(storyId)) {
-                return previous.filter(id => id !== storyId);
-            }
-            if (previous.length >= 4) {
-                alert("You can only select up to 4 stories.");
-                return previous;
-            }
-            return [...previous, storyId];
-        });
+  }
+  function toggleStorySelection(storyId) {
+    setSelectedStories((previous) => {
+      if (previous.includes(storyId)) {
+        return previous.filter((id) => id !== storyId);
+      }
+      if (previous.length >= 4) {
+        alert("You can only select up to 4 stories.");
+        return previous;
+      }
+      return [...previous, storyId];
+    });
+  }
+  async function handleCreateStorySet() {
+    if (!storySetName.trim()) {
+      alert("Please enter a Story Set name.");
+      return;
     }
-    async function handleCreateStorySet() {
-        if (!storySetName.trim()) {
-            alert("Please enter a Story Set name.");
-            return;
-        }
-        if (selectedStories.length === 0) {
-            alert("Please select at least one story.");
-            return;
-        }
-        try {
-            setStorySetLoading(true);
-            const created = await createStorySet(
-                storySetName,
-                selectedStories
-            );
-            await activateStorySet(created.data._id);
-            alert("Story Set created and activated.");
-            setStorySetName("");
-            setSelectedStories([]);
-            await loadStorySets();
-        }
-        catch (error) {
-            console.error(error);
-            alert(error.message);
-        }
-        finally {
-            setStorySetLoading(false);
-        }
+    if (selectedStories.length === 0) {
+      alert("Please select at least one story.");
+      return;
     }
-    async function handleActivateStorySet(setId) {
-        try {
-            await activateStorySet(setId);
-            await loadStorySets();
-            alert("Story Set activated.");
-        }
-        catch (error) {
-            console.error(error);
-            alert(error.message);
-        }
-    } 
-    async function handleDeleteStorySet(setId) {
-        if (!window.confirm("Delete this Story Set?")) {
-            return;
-        }
-        try {
-            await deleteStorySet(setId);
-            await loadStorySets();
-        }
-        catch (error) {
-            console.error(error);
-            alert(error.message);
-        }
+    try {
+      setStorySetLoading(true);
+      const created = await createStorySet(storySetName, selectedStories);
+      await activateStorySet(created.data._id);
+      alert("Story Set created and activated.");
+      setStorySetName("");
+      setSelectedStories([]);
+      await loadStorySets();
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    } finally {
+      setStorySetLoading(false);
     }
+  }
+  async function handleActivateStorySet(setId) {
+    try {
+      await activateStorySet(setId);
+      await loadStorySets();
+      alert("Story Set activated.");
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    }
+  }
+  async function handleDeleteStorySet(setId) {
+    if (!window.confirm("Delete this Story Set?")) {
+      return;
+    }
+    try {
+      await deleteStorySet(setId);
+      await loadStorySets();
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    }
+  }
   async function handleUseTokenizedStory(story) {
     console.log("Using tokenized story:", story);
 
     alert(
-        story.title?.englishversion ||
+      story.title?.englishversion ||
         story.title?.englishVersion ||
-        "Story selected"
+        "Story selected",
     );
   }
   const actionButtonStyle = {
@@ -369,27 +300,34 @@ async function handleDownloadSanskritStory(story) {
     fontSize: "16px",
     minWidth: "220px",
     boxShadow: "0 4px 12px rgba(248,165,60,0.3)",
-    };
-    async function handleRefresh() {
-        setLearnExpanded(false);
-        setSanskritExpanded(false);
-        setLearnStories([]);
-        setSanskritStories([]);
-        setLearnLoaded(false);
-        setSanskritLoaded(false);
-        setActiveView("available");
-        setUploadFile(null);
-        setTokenizedStories([]);
-        // Story Set cleanup
-        setSelectedStories([]);
-        setStorySetName("");
-        setStorySets([]);
-    }
+  };
+  async function handleRefresh() {
+    setLearnExpanded(false);
+    setSanskritExpanded(false);
+    setLearnStories([]);
+    setSanskritStories([]);
+    setLearnLoaded(false);
+    setSanskritLoaded(false);
+    setActiveView("available");
+    setUploadFile(null);
+    setTokenizedStories([]);
+    // Story Set cleanup
+    setSelectedStories([]);
+    setStorySetName("");
+    setStorySets([]);
+  }
   useEffect(() => {
     loadStorySets();
-}, []);
+  }, []);
+
+  // E2E TEST SELECTORS:
+  // The Admin page integrates external story-source and Word Complex backend APIs.
+  // These stable attributes let Playwright verify the existing controls, loading
+  // states, story cards, downloads, metadata actions, uploads, and Story Set UI
+  // without changing admin business logic or contacting live services.
   return (
     <div
+      data-testid="admin-page"
       style={{
         minHeight: "100vh",
         background:
@@ -401,7 +339,7 @@ async function handleDownloadSanskritStory(story) {
       <div
         style={{
           maxWidth: "100%",
-          width: "100%",   
+          width: "100%",
           margin: "0 auto",
           background: "#f8f1e0",
           borderRadius: "24px",
@@ -416,815 +354,832 @@ async function handleDownloadSanskritStory(story) {
             marginBottom: "20px",
           }}
         >
-          Word Complex Admin 
+          Word Complex Admin
         </h1>
 
         <hr />
-        {
-            loading && (
-
-            <div
+        {loading && (
+          <div
+            data-testid="admin-loading"
+            role="status"
+            aria-live="polite"
             style={{
-            background:"#fff7e7",
-            border:"1px solid #f8a53c",
-            padding:"15px",
-            borderRadius:"12px",
-            marginBottom:"20px",
-            fontWeight:"700",
-            color:"#1f2b6b",
+              background: "#fff7e7",
+              border: "1px solid #f8a53c",
+              padding: "15px",
+              borderRadius: "12px",
+              marginBottom: "20px",
+              fontWeight: "700",
+              color: "#1f2b6b",
             }}
-            >
-
+          >
             Loading...
-
-            </div>
-
-            )
-            }
+          </div>
+        )}
 
         <div
-            style={{
-                display: "flex",
-                gap: "20px",
-                marginBottom: "30px",
-                flexWrap: "wrap",
-                alignItems: "center",
-            }}
-            >
-            <button
-                onClick={handleGetTokenizedStories}
-                style={actionButtonStyle}
-            >
-                Get Tokenized Stories
-            </button>
+          style={{
+            display: "flex",
+            gap: "20px",
+            marginBottom: "30px",
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <button
+            data-testid="admin-get-tokenized-button"
+            onClick={handleGetTokenizedStories}
+            style={actionButtonStyle}
+          >
+            Get Tokenized Stories
+          </button>
 
-            <button
-                onClick={handleRefresh}
-                style={actionButtonStyle}
-            >
-                Refresh
-            </button>
-            <button
-                onClick={() => {
-                    window.location.href = "/tokenized-editor";
-                }}
-                style={actionButtonStyle}
-            >
-                Edit Tokenized Stories
-            </button>
+          <button
+            data-testid="admin-refresh-button"
+            onClick={handleRefresh}
+            style={actionButtonStyle}
+          >
+            Refresh
+          </button>
+          <button
+            data-testid="admin-open-tokenized-editor-button"
+            onClick={() => {
+              window.location.href = "/tokenized-editor";
+            }}
+            style={actionButtonStyle}
+          >
+            Edit Tokenized Stories
+          </button>
         </div>
 
         {activeView === "available" ? (
-<>
-                    <h2
-                        style={{
-                            fontSize: "34px",
-                            color: "#1f2b6b",
-                            marginBottom: "24px",
-                        }}
+          <>
+            <h2
+              style={{
+                fontSize: "34px",
+                color: "#1f2b6b",
+                marginBottom: "24px",
+              }}
+            >
+              Available Stories
+            </h2>
+            {/* Upload Asset */}
+            <div
+              data-testid="admin-upload-panel"
+              style={{
+                display: "flex",
+                gap: "20px",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <label
+                style={{
+                  background: "#f8a53c",
+                  color: "white",
+                  padding: "14px 28px",
+                  borderRadius: "14px",
+                  cursor: "pointer",
+                  fontWeight: "700",
+                  boxShadow: "0 4px 12px rgba(248,165,60,.3)",
+                }}
+              >
+                Choose File
+                <input
+                  data-testid="admin-upload-input"
+                  type="file"
+                  accept=".pdf,.json,.txt,.doc,.docx,image/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => setUploadFile(e.target.files[0])}
+                />
+              </label>
+              <span
+                data-testid="admin-upload-filename"
+                style={{
+                  color: "#555",
+                  fontWeight: "600",
+                }}
+              >
+                {uploadFile ? uploadFile.name : "No file selected"}
+              </span>
+
+              <button
+                data-testid="admin-upload-button"
+                onClick={handleUpload}
+                style={actionButtonStyle}
+              >
+                Upload
+              </button>
+            </div>
+            <hr />
+            {/* Learn Sanskrit Section */}
+            <div
+              data-testid="admin-learn-source"
+              data-loaded={learnLoaded ? "true" : "false"}
+              style={{
+                background: "white",
+                borderRadius: "18px",
+                marginTop: "24px",
+                marginBottom: "24px",
+                padding: "20px",
+                boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
+                data-testid="admin-learn-toggle"
+                data-expanded={learnExpanded ? "true" : "false"}
+                onClick={toggleLearnStories}
+              >
+                <h3
+                  style={{
+                    margin: 0,
+                    color: "#1f2b6b",
+                    fontSize: "20px",
+                    fontWeight: "700",
+                  }}
+                >
+                  {learnExpanded ? "▼" : "▶"} Stories from LearnSanskrit.cc{" "}
+                  {learnLoaded && (
+                    <span
+                      style={{
+                        color: "#666",
+                        fontWeight: "600",
+                      }}
                     >
-                        Available Stories
-                    </h2>
-                    {/* Upload Asset */}
+                      ({learnStories.length} stories)
+                    </span>
+                  )}
+                </h3>
+              </div>
+              {learnExpanded && (
+                <>
+                  <div
+                    style={{
+                      marginTop: "20px",
+                      marginBottom: "20px",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <button
+                      onClick={handleWriteLearnMeta}
+                      style={actionButtonStyle}
+                      data-testid="admin-learn-metadata-button"
+                    >
+                      Write Metadata
+                    </button>
+                  </div>
+                  {loading && !learnLoaded ? (
+                    <p
+                      data-testid="admin-learn-loading"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Loading stories...
+                    </p>
+                  ) : (
                     <div
-                        style={{
-                            display: "flex",
-                            gap: "20px",
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                        }}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                        gap: "18px",
+                        width: "100%",
+                      }}
                     >
-                        <label
-                            style={{
-                                background: "#f8a53c",
-                                color: "white",
-                                padding: "14px 28px",
-                                borderRadius: "14px",
+                      {learnStories.map((story) => (
+                        <div
+                          key={story._id}
+                          data-testid={`admin-learn-story-${story._id}`}
+                          data-story-id={story._id}
+                          style={{
+                            background: "white",
+                            border: "1px solid #e5e5e5",
+                            borderRadius: "14px",
+                            overflow: "hidden",
+                            width: "100%",
+                            boxShadow: "0 2px 8px rgba(0,0,0,.08)",
+                          }}
+                        >
+                          <details>
+                            <summary
+                              style={{
+                                padding: "16px",
                                 cursor: "pointer",
                                 fontWeight: "700",
-                                boxShadow: "0 4px 12px rgba(248,165,60,.3)",
-                            }}
-                        >
-                            Choose File
-                            <input
-                                type="file"
-                                accept=".pdf,.json,.txt,.doc,.docx,image/*"
-                                style={{ display: "none" }}
-                                onChange={(e) => setUploadFile(e.target.files[0])}
-                            />
-                        </label>
-                        <span
-                            style={{
-                                color: "#555",
-                                fontWeight: "600",
-                            }}
-                        >
-                            {uploadFile ? uploadFile.name : "No file selected"}
-                        </span>
+                                color: "#1f2b6b",
+                                fontSize: "17px",
+                                background: "#fafafa",
+                              }}
+                            >
+                              {story.storyTitle}
+                            </summary>
 
-                        <button
-                            onClick={handleUpload}
-                            style={actionButtonStyle}
-                        >
-                            Upload
-                        </button>
-                    </div>
-                    <hr/>
-                    {/* Learn Sanskrit Section */}
-                    <div
-                        style={{
-                            background:"white",
-                            borderRadius:"18px",
-                            marginTop:"24px",
-                            marginBottom:"24px",
-                            padding:"20px",
-                            boxShadow:"0 2px 10px rgba(0,0,0,.08)",
-                        }}
-                    >
-
-                        <div
-                            style={{
-                                display:"flex",
-                                justifyContent:"space-between",
-                                alignItems:"center",
-                                cursor:"pointer",
-                            }}
-                            onClick={toggleLearnStories}
-                        >
-
-                            <h3
-                                style={{
-                                    margin: 0,
-                                    color: "#1f2b6b",
-                                    fontSize: "20px",
-                                    fontWeight: "700",
-                                }}
-                                >
-                                {learnExpanded ? "▼" : "▶"} Stories from LearnSanskrit.cc{" "}
-                                {learnLoaded && (
-                                    <span
-                                    style={{
-                                        color: "#666",
-                                        fontWeight: "600",
-                                    }}
-                                    >
-                                    ({learnStories.length} stories)
-                                    </span>
-                                )}
-                                </h3>
+                            <div
+                              style={{
+                                padding: "18px",
+                                display: "flex",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <button
+                                onClick={() => handleDownloadLearnStory(story)}
+                                style={actionButtonStyle}
+                                data-testid={`admin-learn-download-${story._id}`}
+                              >
+                                Download Story
+                              </button>
+                            </div>
+                          </details>
                         </div>
-                        {
-                            learnExpanded && (
-
-                                <>
-
-                                    <div
-                                        style={{
-                                            marginTop:"20px",
-                                            marginBottom:"20px",
-                                            display:"flex",
-                                            justifyContent:"center",
-                                        }}
-                                    >
-                                    <button onClick={handleWriteLearnMeta}
-                                    style={actionButtonStyle}>
-                                        Write Metadata
-                                    </button>
-                                </div>
-                                    {
-
-                                        loading && !learnLoaded ? (
-
-                                            <p>Loading stories...</p>
-
-                                        ) : (
-
-                                            <div
-                                                style={{
-                                                    display: "grid",
-                                                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                                                    gap: "18px",
-                                                    width: "100%",
-                                                }}
-                                            >
-                                                {learnStories.map((story) => (
-                                                    <div
-                                                        key={story._id}
-                                                        style={{
-                                                            background: "white",
-                                                            border: "1px solid #e5e5e5",
-                                                            borderRadius: "14px",
-                                                            overflow: "hidden",
-                                                            width: "100%",
-                                                            boxShadow: "0 2px 8px rgba(0,0,0,.08)",
-                                                        }}
-                                                    >
-                                                        <details>
-                                                            <summary
-                                                                style={{
-                                                                    padding: "16px",
-                                                                    cursor: "pointer",
-                                                                    fontWeight: "700",
-                                                                    color: "#1f2b6b",
-                                                                    fontSize: "17px",
-                                                                    background: "#fafafa",
-                                                                }}
-                                                            >
-                                                                {story.storyTitle}
-                                                            </summary>
-
-                                                            <div
-                                                                style={{
-                                                                    padding: "18px",
-                                                                    display: "flex",
-                                                                    justifyContent: "center",
-                                                                }}
-                                                            >
-                                                                <button
-                                                                    onClick={() => handleDownloadLearnStory(story)}
-                                                                    style={actionButtonStyle}
-                                                                >
-                                                                    Download Story
-                                                                </button>
-                                                            </div>
-                                                        </details>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                        )
-
-                                    }
-
-                                </>
-
-                            )
-
-                        }
-
+                      ))}
                     </div>
-
-                    {/* Sanskrit Section */}
-
-                    <div
-                        style={{
-                            background:"white",
-                            borderRadius:"18px",
-                            padding:"20px",
-                            boxShadow:"0 2px 10px rgba(0,0,0,.08)",
-                        }}
-                    >
-
-                        <div
-                            style={{
-                                display:"flex",
-                                justifyContent:"space-between",
-                                alignItems:"center",
-                                cursor:"pointer",
-                            }}
-                            onClick={toggleSanskritStories}
-                        >
-                            <h3
-                                style={{
-                                    margin: 0,
-                                    color: "#1f2b6b",
-                                    fontSize: "20px",
-                                    fontWeight: "700",
-                                }}
-                                >
-                                {sanskritExpanded ? "▼" : "▶"} Stories from Sanskrit.Samskrutam.com{" "}
-                                {sanskritLoaded && (
-                                    <span
-                                    style={{
-                                        color: "#666",
-                                        fontWeight: "600",
-                                    }}
-                                    >
-                                    ({sanskritStories.length} stories)
-                                    </span>
-                                )}
-                            </h3>
-                        </div>
-                        {
-
-                            sanskritExpanded && (
-
-                                <>
-
-                                    <div
-                                        style={{
-                                            marginTop:"20px",
-                                            marginBottom:"20px",
-                                            display:"flex",
-                                            justifyContent:"center",
-                                        }}
-                                    >
-                                        <button onClick={handleWriteSamskrutamMeta}
-                                        style={actionButtonStyle}>
-                                            Write Metadata
-                                        </button>
-                                    </div>
-                                    {
-                                        loading && !sanskritLoaded ? (
-                                            <p>Loading stories...</p>
-
-                                        ) : (
-                                            <div
-                                                style={{
-                                                    display: "grid",
-                                                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                                                    gap: "18px",
-                                                    width: "100%",
-                                                }}
-                                            >
-                                                {sanskritStories.map((story) => (
-                                                    <div
-                                                        key={story._id}
-                                                        style={{
-                                                            background: "white",
-                                                            border: "1px solid #e5e5e5",
-                                                            borderRadius: "14px",
-                                                            overflow: "hidden",
-                                                            width: "100%",
-                                                            boxShadow: "0 2px 8px rgba(0,0,0,.08)",
-                                                        }}
-                                                    >
-                                                        <details>
-                                                          <summary
-                                                            style={{
-                                                                cursor: "pointer",
-                                                                fontWeight: "700",
-                                                                color: "#1f2b6b",
-                                                                fontSize: "16px",
-                                                                padding: "14px",
-                                                            }}
-                                                        >
-                                                            {story.english_title}
-
-                                                            <span
-                                                                style={{
-                                                                    float: "right",
-                                                                    color: "#666",
-                                                                    fontWeight: "500",
-                                                                    fontSize: "14px",
-                                                                }}
-                                                            >
-                                                                {story.sanskrit_title}
-                                                            </span>
-                                                        </summary>
-                                                            <div
-                                                                style={{
-                                                                    padding: "18px",
-                                                                    display: "flex",
-                                                                    justifyContent: "center",
-                                                                }}
-                                                            >
-                                                                <button
-                                                                    onClick={() => handleDownloadSanskritStory(story)}
-                                                                    style={actionButtonStyle}
-                                                                >
-                                                                    Download Story
-                                                                </button>
-                                                            </div>
-                                                        </details>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                        )
-
-                                    }
-
-                                </>
-
-                            )
-
-                        }
-
-                    </div>
-
+                  )}
                 </>
+              )}
+            </div>
 
-                ) : (
-        <>
-        <h2
-            style={{
-            fontSize: "34px",
-            color: "#1f2b6b",
-            marginBottom: "24px",
-            }}
-        >
-            Tokenized Stories ({tokenizedStories.length})
-        </h2>
+            {/* Sanskrit Section */}
 
-        {loading ? (
-            <p>Loading...</p>
-        ) : (
             <div
-            style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(430px,1fr))",
-                gap: "20px",
-            }}
+              data-testid="admin-sanskrit-source"
+              data-loaded={sanskritLoaded ? "true" : "false"}
+              style={{
+                background: "white",
+                borderRadius: "18px",
+                padding: "20px",
+                boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+              }}
             >
-            {tokenizedStories.map((story) => (
-                <div
-                    key={story._id}
-                    style={{
-                        padding: "18px",
-                        background: selectedStories.includes(story._id)
-                            ? "#f3fff2"
-                            : "white",
-                        borderRadius: "16px",
-                        border: selectedStories.includes(story._id)
-                            ? "2px solid #3aa655"
-                            : "1px solid #e3e3e3",
-                        boxShadow: "0 2px 10px rgba(0,0,0,.08)",
-                        transition: "all .2s ease",
-                    }}
-                >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
+                onClick={toggleSanskritStories}
+                data-testid="admin-sanskrit-toggle"
+                data-expanded={sanskritExpanded ? "true" : "false"}
+              >
                 <h3
+                  style={{
+                    margin: 0,
+                    color: "#1f2b6b",
+                    fontSize: "20px",
+                    fontWeight: "700",
+                  }}
+                >
+                  {sanskritExpanded ? "▼" : "▶"} Stories from
+                  Sanskrit.Samskrutam.com{" "}
+                  {sanskritLoaded && (
+                    <span
+                      style={{
+                        color: "#666",
+                        fontWeight: "600",
+                      }}
+                    >
+                      ({sanskritStories.length} stories)
+                    </span>
+                  )}
+                </h3>
+              </div>
+              {sanskritExpanded && (
+                <>
+                  <div
                     style={{
+                      marginTop: "20px",
+                      marginBottom: "20px",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <button
+                      onClick={handleWriteSamskrutamMeta}
+                      style={actionButtonStyle}
+                      data-testid="admin-sanskrit-metadata-button"
+                    >
+                      Write Metadata
+                    </button>
+                  </div>
+                  {loading && !sanskritLoaded ? (
+                    <p
+                      data-testid="admin-sanskrit-loading"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Loading stories...
+                    </p>
+                  ) : (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                        gap: "18px",
+                        width: "100%",
+                      }}
+                    >
+                      {sanskritStories.map((story) => (
+                        <div
+                          key={story._id}
+                          data-testid={`admin-sanskrit-story-${story._id}`}
+                          data-story-id={story._id}
+                          style={{
+                            background: "white",
+                            border: "1px solid #e5e5e5",
+                            borderRadius: "14px",
+                            overflow: "hidden",
+                            width: "100%",
+                            boxShadow: "0 2px 8px rgba(0,0,0,.08)",
+                          }}
+                        >
+                          <details>
+                            <summary
+                              style={{
+                                cursor: "pointer",
+                                fontWeight: "700",
+                                color: "#1f2b6b",
+                                fontSize: "16px",
+                                padding: "14px",
+                              }}
+                            >
+                              {story.english_title}
+
+                              <span
+                                style={{
+                                  float: "right",
+                                  color: "#666",
+                                  fontWeight: "500",
+                                  fontSize: "14px",
+                                }}
+                              >
+                                {story.sanskrit_title}
+                              </span>
+                            </summary>
+                            <div
+                              style={{
+                                padding: "18px",
+                                display: "flex",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <button
+                                onClick={() =>
+                                  handleDownloadSanskritStory(story)
+                                }
+                                style={actionButtonStyle}
+                                data-testid={`admin-sanskrit-download-${story._id}`}
+                              >
+                                Download Story
+                              </button>
+                            </div>
+                          </details>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <h2
+              data-testid="admin-tokenized-heading"
+              data-story-count={tokenizedStories.length}
+              style={{
+                fontSize: "34px",
+                color: "#1f2b6b",
+                marginBottom: "24px",
+              }}
+            >
+              Tokenized Stories ({tokenizedStories.length})
+            </h2>
+
+            {loading ? (
+              <p
+                data-testid="admin-tokenized-loading"
+                role="status"
+                aria-live="polite"
+              >
+                Loading...
+              </p>
+            ) : (
+              <div
+                data-testid="admin-tokenized-grid"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(430px,1fr))",
+                  gap: "20px",
+                }}
+              >
+                {tokenizedStories.map((story) => (
+                  <div
+                    key={story._id}
+                    data-testid={`admin-tokenized-story-${story._id}`}
+                    data-story-id={story._id}
+                    data-selected={
+                      selectedStories.includes(story._id) ? "true" : "false"
+                    }
+                    style={{
+                      padding: "18px",
+                      background: selectedStories.includes(story._id)
+                        ? "#f3fff2"
+                        : "white",
+                      borderRadius: "16px",
+                      border: selectedStories.includes(story._id)
+                        ? "2px solid #3aa655"
+                        : "1px solid #e3e3e3",
+                      boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+                      transition: "all .2s ease",
+                    }}
+                  >
+                    <h3
+                      style={{
                         marginTop: 0,
                         marginBottom: "14px",
                         color: "#1f2b6b",
                         fontSize: "20px",
                         lineHeight: "1.3",
-                    }}
-                >
-                    {story.storyTitle ||
-                    story.title?.englishversion ||
-                    story.title?.englishVersion ||
-                    story.english_title ||
-                    "Untitled Story"}
-                </h3>
+                      }}
+                    >
+                      {story.storyTitle ||
+                        story.title?.englishversion ||
+                        story.title?.englishVersion ||
+                        story.english_title ||
+                        "Untitled Story"}
+                    </h3>
 
-                <div
-                    style={{
+                    <div
+                      style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "flex-start",
                         marginBottom: "14px",
                         gap: "16px",
-                    }}
-                >
-                    <div>
-                        <p
-                            style={{
-                                margin: 0,
-                                marginBottom: "8px",
-                            }}
-                        >
-                            <strong>Category:</strong> {story.category}
-                        </p>
-                    </div>
-                    <label
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            fontWeight: "700",
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                        }}
+                      }}
                     >
+                      <div>
+                        <p
+                          style={{
+                            margin: 0,
+                            marginBottom: "8px",
+                          }}
+                        >
+                          <strong>Category:</strong> {story.category}
+                        </p>
+                      </div>
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         <input
-                            type="checkbox"
-                            checked={selectedStories.includes(story._id)}
-                            onChange={() => toggleStorySelection(story._id)}
+                          type="checkbox"
+                          data-testid={`admin-tokenized-select-${story._id}`}
+                          aria-label={`Select story ${story._id}`}
+                          checked={selectedStories.includes(story._id)}
+                          onChange={() => toggleStorySelection(story._id)}
                         />
                         Select
-                    </label>
-                </div>
-                <p
-                    style={{
-                        marginTop: "14px",
-                        marginBottom: "16px",}}>
-                    <strong>Actors:</strong>
-                    {" "}
-                    {story.actors?.length
-                        ? story.actors.join(", ")
-                        : "None"}
-                </p>
-                <details>
-                    <summary
-                        style={{
-                            cursor: "pointer",
-                            fontWeight: "700",
-                            color: "#1f2b6b",}}
-                    >
-                    View English Text
-                    </summary>
+                      </label>
+                    </div>
                     <p
-                    style={{
-                        marginTop: "10px",
-                        whiteSpace: "pre-wrap",
-                        lineHeight: "1.6",
-                    }}
+                      style={{
+                        marginTop: "14px",
+                        marginBottom: "16px",
+                      }}
                     >
-                    {story.englishVersion}
+                      <strong>Actors:</strong>{" "}
+                      {story.actors?.length ? story.actors.join(", ") : "None"}
                     </p>
-                </details>
-                </div>
-            ))}
-            </div>                                    
-        )}
-        {/* ============================================
+                    <details>
+                      <summary
+                        style={{
+                          cursor: "pointer",
+                          fontWeight: "700",
+                          color: "#1f2b6b",
+                        }}
+                      >
+                        View English Text
+                      </summary>
+                      <p
+                        style={{
+                          marginTop: "10px",
+                          whiteSpace: "pre-wrap",
+                          lineHeight: "1.6",
+                        }}
+                      >
+                        {story.englishVersion}
+                      </p>
+                    </details>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* ============================================
             Story Set Creation Panel
         ============================================ */}
-        <div
-            style={{
+            <div
+              data-testid="admin-story-set-create-panel"
+              style={{
                 marginTop: "35px",
                 background: "white",
                 borderRadius: "18px",
                 padding: "24px",
                 boxShadow: "0 2px 10px rgba(0,0,0,.08)",
-            }}
-        >
-            <h2
-                style={{
-                    color: "#1f2b6b",
-                    marginTop: 0,
-                    marginBottom: "20px",
-                }}
+              }}
             >
+              <h2
+                style={{
+                  color: "#1f2b6b",
+                  marginTop: 0,
+                  marginBottom: "20px",
+                }}
+              >
                 Create Story Set
-            </h2>
-            <p
+              </h2>
+              <p
                 style={{
-                    marginTop: 0,
-                    marginBottom: "20px",
-                    color: "#555",
-                    fontSize: "16px",
+                  marginTop: 0,
+                  marginBottom: "20px",
+                  color: "#555",
+                  fontSize: "16px",
                 }}
-            >
+              >
                 Selected Stories:
-                <strong>
-                    {" "}
-                    {selectedStories.length} / 4
+                <strong data-testid="admin-selected-story-count">
+                  {" "}
+                  {selectedStories.length} / 4
                 </strong>
-            </p>
-            <div
+              </p>
+              <div
                 style={{
-                    marginBottom: "20px",
+                  marginBottom: "20px",
                 }}
-            >
+              >
                 <label
-                    style={{
-                        display: "block",
-                        fontWeight: "700",
-                        marginBottom: "10px",
-                        color: "#1f2b6b",
-                    }}
+                  style={{
+                    display: "block",
+                    fontWeight: "700",
+                    marginBottom: "10px",
+                    color: "#1f2b6b",
+                  }}
                 >
-                    Story Set Name
+                  Story Set Name
                 </label>
                 {selectedStories.length > 0 && (
-                    <div
-                        style={{
-                            background: "#f5f8ff",
-                            border: "1px solid #d6e2ff",
-                            borderRadius: "12px",
-                            padding: "14px",
-                            marginBottom: "20px",
-                        }}
+                  <div
+                    data-testid="admin-selected-story-list"
+                    style={{
+                      background: "#f5f8ff",
+                      border: "1px solid #d6e2ff",
+                      borderRadius: "12px",
+                      padding: "14px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    <strong>Selected Stories</strong>
+                    <ul
+                      style={{
+                        marginTop: "10px",
+                        marginBottom: 0,
+                      }}
                     >
-                        <strong>Selected Stories</strong>
-                        <ul
-                            style={{
-                                marginTop: "10px",
-                                marginBottom: 0,
-                            }}
-                        >
-                            {tokenizedStories
-                                .filter(story => selectedStories.includes(story._id))
-                                .map(story => (
-                                    <li key={story._id}>
-                                        {story.storyTitle ||
-                                        story.title?.englishversion ||
-                                        story.title?.englishVersion ||
-                                        "Untitled Story"}
-                                    </li>
-                                ))}
-                        </ul>
-                    </div>
+                      {tokenizedStories
+                        .filter((story) => selectedStories.includes(story._id))
+                        .map((story) => (
+                          <li
+                            key={story._id}
+                            data-testid={`admin-selected-story-${story._id}`}
+                          >
+                            {story.storyTitle ||
+                              story.title?.englishversion ||
+                              story.title?.englishVersion ||
+                              "Untitled Story"}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
                 )}
                 <input
-                    type="text"
-                    placeholder="Enter a Story Set name"
-                    value={storySetName}
-                    onChange={(e) => setStorySetName(e.target.value)}
-                    style={{
-                        width: "100%",
-                        padding: "14px",
-                        borderRadius: "10px",
-                        border: "1px solid #ccc",
-                        fontSize: "16px",
-                        boxSizing: "border-box",
-                    }}
-                />
-            </div>
-            <button
-                onClick={handleCreateStorySet}
-                disabled={
-                    storySetLoading ||
-                    selectedStories.length === 0
-                }
-                style={{
-                    background:
-                        selectedStories.length === 0
-                            ? "#cccccc"
-                            : "#3aa655",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "12px",
-                    padding: "14px 30px",
-                    fontWeight: "700",
+                  type="text"
+                  data-testid="admin-story-set-name-input"
+                  placeholder="Enter a Story Set name"
+                  value={storySetName}
+                  onChange={(e) => setStorySetName(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    borderRadius: "10px",
+                    border: "1px solid #ccc",
                     fontSize: "16px",
-                    cursor:
-                        selectedStories.length === 0
-                            ? "not-allowed"
-                            : "pointer",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <button
+                data-testid="admin-story-set-create-button"
+                onClick={handleCreateStorySet}
+                disabled={storySetLoading || selectedStories.length === 0}
+                style={{
+                  background:
+                    selectedStories.length === 0 ? "#cccccc" : "#3aa655",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "12px",
+                  padding: "14px 30px",
+                  fontWeight: "700",
+                  fontSize: "16px",
+                  cursor:
+                    selectedStories.length === 0 ? "not-allowed" : "pointer",
                 }}
-            >
+              >
                 {storySetLoading
-                    ? "Creating..."
-                    : "Create & Activate Story Set"}
-            </button>
-        </div>
-        {/* ============================================
+                  ? "Creating..."
+                  : "Create & Activate Story Set"}
+              </button>
+            </div>
+            {/* ============================================
             Existing Story Sets
         ============================================ */}
-        <div
-            style={{
+            <div
+              data-testid="admin-story-sets-panel"
+              style={{
                 marginTop: "35px",
                 background: "white",
                 borderRadius: "18px",
                 padding: "24px",
                 boxShadow: "0 2px 10px rgba(0,0,0,.08)",
-            }}
-        >
-            <h2
-                style={{
-                    color: "#1f2b6b",
-                    marginTop: 0,
-                    marginBottom: "20px",
-                }}
+              }}
             >
+              <h2
+                style={{
+                  color: "#1f2b6b",
+                  marginTop: 0,
+                  marginBottom: "20px",
+                }}
+              >
                 Existing Story Sets
-            </h2>
-            {storySetLoading ? (
-                <p>Loading Story Sets...</p>
-            ) : storySets.length === 0 ? (
-                <p>No Story Sets created yet.</p>
-            ) : (
-                storySets.map((set) => (
-                    <div
-                        key={set._id}
-                        style={{
-                            border: set.isActive
-                                ? "2px solid #3aa655"
-                                : "1px solid #ddd",
-                            borderRadius: "14px",
-                            padding: "18px",
-                            marginBottom: "16px",
-                            background: set.isActive
-                                ? "#f4fff5"
-                                : "#fafafa",
-                        }}
-                    >
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                            }}
-                        >
-                            <div>
-                                <h3
-                                    style={{
-                                        margin: 0,
-                                        color: "#1f2b6b",
-                                    }}
-                                >
-                                    {set.name}
-                                </h3>
-    <div
-    style={{
-        marginTop: "12px",
-    }}
->
-
-    <strong
-        style={{
-            color: "#1f2b6b",
-        }}
-    >
-        Stories
-    </strong>
-
-    <ul
-        style={{
-            marginTop: "10px",
-            marginBottom: 0,
-            paddingLeft: "20px",
-            color: "#555",
-        }}
-    >
-
-        {set.storyIds.map((storyId) => {
-
-            const story = tokenizedStories.find(
-                (s) => s._id === storyId
-            );
-
-            return (
-                <li key={storyId}>
-
-                    {story
-                        ? (
-                            story.storyTitle ||
-                            story.title?.englishversion ||
-                            story.title?.englishVersion ||
-                            "Untitled Story"
-                        )
-                        : "Story not loaded"}
-
-                </li>
-            );
-
-        })}
-
-    </ul>
-    </div>
- </div>
-                {set.isActive && (
-                    <span
-                    style={{
-                        background: "#3aa655",
-                        color: "white",
-                        padding: "6px 14px",
-                        borderRadius: "20px",
-                        fontWeight: "700",
-                    }}
+              </h2>
+              {storySetLoading ? (
+                <p
+                  data-testid="admin-story-sets-loading"
+                  role="status"
+                  aria-live="polite"
                 >
-                    🟢 Active
-                </span>
-                )}
-            </div>
+                  Loading Story Sets...
+                </p>
+              ) : storySets.length === 0 ? (
+                <p data-testid="admin-story-sets-empty">
+                  No Story Sets created yet.
+                </p>
+              ) : (
+                storySets.map((set) => (
+                  <div
+                    key={set._id}
+                    data-testid={`admin-story-set-${set._id}`}
+                    data-story-set-id={set._id}
+                    data-active={set.isActive ? "true" : "false"}
+                    style={{
+                      border: set.isActive
+                        ? "2px solid #3aa655"
+                        : "1px solid #ddd",
+                      borderRadius: "14px",
+                      padding: "18px",
+                      marginBottom: "16px",
+                      background: set.isActive ? "#f4fff5" : "#fafafa",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <h3
+                          style={{
+                            margin: 0,
+                            color: "#1f2b6b",
+                          }}
+                        >
+                          {set.name}
+                        </h3>
                         <div
-                            style={{
-                                marginTop: "18px",
-                                display: "flex",
-                                gap: "14px",
-                            }}
+                          style={{
+                            marginTop: "12px",
+                          }}
                         >
-                            {!set.isActive && (
-                                <button
-                                    onClick={() =>
-                                        handleActivateStorySet(set._id)
-                                    }
-                                    style={{
-                                        background: "#3aa655",
-                                        color: "white",
-                                        border: "none",
-                                        borderRadius: "10px",
-                                        padding: "10px 18px",
-                                        cursor: "pointer",
-                                        fontWeight: "700",
-                                    }}
-                                >
-                                    Activate
-                                </button>
-                            )}
-                            <button
-                            onClick={() => handleDeleteStorySet(set._id)}
-                            disabled={set.isActive}
+                          <strong
                             style={{
-                                background: set.isActive
-                                    ? "#cccccc"
-                                    : "#d9534f",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "10px",
-                                padding: "10px 18px",
-                                cursor: set.isActive
-                                    ? "not-allowed"
-                                    : "pointer",
-                                fontWeight: "700",
+                              color: "#1f2b6b",
                             }}
+                          >
+                            Stories
+                          </strong>
+
+                          <ul
+                            style={{
+                              marginTop: "10px",
+                              marginBottom: 0,
+                              paddingLeft: "20px",
+                              color: "#555",
+                            }}
+                          >
+                            {set.storyIds.map((storyId) => {
+                              const story = tokenizedStories.find(
+                                (s) => s._id === storyId,
+                              );
+
+                              return (
+                                <li key={storyId}>
+                                  {story
+                                    ? story.storyTitle ||
+                                      story.title?.englishversion ||
+                                      story.title?.englishVersion ||
+                                      "Untitled Story"
+                                    : "Story not loaded"}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      </div>
+                      {set.isActive && (
+                        <span
+                          data-testid={`admin-story-set-active-${set._id}`}
+                          style={{
+                            background: "#3aa655",
+                            color: "white",
+                            padding: "6px 14px",
+                            borderRadius: "20px",
+                            fontWeight: "700",
+                          }}
                         >
-                            Delete
-                        </button>                            
+                          🟢 Active
+                        </span>
+                      )}
                     </div>
+                    <div
+                      style={{
+                        marginTop: "18px",
+                        display: "flex",
+                        gap: "14px",
+                      }}
+                    >
+                      {!set.isActive && (
+                        <button
+                          data-testid={`admin-story-set-activate-${set._id}`}
+                          onClick={() => handleActivateStorySet(set._id)}
+                          style={{
+                            background: "#3aa655",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "10px",
+                            padding: "10px 18px",
+                            cursor: "pointer",
+                            fontWeight: "700",
+                          }}
+                        >
+                          Activate
+                        </button>
+                      )}
+                      <button
+                        data-testid={`admin-story-set-delete-${set._id}`}
+                        onClick={() => handleDeleteStorySet(set._id)}
+                        disabled={set.isActive}
+                        style={{
+                          background: set.isActive ? "#cccccc" : "#d9534f",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "10px",
+                          padding: "10px 18px",
+                          cursor: set.isActive ? "not-allowed" : "pointer",
+                          fontWeight: "700",
+                        }}
+                      >
+                        Delete
+                      </button>
                     </div>
+                  </div>
                 ))
-            )}
-        </div>
-        </>
+              )}
+            </div>
+          </>
         )}
       </div>
-      
     </div>
   );
 }
