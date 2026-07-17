@@ -31,7 +31,8 @@ function generateSynonymMatchPuzzle({ story, pairCount = 4 }) {
   const seen = new Set();
 
   for (const token of tokens) {
-    if (!token || !token.text || !token.synonyms || token.synonyms.length === 0) continue;
+    if (!token || !token.text || !token.synonyms || token.synonyms.length === 0)
+      continue;
     if (SKIP_POS.has(token.pos)) continue;
 
     const word = token.text.toLowerCase();
@@ -65,14 +66,14 @@ function generateSynonymMatchPuzzle({ story, pairCount = 4 }) {
   }));
 
   const answerKey = Object.fromEntries(
-    leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id])
+    leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id]),
   );
 
   const hints = Object.fromEntries(
     leftItems.map((l, i) => [
       l.id,
       `"${candidates[i].form}" and "${candidates[i].lemma}" have the same meaning.`,
-    ])
+    ]),
   );
 
   return {
@@ -84,7 +85,12 @@ function generateSynonymMatchPuzzle({ story, pairCount = 4 }) {
     rightItems: shuffle(rightItemsOrdered),
     answerKey,
     hints,
-    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
+    scoreRules: {
+      correct: 10,
+      incorrect: 0,
+      hintPenalty: 2,
+      wrongAttemptPenalty: 5,
+    },
   };
 }
 
@@ -94,7 +100,8 @@ function generateAntonymMatchPuzzle({ story, pairCount = 4 }) {
   const seen = new Set();
 
   for (const token of tokens) {
-    if (!token || !token.text || !token.antonyms || token.antonyms.length === 0) continue;
+    if (!token || !token.text || !token.antonyms || token.antonyms.length === 0)
+      continue;
     if (SKIP_POS.has(token.pos)) continue;
 
     const word = token.text.toLowerCase();
@@ -128,14 +135,14 @@ function generateAntonymMatchPuzzle({ story, pairCount = 4 }) {
   }));
 
   const answerKey = Object.fromEntries(
-    leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id])
+    leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id]),
   );
 
   const hints = Object.fromEntries(
     leftItems.map((l, i) => [
       l.id,
       `"${candidates[i].form}" and "${candidates[i].lemma}" are opposites.`,
-    ])
+    ]),
   );
 
   return {
@@ -147,18 +154,26 @@ function generateAntonymMatchPuzzle({ story, pairCount = 4 }) {
     rightItems: shuffle(rightItemsOrdered),
     answerKey,
     hints,
-    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
+    scoreRules: {
+      correct: 10,
+      incorrect: 0,
+      hintPenalty: 2,
+      wrongAttemptPenalty: 5,
+    },
   };
 }
 
 function generateDefinitionMatchPuzzle({ story, pairCount = 4 }) {
-  const tokens = story.tokenized_english_version || [];
+  // Definition mode plays with the SANSKRIT tokens: the player matches each
+  // Sanskrit word to its definition. Sanskrit tokens use `upos` (not `pos`)
+  // for the part of speech: { text, lemma, upos, features, definition }.
+  const tokens = story.tokenized_sanskrit_version || [];
   const pairs = [];
   const seen = new Set();
 
   for (const token of tokens) {
     if (!token || !token.text || !token.definition) continue;
-    if (SKIP_POS.has(token.pos)) continue;
+    if (SKIP_POS.has(token.upos)) continue;
 
     const word = token.text.toLowerCase();
     const definition = token.definition;
@@ -169,7 +184,7 @@ function generateDefinitionMatchPuzzle({ story, pairCount = 4 }) {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    pairs.push({ form: token.text, definition, pos: token.pos || "WORD" });
+    pairs.push({ form: token.text, definition, pos: token.upos || "WORD" });
   }
 
   if (pairs.length < 2) {
@@ -186,21 +201,22 @@ function generateDefinitionMatchPuzzle({ story, pairCount = 4 }) {
 
   const rightItemsOrdered = candidates.map((p, i) => {
     // trim long definitions to 2 lines max (~60 chars)
-    const def = p.definition.length > 60
-      ? p.definition.slice(0, 57).trimEnd() + "…"
-      : p.definition;
+    const def =
+      p.definition.length > 60
+        ? p.definition.slice(0, 57).trimEnd() + "…"
+        : p.definition;
     return { id: `right_${i}`, label: def, sublabel: "definition" };
   });
 
   const answerKey = Object.fromEntries(
-    leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id])
+    leftItems.map((l, i) => [l.id, rightItemsOrdered[i].id]),
   );
 
   const hints = Object.fromEntries(
     leftItems.map((l, i) => [
       l.id,
       `"${candidates[i].form}" means: "${candidates[i].definition}".`,
-    ])
+    ]),
   );
 
   return {
@@ -212,7 +228,12 @@ function generateDefinitionMatchPuzzle({ story, pairCount = 4 }) {
     rightItems: shuffle(rightItemsOrdered),
     answerKey,
     hints,
-    scoreRules: { correct: 10, incorrect: 0, hintPenalty: 2, wrongAttemptPenalty: 5 },
+    scoreRules: {
+      correct: 10,
+      incorrect: 0,
+      hintPenalty: 2,
+      wrongAttemptPenalty: 5,
+    },
   };
 }
 
