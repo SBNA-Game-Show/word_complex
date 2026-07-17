@@ -150,3 +150,7 @@ describe("Wordhunt Controller Tests", () => {
     });
   });
 });
+
+describe("Word Hunt gameController Tests", () => {
+  
+})

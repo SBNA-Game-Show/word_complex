@@ -9,6 +9,16 @@ const {
   getPlayerInfoByStory,
 } = require("../service/gameservice");
 
+/**
+ * Initializes  Word Hunt repository where passage information
+ * and game meta data are stored
+ * This end point was created for testing currently
+ * the collection is directly created when a new story set is created
+ * currently the max limit is set to 4
+ * @param {[storyId's],gameId} req
+ * @param {*} res
+ * @returns
+ */
 const initGame = async (req, res) => {
   try {
     const { storyId, gameId } = req.body;
@@ -26,6 +36,15 @@ const initGame = async (req, res) => {
     });
   }
 };
+/**
+ * Retrieves All game data from the collection for leaderboard purposes
+ * This end point was created for testing currently this end point is cunsumed
+ * by leaderboard services
+ *
+ * @param {*} req
+ * @param {*} res
+ * @returns
+ */
 
 const getAll = async (req, res) => {
   try {
@@ -42,6 +61,24 @@ const getAll = async (req, res) => {
     });
   }
 };
+/**
+ * Given Params in the request body adds the passage informtion like 
+ * nounGameWords,nounGameHints,verbGameWords,verbGameHints,adjGameWords,
+      adjGameHints to the word hunt collection 
+ * Client side is currently controlling to write only Sanskrit version of the 
+      passage   
+ * @param {      
+ * gameId,
+      storyId,
+      nounGameWords,
+      nounGameHints,
+      verbGameWords,
+      verbGameHints,
+      adjGameWords,
+      adjGameHints,} req 
+ * @param {success, message} res 
+ * @returns success and a message
+ */
 
 const addStoryInfo = async (req, res) => {
   try {
@@ -78,6 +115,24 @@ const addStoryInfo = async (req, res) => {
     });
   }
 };
+/**
+ * Given the required game meta data from the particular passage
+ * this emd point stores all the information individually into the collection
+ * according to story set, story and player
+ * @param {      
+ *    gameId,
+      storyId,
+      playerId,
+      playerName,
+      bestTime,
+      coins,
+      totalScore,
+      hintsUsed,
+      foundWords,
+      gameInstance,} req 
+ * @param {success: true/false, message} res 
+ * @returns 
+ */
 
 const addGameData = async (req, res) => {
   try {
@@ -122,6 +177,16 @@ const addGameData = async (req, res) => {
     });
   }
 };
+/**
+ * Given params the end point fetches the player information
+ * form the collection parses it 
+ * CONDITIONS
+ * IF THE PLAYER HAS COMPLETED THE GAME THEN THE COMPLETION TIME IS SENT
+ * WHICH IS THEN USED AS THE BASE TIME FOR THE STORY FOR THE PLAYER
+ * @param {gameId,storyId,playerName} req 
+ * @param {Player information on story} res 
+ * @returns 
+ */
 
 const fetchPlayerData = async (req, res) => {
   try {
