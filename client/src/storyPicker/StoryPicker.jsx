@@ -30,7 +30,11 @@ const ACCENTS = [
  *   onBack?          - optional; when present (opened from the launcher) shows a
  *                      Back button. Omitted on the first-login gate.
  */
-export default function StoryPicker({ currentStoryId = null, onConfirm, onBack }) {
+export default function StoryPicker({
+  currentStoryId = null,
+  onConfirm,
+  onBack,
+}) {
   const { logout, user } = useAuth();
 
   const [stories, setStories] = useState([]);
@@ -61,8 +65,12 @@ export default function StoryPicker({ currentStoryId = null, onConfirm, onBack }
 
   const picked = stories.find((story) => story.storyId === pickedId) ?? null;
 
+  // E2E TEST SELECTORS:
+  // The Story Picker is now a required step before the launcher. These stable
+  // selectors let Playwright choose deterministic mocked stories without relying
+  // on CSS classes or animation timing. They do not change player-facing behavior.
   return (
-    <main className="story-picker">
+    <main className="story-picker" data-testid="story-picker-page">
       <BackgroundDecor />
       <div className="sp-scene" aria-hidden="true">
         <div className="sp-grid-pattern" />
@@ -72,12 +80,22 @@ export default function StoryPicker({ currentStoryId = null, onConfirm, onBack }
 
       <header className="game-header">
         {onBack ? (
-          <button className="back-button" type="button" onClick={onBack}>
-            <span className="back-arrow" aria-hidden="true">&larr;</span>
+          <button
+            className="back-button"
+            data-testid="story-picker-back-button"
+            type="button"
+            onClick={onBack}
+          >
+            <span className="back-arrow" aria-hidden="true">
+              &larr;
+            </span>
             Back
           </button>
         ) : (
-          <span className="back-button back-button--placeholder" aria-hidden="true" />
+          <span
+            className="back-button back-button--placeholder"
+            aria-hidden="true"
+          />
         )}
         <div className="header-titles">
           <p className="eyebrow">Choose your adventure</p>
@@ -98,7 +116,9 @@ export default function StoryPicker({ currentStoryId = null, onConfirm, onBack }
 
       <section className="sp-stage" aria-label="Stories">
         {status === "loading" && (
-          <p className="sp-state" role="status">Loading stories&hellip;</p>
+          <p className="sp-state" role="status">
+            Loading stories&hellip;
+          </p>
         )}
 
         {status === "error" && (
@@ -123,6 +143,8 @@ export default function StoryPicker({ currentStoryId = null, onConfirm, onBack }
                   key={story.storyId}
                   type="button"
                   className={`story-card${isSelected ? " is-selected" : ""}`}
+                  data-testid={`story-card-${story.storyId}`}
+                  data-story-id={story.storyId}
                   style={{
                     "--c": accent.c,
                     "--c2": accent.c2,
@@ -143,7 +165,9 @@ export default function StoryPicker({ currentStoryId = null, onConfirm, onBack }
                   <span className="story-pick">
                     {isSelected ? (
                       <>
-                        <span className="story-check" aria-hidden="true">&#10003;</span>
+                        <span className="story-check" aria-hidden="true">
+                          &#10003;
+                        </span>
                         Picked
                       </>
                     ) : (
@@ -167,11 +191,14 @@ export default function StoryPicker({ currentStoryId = null, onConfirm, onBack }
             </p>
             <button
               className="btn-primary sp-confirm"
+              data-testid="story-picker-confirm-button"
               type="button"
               onClick={() => onConfirm(picked.storyId)}
             >
               Start reading
-              <span className="btn-arrow" aria-hidden="true">&rarr;</span>
+              <span className="btn-arrow" aria-hidden="true">
+                &rarr;
+              </span>
             </button>
           </>
         ) : (

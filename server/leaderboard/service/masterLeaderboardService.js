@@ -33,6 +33,7 @@ const { GAME_KEYS } = require("../leaderboardConfig");
 const contextClozeService = require("../../fillinblanks/services/contextClozeQuestScoreService");
 const passageReconstructionScoreService = require("../../passagereconstruction/service/passageReconstructionScoreService");
 const meaningBridgeScoreService = require("../../meaning-bridge/service/meaningBridgeScoreService");
+const wordHuntLeaderboardService = require("../../wordhunt/service/wordhuntLeaderboardService");
 
 // How many rows we pull from each game before merging. ContextQuiz's service
 // clamps at 100, so going higher there is a no-op.
@@ -44,14 +45,24 @@ const PER_GAME_FETCH = 100;
  * A max of 0 means "not known yet" (that game contributes nothing).
  */
 const contextQuizMAX = 1140;
-const wordHuntMAX = 0; // TODO (Sabahat)
+// WordHunt: a player's leaderboard totalScore = best Noun + best Verb + best
+// Adjective attempt (summed across stories). Per single POS game the max is:
+//   BASE_SCORE(1) per word x wordCount, then x10 for an "elite" clear
+//   (all words found, within 25% of the clock, 0 hints — see Helper.js
+//   calculateGameTotal). So max per POS = 10 x wordCount.
+// Word counts are STORY-DEPENDENT (they come from each story's noun/verb/adj
+// arrays — there is no fixed cap in the code), so this is a calibration
+// constant, not an absolute. Assuming ~10 target words per POS (the hint
+// system itself scales in 10-word blocks): 10 x 10 x 3 POS = 300.
+// CALIBRATE: set to 10 x (maxNouns + maxVerbs + maxAdjectives) observed across
+// the live story set if you want exact normalization.
+const wordHuntMAX = 300;
 const passageReconstructionMAX = 750; // 3 rounds x 100 + 90s x 5 time bonus
 const meaningBridgeMAX = 285; // 3 rounds (4+5+6 pairs) x 10/pair + 3 x 45 max speed bonus
 
 /**
- * One adapter per GAME_KEYS entry. Live: ContextQuiz, PassageReconstruction,
- * MeaningBridge. Remaining TODO — WordHunt (Sabahat): needs a real Mongo
- * top-X + maxScore (current service still reads mock JSON).
+ * One adapter per GAME_KEYS entry. All four games are now live:
+ * ContextQuiz, WordHunt, PassageReconstruction, MeaningBridge.
  */
 const ADAPTERS = {
   ContextQuiz: {
@@ -66,7 +77,20 @@ const ADAPTERS = {
       }));
     },
   },
-  WordHunt: null, // TODO (Sabahat)
+  WordHunt: {
+    maxScore: wordHuntMAX,
+    getTopPlayers: async (x) => {
+      // WordHunt's service aggregates each player's best Noun/Verb/Adjective
+      // attempts; totalScore is that sum, uuid is the player's Firebase UID.
+      const rows = await wordHuntLeaderboardService.getTopPlayers(x);
+      return rows.map((r) => ({
+        uuid: r.uuid,
+        displayName: r.playerName ?? null,
+        avatar: r.avatar ?? null,
+        score: r.totalScore ?? 0,
+      }));
+    },
+  },
   PassageReconstruction: {
     maxScore: passageReconstructionMAX,
     getTopPlayers: async (x) => {

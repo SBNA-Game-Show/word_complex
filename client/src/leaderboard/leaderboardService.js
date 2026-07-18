@@ -36,6 +36,29 @@ export async function fetchLeaderboard(board = "master", limit = 100) {
 
     return json.data ?? [];
   }
+  if (board === "MeaningBridge") {
+    // Meaning Bridge is federated like the other games: scores live in its
+    // own `meaning-bridge` collection, exposed at /meaningBridge/score/leaderboard.
+    // Its rows are pre-shaped for the game scene (playerName/totalScore), so
+    // map them to the generic leaderboard row shape here.
+    const response = await fetch(
+      `${API_BASE}/meaningBridge/score/leaderboard?limit=${limit}`
+    );
+
+    const json = await readJson(
+      response,
+      "Failed to load Meaning Bridge leaderboard"
+    );
+
+    return (json.scores ?? []).map((row, i) => ({
+      rank: i + 1,
+      uuid: row.uuid,
+      displayName: row.playerName ?? null,
+      avatar: row.avatar ?? null,
+      score: row.totalScore ?? 0,
+      bestTime: row.bestTime ?? null,
+    }));
+  }
   if (board === "PassageReconstruction") {
     const response = await fetch(
       `${API_BASE}/passageReconstruct/leaderboard?limit=10`
@@ -47,6 +70,31 @@ export async function fetchLeaderboard(board = "master", limit = 100) {
     );
 
     return json.data ?? [];
+  }
+  if (board === "WordHunt") {
+    const response = await fetch(`${API_BASE}/wordHunt/leaderboard?limit=10`);
+    const json = await readJson(
+      response,
+      "Failed to load Word Hunt leaderboard"
+    );
+
+    // WordHunt's endpoint returns its own row shape (playerName / totalScore,
+    // and bestTime as an "m:ss" string). Map it to the shape the UI renders
+    // (displayName / score / uuid, bestTime in ms for formatTime).
+    const toMs = (t) => {
+      if (t == null) return null;
+      const [m, s] = String(t).split(":").map(Number);
+      if (Number.isNaN(m) || Number.isNaN(s)) return null;
+      return (m * 60 + s) * 1000;
+    };
+
+    return (json.data ?? []).map((row) => ({
+      rank: row.rank,
+      uuid: row.uuid ?? row.playerName, // Firebase UID; fall back to name for old/guest rows
+      displayName: row.playerName,
+      score: row.totalScore,
+      bestTime: toMs(row.bestTime),
+    }));
   }
   const params = new URLSearchParams({ game: board, limit: String(limit) });
   const response = await fetch(`${API_BASE}/leaderboard?${params}`);

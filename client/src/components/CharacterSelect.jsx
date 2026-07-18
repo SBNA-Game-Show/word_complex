@@ -8,14 +8,38 @@ import "./CharacterSelect.css";
 // The roster of pickable reading buddies. The image lives in /characters/<id>.png
 // and the colors come from the existing game palette so accents stay on-brand.
 export const CHARACTERS = [
-  { id: "tomely",  name: "Tomely",  tag: "The Wise",     c: "#7aa8ff", c2: "#3155c7" },
-  { id: "sprout",  name: "Sprout",  tag: "The Kind",     c: "#7bd17b", c2: "#46c97a" },
-  { id: "bubbles", name: "Bubbles", tag: "The Splashy",  c: "#7fdcef", c2: "#2fb6d6" },
-  { id: "cap",     name: "Cap",     tag: "The Brave",    c: "#ff8a8a", c2: "#ef4444" },
-  { id: "luna",    name: "Luna",    tag: "The Magical",  c: "#b89cff", c2: "#7a5bd6" },
-  { id: "bolt",    name: "Bolt",    tag: "The Curious",  c: "#cfe9ef", c2: "#8fbdd1" },
-  { id: "comet",   name: "Comet",   tag: "The Sparkly",  c: "#ffe066", c2: "#ffb300" },
-  { id: "berry",   name: "Berry",   tag: "The Sweet",    c: "#ff9bb4", c2: "#ff4f7a" },
+  {
+    id: "tomely",
+    name: "Tomely",
+    tag: "The Wise",
+    c: "#7aa8ff",
+    c2: "#3155c7",
+  },
+  {
+    id: "sprout",
+    name: "Sprout",
+    tag: "The Kind",
+    c: "#7bd17b",
+    c2: "#46c97a",
+  },
+  {
+    id: "bubbles",
+    name: "Bubbles",
+    tag: "The Splashy",
+    c: "#7fdcef",
+    c2: "#2fb6d6",
+  },
+  { id: "cap", name: "Cap", tag: "The Brave", c: "#ff8a8a", c2: "#ef4444" },
+  { id: "luna", name: "Luna", tag: "The Magical", c: "#b89cff", c2: "#7a5bd6" },
+  { id: "bolt", name: "Bolt", tag: "The Curious", c: "#cfe9ef", c2: "#8fbdd1" },
+  {
+    id: "comet",
+    name: "Comet",
+    tag: "The Sparkly",
+    c: "#ffe066",
+    c2: "#ffb300",
+  },
+  { id: "berry", name: "Berry", tag: "The Sweet", c: "#ff9bb4", c2: "#ff4f7a" },
 ];
 
 export default function CharacterSelect({ selectedId, onSelect, onBack }) {
@@ -24,11 +48,14 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
   const [pendingId, setPendingId] = useState(null);
   const [notice, setNotice] = useState("");
 
-  const selected = CHARACTERS.find((character) => character.id === selectedId) ?? null;
+  const selected =
+    CHARACTERS.find((character) => character.id === selectedId) ?? null;
 
   // Which streak day gifts this character, if any (inverse of the milestone map).
   const milestoneDayFor = (id) => {
-    const entry = Object.entries(milestones).find(([, giftId]) => giftId === id);
+    const entry = Object.entries(milestones).find(
+      ([, giftId]) => giftId === id,
+    );
     return entry ? Number(entry[0]) : null;
   };
 
@@ -47,8 +74,13 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
     }
   }
 
+  // E2E TEST SELECTORS:
+  // Character ownership and purchases are normal DOM interactions, but their
+  // cards change structure after a purchase. These stable attributes let
+  // Playwright follow that real transition without changing purchase logic,
+  // ownership rules, prices, or the selected-character behaviour.
   return (
-    <main className="character-select">
+    <main className="character-select" data-testid="character-select-page">
       <BackgroundDecor />
       <div className="cs-scene" aria-hidden="true">
         <div className="cs-grid-pattern" />
@@ -68,15 +100,22 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
       </div>
 
       <header className="game-header">
-        <button className="back-button" type="button" onClick={onBack}>
-          <span className="back-arrow" aria-hidden="true">&larr;</span>
+        <button
+          className="back-button"
+          data-testid="character-select-back-button"
+          type="button"
+          onClick={onBack}
+        >
+          <span className="back-arrow" aria-hidden="true">
+            &larr;
+          </span>
           Back
         </button>
         <div className="header-titles">
           <p className="eyebrow">Choose your buddy</p>
           <h1>Pick a Character</h1>
         </div>
-        <span className="cs-star-pill">
+        <span className="cs-star-pill" data-testid="character-select-stars">
           <span aria-hidden="true">⭐</span> {stars}
         </span>
         <UserBadge user={user} onLogout={logout} />
@@ -91,10 +130,23 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
           Pick a buddy you own, buy a new one with your stars, or keep your
           streak going to unlock the special ones!
         </p>
-        {notice && <p className="cs-notice">{notice}</p>}
+        {notice && (
+          <p
+            className="cs-notice"
+            data-testid="character-select-notice"
+            role="status"
+            aria-live="polite"
+          >
+            {notice}
+          </p>
+        )}
       </section>
 
-      <section className="cs-stage" aria-label="Characters">
+      <section
+        className="cs-stage"
+        data-testid="character-roster"
+        aria-label="Characters"
+      >
         <div className="cs-stage-floor" aria-hidden="true" />
         <div className="cs-row">
           {CHARACTERS.map((character, index) => {
@@ -143,6 +195,9 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
                   key={character.id}
                   type="button"
                   className={`character-card${isSelected ? " is-selected" : ""}`}
+                  data-testid={`character-card-${character.id}`}
+                  data-character-id={character.id}
+                  data-owned="true"
                   style={cardStyle}
                   onClick={() => onSelect(character.id)}
                   aria-pressed={isSelected}
@@ -152,14 +207,18 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
                   <span className="character-pick">
                     {isSelected ? (
                       <>
-                        <span className="character-check" aria-hidden="true">&#10003;</span>
+                        <span className="character-check" aria-hidden="true">
+                          &#10003;
+                        </span>
                         Picked
                       </>
                     ) : (
                       "Pick me"
                     )}
                   </span>
-                  {isSelected && <span className="character-ribbon">Yours</span>}
+                  {isSelected && (
+                    <span className="character-ribbon">Yours</span>
+                  )}
                 </button>
               );
             }
@@ -170,6 +229,10 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
                 <div
                   key={character.id}
                   className={`character-card is-locked${canAfford ? "" : " cant-afford"}`}
+                  data-testid={`character-card-${character.id}`}
+                  data-character-id={character.id}
+                  data-owned="false"
+                  data-price={price}
                   style={cardStyle}
                 >
                   {stage}
@@ -177,6 +240,7 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
                   <button
                     type="button"
                     className="character-buy"
+                    data-testid={`character-buy-${character.id}`}
                     disabled={!canAfford || isPending}
                     onClick={() => handleBuy(character)}
                   >
@@ -197,6 +261,10 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
               <div
                 key={character.id}
                 className="character-card is-locked"
+                data-testid={`character-card-${character.id}`}
+                data-character-id={character.id}
+                data-owned="false"
+                data-milestone-day={milestoneDay ?? ""}
                 style={cardStyle}
               >
                 {stage}
@@ -210,11 +278,15 @@ export default function CharacterSelect({ selectedId, onSelect, onBack }) {
         </div>
       </section>
 
-      <footer className={`cs-footer${selected ? " is-active" : ""}`}>
+      <footer
+        className={`cs-footer${selected ? " is-active" : ""}`}
+        data-testid="character-selected-summary"
+      >
         {selected ? (
           <p>
             <span className="cs-footer-dot" />
-            Your character is <strong>{selected.name}</strong> &mdash; {selected.tag}!
+            Your character is <strong>{selected.name}</strong> &mdash;{" "}
+            {selected.tag}!
           </p>
         ) : (
           <p>

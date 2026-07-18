@@ -1,0 +1,81 @@
+name: Client Playwright Non-Game E2E
+
+on:
+  push:
+    branches:
+      - development
+      - playwright-tests-Nawaf
+    paths:
+      - "client/**"
+      - ".github/workflows/playwright-non-game.yml"
+
+  pull_request:
+    branches:
+      - development
+    paths:
+      - "client/**"
+      - ".github/workflows/playwright-non-game.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  playwright:
+    name: Build and run 102 non-game E2E tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    defaults:
+      run:
+        working-directory: client
+
+    env:
+      CI: "true"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.12.0"
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install client dependencies
+        run: npm ci
+
+      - name: Install Chromium and Linux dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Build client
+        run: npm run build
+
+      - name: Run verified non-game Playwright suite
+        run: >
+          npm run test:e2e --
+          tests/site-navigation.spec.js
+          tests/platform-pages.spec.js
+          tests/progress-and-character.spec.js
+          tests/leaderboard.spec.js
+          tests/admin.spec.js
+          tests/tokenized-editor.spec.js
+          --workers=1
+
+      - name: Upload Playwright diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-non-game-diagnostics-${{ github.run_id }}
+          path: |
+            client/playwright-report/
+            client/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
