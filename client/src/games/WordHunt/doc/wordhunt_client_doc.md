@@ -6,7 +6,7 @@ are separated into independent classes.
 
 ## Class Diagram
 
-![Class Diagram](docs/class-diagram.png)
+![ER DIAGRAM](./client_entity_relationship_wordhunt.png)
 
 ---
 
