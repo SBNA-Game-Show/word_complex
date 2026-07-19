@@ -100,6 +100,7 @@ class FindAdjectiveGame {
     this.messageBar.onExit = () => {
       this.gameOver = true;
       this.timer.stop();
+      this.game.isStartingGame = false;
       this.foundWordsCont.reset();
       this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
@@ -121,7 +122,7 @@ class FindAdjectiveGame {
       this.game.isInputLocked = false;
 
       this.game.stage.removeAllChildren();
-      this.displayPassage();
+      this.game.findAdjectiveGame.displayPassage();
     };
     //-----------------------------------
     // Control Panel Configuration
@@ -358,6 +359,8 @@ class FindAdjectiveGame {
         this.foundWords.length,
         this.game.adjGameKey,
       );
+      this.game.TOTAL_SCORE = 0;
+      this.game.EARNED_COINS = 0;
       // sending data to backend irrespective user [guest, signed in user]
       // const res = await this.manager.writeGameInformation(
       //   completionTime,
@@ -368,6 +371,31 @@ class FindAdjectiveGame {
       this.game.hasGameStarted = false;
       emit("complete");
     }
+  }
+  destroy() {
+    this.gameOver = true;
+
+    if (this.timer) {
+      this.timer.stop();
+    }
+
+    if (this.passageDisplay) {
+      this.passageDisplay.destroy();
+      this.passageDisplay = null;
+    }
+
+    if (this.foundWordsCont) {
+      this.foundWordsCont.reset();
+      this.foundWordsCont = null;
+    }
+
+    this.messageBar = null;
+    this.controlPanel = null;
+    this.playerInformation = null;
+
+    this.foundWords = [];
+
+    this.game.stage.removeAllChildren();
   }
 }
 

@@ -32,125 +32,7 @@ class MessageBar {
     this.countdownFlareIntervalId = null;
   }
 
-  show(text, color = "black", duration = 1200) {
-    this.clearActiveMessages();
-    this.game.isInputLocked = true;
-
-    if (this.messageContainer) {
-      this.messageContainer.removeFrom();
-      clearTimeout(this.timeout);
-    }
-
-    // Increased height slightly to comfortably stack 3 lines
-    const containerWidth = 460;
-    const containerHeight = 160;
-    const padding = 25;
-    const maxTextWidth = containerWidth - padding * 2;
-
-    this.messageContainer = new ZimContainer(
-      this.game,
-      containerWidth,
-      containerHeight,
-    ).createContainer();
-
-    this.messageContainer.addTo(this.game.stage);
-
-    this.messageContainer.pos(
-      this.game.width / 2 - containerWidth / 2,
-      this.game.height / 2 - containerHeight / 2,
-    );
-
-    this.messageContainer.alpha = 0.95;
-
-    // Background Panel
-    const bg = new this.game.zim.Rectangle({
-      width: containerWidth,
-      height: containerHeight,
-      color: "#1E3A1E",
-      corner: 16,
-      borderColor: "#E9D8A6",
-      borderWidth: 2,
-    });
-    bg.addTo(this.messageContainer);
-
-    // --- OBJECT SANITIZATION LAYER ---
-    let rawText = text;
-    if (typeof text === "object" && text !== null) {
-      rawText = text.text || text.label?.text || "";
-    }
-    if (typeof rawText !== "string") {
-      rawText = String(rawText);
-    }
-
-    // --- THREE-WAY SENTENCE SPLITTING ---
-    // Example input: "Oops! "run" is a VERB. An action word..."
-    const sentences = rawText.split(/(?<=[.!?])\s+/);
-
-    const line1Text = sentences[0] || ""; // "Oops!"
-    const line2Text = sentences[1] || ""; // '"run" is a VERB.'
-    const line3Text = sentences[2] || ""; // 'An action word...'
-
-    // Line 1: Header/Alert
-    const label1Wrapper = new ZimLabel(this.game, line1Text, 18, "red");
-    const label1 = label1Wrapper.createLabel();
-
-    // Line 2: The Core Answer
-    const label2Wrapper = new ZimLabel(this.game, line2Text, 18, "black");
-    const label2 = label2Wrapper.createLabel();
-
-    // Line 3: The Helpful Definition
-    const label3Wrapper = new ZimLabel(this.game, line3Text, 16, "black");
-    const label3 = label3Wrapper.createLabel();
-
-    // Force strict alignment properties down onto native labels
-    const inner1 = label1.label || label1;
-    const inner2 = label2.label || label2;
-    const inner3 = label3.label || label3;
-
-    [inner1, inner2, inner3].forEach((labelNode) => {
-      if (labelNode) {
-        labelNode.lineWidth = maxTextWidth;
-        labelNode.textAlign = "left";
-      }
-    });
-
-    label1.addTo(this.messageContainer);
-    label2.addTo(this.messageContainer);
-    label3.addTo(this.messageContainer);
-
-    // Grab rendering bounds heights
-    const h1 = inner1?.getBounds()?.height || 20;
-    const h2 = inner2?.getBounds()?.height || 20;
-    const h3 = inner3?.getBounds()?.height || 18;
-
-    const gap = 8; // Smaller gap since we have 3 lines
-    const totalTextHeight = h1 + h2 + h3 + gap * 2;
-
-    // Vertical Start positioning
-    const startY = (containerHeight - totalTextHeight) / 2;
-    // const centerX = containerWidth / 2;
-    const leftX = padding;
-
-    // Position layouts perfectly relative to the center axis point
-    label1.pos(leftX, startY);
-    label2.pos(leftX, startY + h1 + gap);
-    label3.pos(leftX, startY + h1 + h2 + gap * 2);
-
-    this.game.stage.update();
-
-    this.timeout = setTimeout(() => {
-      if (this.messageContainer) {
-        this.messageContainer.removeFrom();
-        this.messageContainer = null;
-        this.game.isInputLocked = false;
-        this.game.stage.update();
-      }
-    }, duration);
-
-    return this.messageContainer;
-  }
-
-  clearActiveMessages() {
+    clearActiveMessages() {
     this.countdownRunning = false;
     this.countdownTimeouts.forEach(clearTimeout);
     this.countdownTimeouts = [];
@@ -518,6 +400,42 @@ class MessageBar {
     };
 
     showNext();
+  }
+  reset() {
+    this.clearActiveMessages();
+
+    this.countdownRunning = false;
+
+    this.countdownTimeouts.forEach((id) => {
+      clearTimeout(id);
+    });
+
+    this.countdownTimeouts = [];
+
+    if (this.countdownFlareIntervalId) {
+      clearInterval(this.countdownFlareIntervalId);
+      this.countdownFlareIntervalId = null;
+    }
+
+    if (this.winningContainer) {
+      this.winningContainer.removeFrom();
+      this.winningContainer = null;
+    }
+
+    if (this.timeOverContainer) {
+      this.timeOverContainer.removeFrom();
+      this.timeOverContainer = null;
+    }
+
+    this.continueButton = null;
+    this.exitButton = null;
+    this.restartButton = null;
+
+    this.onContinue = null;
+    this.onExit = null;
+    this.onRestart = null;
+
+    this.game.stage.update();
   }
 }
 

@@ -54,91 +54,108 @@ class ControlPanel {
     bg.addTo(panel);
 
     //-----------------------------------
-    // CENTER: INTERACTIVE EYE EMOJI (WITH AUTO-CLOSE)
+    // CENTER: HINT BUTTON
     //-----------------------------------
-    this.eyeEmojiWrapper = new ZimLabel(this.game, "😴", 36).createLabel();
-    this.eyeEmojiWrapper.addTo(panel);
+    this.maxHints = this.game.allowedHints;
+    this.remainingHints = this.maxHints - this.hintCounter;
 
-    const emojiDisplay = this.eyeEmojiWrapper.label;
-    emojiDisplay.reg(emojiDisplay.width / 2, emojiDisplay.height / 2);
-    emojiDisplay.pos(150, 30);
+    this.hintButton = new ZimButton(
+      this.game,
+      100,
+      38,
+      `Hint: ${this.remainingHints}`,
+      14,
+    ).createButton();
 
-    this.eyeEmojiWrapper.tap(() => {
+    this.hintButton.pos(125, 31);
+    this.hintButton.addTo(panel);
+
+    this.hintButton.tap(() => {
       if (this.isProcessingClick) return;
-      this.maxHints = this.game.allowedHints;
 
+      // No hints remaining
       if (this.isClosed && this.hintCounter >= this.maxHints) {
-        const targetLabel = this.eyeEmojiWrapper.label;
-        targetLabel.text = "😭";
+        this.hintButton.updateText("No Hints");
+
         this.game.stage.update();
+
         setTimeout(() => {
-          targetLabel.text = "😴";
-          targetLabel.reg(targetLabel.width / 2, targetLabel.height / 2);
-          targetLabel.pos(150, 30);
+          this.remainingHints = this.maxHints - this.hintCounter;
+
+          this.hintButton.updateText(`Hint: ${this.remainingHints}`);
+
           this.game.stage.update();
         }, 1000);
-        emit("hint", { text: `Oops !.... Used up All Hints` });
+
+        emit("hint", {
+          text: "Oops!.... Used up All Hints",
+        });
+
         return;
       }
+
       this.isProcessingClick = true;
 
-      // Clear timer and clean up colors if manually toggled while active
+      // Cancel previous timer if active
       if (this.hintAutoCloseTimer) {
         clearTimeout(this.hintAutoCloseTimer);
         this.hintAutoCloseTimer = null;
 
-        // Revert colors early if player manually clicks to close the eye
-        if (this.isClosed === false && this.onHintExpired) {
+        if (!this.isClosed && this.onHintExpired) {
           this.onHintExpired();
         }
       }
 
+      // Toggle state
       this.isClosed = !this.isClosed;
-      const targetLabel = this.eyeEmojiWrapper.label;
 
       if (!this.isClosed) {
-        // --- OPEN STATE ---
-        targetLabel.text = "🤔";
+        //-----------------------------------
+        // OPEN HINT
+        //-----------------------------------
+
+        this.hintButton.updateText("Hide");
 
         if (this.hintClicked) {
           this.hintClicked();
-          this.hintCounter += 1;
-          console.log("Hint Counter: ", this.hintCounter);
+
+          this.hintCounter++;
+
+          this.remainingHints = this.maxHints - this.hintCounter;
+
+          // console.log("Hint Counter:", this.hintCounter);
         }
 
-        // START 10-SECOND COUNTDOWN ENGINE
+        // Auto close after 2 seconds
         this.hintAutoCloseTimer = setTimeout(() => {
           this.isClosed = true;
-          targetLabel.text = "😴"; // Automatically flip back to closed frame
 
-          // Re-balance bounds tracking configurations on timeout execution
-          targetLabel.reg(targetLabel.width / 2, targetLabel.height / 2);
-          targetLabel.pos(150, 30);
+          this.hintButton.updateText(`Hint: ${this.remainingHints}`);
 
-          // TRIGGER EXPIRED CALLBACK: Tells the game to remove the blue highlights
           if (this.onHintExpired) {
             this.onHintExpired();
           }
 
           this.game.stage.update();
 
-          console.log("Hint expired and closed automatically.");
-          this.hintAutoCloseTimer = null;
-        }, 2000); // 2 seconds
-      } else {
-        // --- MANUAL CLOSE STATE ---
-        targetLabel.text = "😴";
+          // console.log("Hint expired and closed automatically.");
 
-        // Trigger expiration cleanup when manually closing
+          this.hintAutoCloseTimer = null;
+        }, 2000);
+      } else {
+        //-----------------------------------
+        // MANUAL CLOSE
+        //-----------------------------------
+
+        this.hintButton.updateText(`Hint: ${this.remainingHints}`);
+
         if (this.onHintExpired) {
           this.onHintExpired();
         }
-        console.log("Hint Hidden.");
+
+        // console.log("Hint Hidden.");
       }
 
-      // Re-align bounds origin settings for immediate clicks
-      targetLabel.reg(targetLabel.width / 2, targetLabel.height / 2);
-      targetLabel.pos(150, 30);
       this.game.stage.update();
 
       setTimeout(() => {

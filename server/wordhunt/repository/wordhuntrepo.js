@@ -82,6 +82,14 @@ const initializeStoryInfo = async (gameId, storyId, storyInfo) => {
       throw new Error("No Story Found By Given Id");
     }
 
+    if (game.isStoryInitialized(story)) {
+      if (game.storyInfoMatchers(story, storyInfo)) {
+        return "Story Information Already Initialized";
+      }
+
+      return "Story Information Already Initialized in Sanskrit";
+    }
+
     const response = game.initializeStoryInfo(story, storyInfo);
 
     await game.save();

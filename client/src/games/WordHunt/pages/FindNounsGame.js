@@ -93,6 +93,7 @@ class FindNounsGame {
     this.messageBar.onContinue = () => {
       this.gameOver = true;
       this.timer.stop();
+      this.messageBar.reset();
       this.game.hasGameStarted = false;
       this.game.stage.removeAllChildren();
       this.game.startVerbGame();
@@ -104,11 +105,13 @@ class FindNounsGame {
       this.gameOver = true;
       this.timer.stop();
       this.game.hasGameStarted = false;
+      this.game.isStartingGame = false;
       this.foundWordsCont.reset();
       this.game.stage.removeAllChildren();
       this.game.isInputLocked = false;
       this.game.start();
     };
+
     // Restarting same game when time is up
     this.messageBar.onRestart = () => {
       // console.log("Restart triggered");
@@ -124,7 +127,7 @@ class FindNounsGame {
       this.game.isInputLocked = false;
 
       this.game.stage.removeAllChildren();
-      this.displayPassage();
+      this.game.findNounsGame.displayPassage();
     };
 
     //-----------------------------------
@@ -365,7 +368,8 @@ class FindNounsGame {
         this.foundWords.length,
         this.game.nounGameKey,
       );
-      console.log(res);
+      this.game.TOTAL_SCORE = 0;
+      this.game.EARNED_COINS = 0;
       // sending data to backend irrespective user [guest, signed in user]
       // const res = await this.manager.writeGameInformation(
       //   completionTime,
@@ -383,22 +387,30 @@ class FindNounsGame {
   // Button Functionality
   //-----------------------------------
 
-  restartButtonTapped() {
-    if (!this.restartButton) return;
+  destroy() {
+    this.gameOver = true;
 
-    this.restartButton.tap(() => {
-      // console.log("Restart Button Tapped");
-
-      this.gameOver = false;
-      this.foundWords = [];
-      this.score = 0;
-
+    if (this.timer) {
       this.timer.stop();
-      this.game.isInputLocked = false;
+    }
 
-      this.game.stage.removeAllChildren();
-      this.displayPassage();
-    });
+    if (this.passageDisplay) {
+      this.passageDisplay.destroy();
+      this.passageDisplay = null;
+    }
+
+    if (this.foundWordsCont) {
+      this.foundWordsCont.reset();
+      this.foundWordsCont = null;
+    }
+
+    this.messageBar = null;
+    this.controlPanel = null;
+    this.playerInformation = null;
+
+    this.foundWords = [];
+
+    this.game.stage.removeAllChildren();
   }
 }
 

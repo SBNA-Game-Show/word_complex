@@ -46,12 +46,12 @@ class Game {
     this.isInputLocked = false;
 
     // BASE SETTINGS
-    this.WORD_TIMING = 2 / 60;
-    this.BASE_SCORE = 1;
+    this.WORD_TIMING = 5 / 60; // five seconds per word to find
+    this.BASE_SCORE = 10;
     this.BASE_PENALTY = 0.25;
     this.BASE_HINTS = 1;
-    this.BASE_COIN = 2; // FOR EACH 10 points 2 coins
-    this.BASE_COIN_SCORE = 10;
+    this.BASE_COIN = 2; // FOR EACH 20 points 2 coins
+    this.BASE_COIN_SCORE = 20;
     this.languages = ["EN", "SA"];
     this.LANGUAGE = this.languages[0];
 
@@ -94,6 +94,7 @@ class Game {
     // ];
     this.playerInfo = {};
     this.hasGameStarted = false;
+    this.isStartingGame = false;
   }
 
   //----------------------------------
@@ -104,6 +105,10 @@ class Game {
     // console.log("Player Info: ", this.player);
     await this.serviceManager.extractGameId();
     this.hasGameStarted = false; // Reset explicitly on menu returns
+    if (this.landingPage) {
+      this.landingPage.hide();
+      this.landingPage = null;
+    }
     this.landingPage = new LandingPage(this).createLandingPage();
 
     // 🛠️ FIXED: Removed early API calls from here.
@@ -125,7 +130,11 @@ class Game {
           // console.log("Loading English pipeline data assets...");
           await this.serviceManager.getPassageByIdEnglish();
         }
-        await this.serviceManager.writeStoryInfo();
+        // writing if the story information only if the language is SA
+        await this.serviceManager.writeStoryInfoOnlySA();
+        //Writes the story info irrespective of any language
+        //NOTE: Before switching Database reset is a must to avoid Conflicts
+        // await this.serviceManager.writeStoryInfo();
         await this.serviceManager.retrievePlayerInfo();
 
         this.landingPage.hide();
@@ -146,8 +155,7 @@ class Game {
     this.hasGameStarted = false;
     this.isInputLocked = true;
     this.messageBar?.clearActiveMessages?.();
-
-    [this.findNounsGame, this.findVerbGame, this.findAdjectiveGame].forEach(
+    [(this.findNounsGame, this.findVerbGame, this.findAdjectiveGame)].forEach(
       (activeGame) => {
         activeGame?.timer?.stop?.();
         if (activeGame?.controlPanel?.hintAutoCloseTimer) {
@@ -220,9 +228,14 @@ class Game {
   //----------------------------------
 
   startNounGame() {
-    if (this.hasGameStarted) return;
-    this.hasGameStarted = true;
+    if (this.hasGameStarted || this.isStartingGame) return;
+    this.isStartingGame = true;
     this.messageBar.countdownTimer(() => {
+      this.isStartingGame = false;
+      if (this.hasGameStarted) {
+        return;
+      }
+      this.hasGameStarted = true;
       this.findNounsGame = new FindNounsGame(this);
 
       this.findNounsGame.displayPassage();
@@ -236,9 +249,16 @@ class Game {
   //----------------------------------
 
   startVerbGame() {
-    if (this.hasGameStarted) return;
-    this.hasGameStarted = true;
+    if (this.hasGameStarted || this.isStartingGame) return;
+
+    this.isStartingGame = true;
+
     this.messageBar.countdownTimer(() => {
+      this.isStartingGame = false;
+      if (this.hasGameStarted) {
+        return;
+      }
+      this.hasGameStarted = true;
       this.findVerbGame = new FindVerbGame(this);
 
       this.findVerbGame.displayPassage();
@@ -252,9 +272,14 @@ class Game {
   //----------------------------------
 
   startAdjectiveGame() {
-    if (this.hasGameStarted) return;
-    this.hasGameStarted = true;
+    if (this.hasGameStarted || this.isStartingGame) return;
+    this.isStartingGame = true;
     this.messageBar.countdownTimer(() => {
+      this.isStartingGame = false;
+      if (this.hasGameStarted) {
+        return;
+      }
+      this.hasGameStarted = true;
       this.findAdjectiveGame = new FindAdjectiveGame(this);
 
       this.findAdjectiveGame.displayPassage();

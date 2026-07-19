@@ -38,16 +38,6 @@ class GameManager {
    * decides whether to use history OR passage length
    */
 
-  initGame() {
-    let gameType = "";
-    this.gameTypesArray.forEach((game) => {
-      gameType = game;
-    });
-    this.getTargetWordCount(gameType);
-    if (this.nounCount == 0) {
-      console.log("Noun Game Has No Play");
-    }
-  }
   setGameTime(gameType) {
     const data = this.game?.storyData?.story;
     if (!data) return 0;

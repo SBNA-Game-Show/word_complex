@@ -44,6 +44,19 @@ class ZimButton {
       (this.height - this.label.label.height) / 2,
     );
 
+    // UPDATE FUNCTION
+    this.container.updateText = (newText) => {
+      this.text = newText;
+
+      this.label.label.text = newText;
+      this.label.pos(
+        (this.width - this.label.label.width) / 2,
+        (this.height - this.label.label.height) / 2,
+      );
+
+      this.game.stage.update();
+    };
+
     return this.container;
   }
 }

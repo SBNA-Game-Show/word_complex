@@ -104,7 +104,7 @@ class GameServiceManager {
       this.storyId = this.game.currentStoryId;
       const response = await retrieveSanskritVersion(this.storyId);
 
-      console.log("RESPONSE:", response);
+      // console.log("RESPONSE:", response);
       this.data = response;
       this.processDataSanskrit();
 
@@ -189,6 +189,28 @@ class GameServiceManager {
       throw new Error(error.message);
     }
   }
+  /**
+   * Function verifies if the language is sanskrit and then performs the post
+   * operation to the data base only if the played version is sanskrit
+   * @returns boolean
+   */
+
+  async writeStoryInfoOnlySA() {
+    try {
+      if (this.manager.verifyLanguage() && this.manager.verifyPlayer()) {
+        const response = await this.writeStoryInfo();
+
+        return response;
+      }
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+  /**
+   * Function post operation to the data base irrespective of any language,
+   * which overwrites the previous
+   * @returns boolean
+   */
 
   async writeStoryInfo() {
     try {
@@ -202,12 +224,19 @@ class GameServiceManager {
         this.adjCount ?? 0,
         this.adjHint ?? 0,
       );
+      const result = await writeStoryInformation(storyInfo);
 
-      return await writeStoryInformation(storyInfo);
+      return result;
     } catch (e) {
       throw new Error(e.message);
     }
   }
+  /**
+   * Function that call the services to write game info
+   * checking for guest and language is done in game manager
+   * @param {*} gameInfo
+   * @returns
+   */
   async writeGameInfo(gameInfo) {
     try {
       const response = await writeGameInformation(gameInfo);
@@ -218,6 +247,10 @@ class GameServiceManager {
       throw new Error(e.message);
     }
   }
+  /**
+   * Retrieves the logged in player information for the current story id and game id
+   * @returns
+   */
 
   async retrievePlayerInfo() {
     try {

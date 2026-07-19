@@ -37,9 +37,9 @@ wordHuntRouter.get("/leaderboard/player/:playerName", getPlayerRank);
 wordHuntRouter.post("/initGame", initGame);
 wordHuntRouter.post("/addStoryInfo", addStoryInfo);
 wordHuntRouter.post("/addGameData", addGameData);
-wordHuntRouter.post("/playerData", fetchPlayerData);
 
 //GET ROUTES
 wordHuntRouter.get("/allGameData", getAll);
+wordHuntRouter.get("/playerData", fetchPlayerData);
 
 module.exports = wordHuntRouter;
