@@ -2,69 +2,77 @@
 
 ## Current automated quality gate
 
-The current automated testing workflow is:
+The reusable Playwright workflow is:
 
 ```text
 .github/workflows/playwright-non-game.yml
 ```
 
-This milestone intentionally focuses on the verified non-game Playwright suite.
-Server-test automation is outside the current Playwright closeout scope.
+It is invoked by:
+
+```text
+.github/workflows/promote-development.yml
+```
+
+after `development` is merged into `testing`. The reusable Playwright job checks out `testing` so the exact promotion candidate is built and tested.
+
+The automated quality gate remains the verified **134-test non-game suite**. Passage Reconstruction is validated locally as a separate 20-test gameplay milestone. Gameplay will be added to CI in one deliberate update after all four game suites are complete.
 
 ## Client Playwright workflow
 
-`playwright-non-game.yml` is a reusable workflow triggered through
-`workflow_call`.
+The reusable workflow uses:
 
-`promote-development.yml` invokes it after `development` is merged into the
-`testing` branch. The reusable workflow explicitly checks out `testing`, builds
-the client, and runs the verified non-game Playwright suite before promotion can
-continue.
-
-Other release steps in `promote-development.yml` are outside the scope of this
-Playwright testing guide.
+```yaml
+on:
+  workflow_call:
+```
 
 The job:
 
-1. checks out the repository;
+1. checks out `testing`;
 2. installs Node.js 24.12.0;
 3. runs `npm ci` from `client`;
-4. installs Chromium and its Linux dependencies;
-5. runs the production client build;
-6. runs the seven verified non-game Playwright specs with one worker;
-7. uploads `playwright-report` and `test-results` only when the job fails.
+4. installs Chromium and Linux dependencies;
+5. builds the production client;
+6. runs the seven verified non-game specs with one worker;
+7. uploads Playwright diagnostics only after failure.
 
-The explicit spec list prevents retired or incomplete gameplay suites from
-silently joining the completed non-game quality gate.
-
-GitHub Actions runs Chromium headlessly. Headed mode, Playwright Inspector, and
-UI mode are local diagnostic tools and are not used in CI.
+The explicit inventory prevents team-owned or unfinished suites from silently joining the verified gate.
 
 ## Verified non-game inventory
 
-| Spec                             |   Tests | Primary scope                                                                           |
-| -------------------------------- | ------: | --------------------------------------------------------------------------------------- |
-| `auth.spec.js`                   |       9 | Email, Google, guest, sign-up, errors, pending state, and logout                        |
-| `site-navigation.spec.js`        |      18 | Story Picker, launcher, four shared game scenes, logout, and canvas zoom                |
-| `platform-pages.spec.js`         |      15 | About and all four How-to-Play flows                                                    |
-| `progress-and-character.spec.js` |      13 | Rewards, streak toast, character selection, purchases, and GameScene propagation        |
-| `leaderboard.spec.js`            |      13 | Board switching, loading, errors, ranking, formatting, and refresh                      |
-| `admin.spec.js`                  |      34 | Sources, downloads, metadata, uploads, tokenized stories, Story Sets, and failure paths |
-| `tokenized-editor.spec.js`       |      32 | Loading, filtering, editing, save/discard, and English and Sanskrit tokens              |
-| **Total**                        | **134** | **Completed non-game Playwright milestone**                                             |
+| Spec | Tests | Primary scope |
+|---|---:|---|
+| `auth.spec.js` | 9 | Email, Google, guest, sign-up, errors, pending state, and logout |
+| `site-navigation.spec.js` | 18 | Story Picker, launcher, four game scenes, logout, and canvas zoom |
+| `platform-pages.spec.js` | 15 | About and all four How-to-Play flows |
+| `progress-and-character.spec.js` | 13 | Rewards, streak toast, character selection, purchases, and GameScene propagation |
+| `leaderboard.spec.js` | 13 | Board switching, loading, errors, ranking, formatting, and refresh |
+| `admin.spec.js` | 34 | Admin authorization, sources, downloads, metadata, uploads, tokenized stories, Story Sets, and failure paths |
+| `tokenized-editor.spec.js` | 32 | Loading, filtering, editing, save/discard, and English and Sanskrit tokens |
+| **Total** | **134** | **Completed non-game Playwright milestone** |
 
-## Local release validation
+The top-level `client/tests/admin.spec.js` belongs to the verified inventory.
 
-Run from the repository root.
+Files under:
 
-### Install and build the client
+```text
+client/tests/admin/
+```
+
+are team-owned and must not be modified, counted, or run as part of this deterministic inventory.
+
+## Local validation
+
+### Install and build
+
+From the repository root:
 
 ```powershell
 cd client
 
 npm ci
 npx playwright install chromium
-
 npm run build
 ```
 
@@ -74,7 +82,9 @@ Expected:
 Client build: GREEN
 ```
 
-### Run the complete non-game suite
+A Vite chunk-size warning is not a build failure.
+
+### Complete non-game suite
 
 ```powershell
 npm run test:e2e -- `
@@ -91,10 +101,10 @@ npm run test:e2e -- `
 Expected:
 
 ```text
-Non-game Playwright suite: 134 passed
+134 passed
 ```
 
-### Run a focused suite
+### Focused specs
 
 ```powershell
 npm run test:e2e -- tests/auth.spec.js --workers=1
@@ -104,11 +114,33 @@ npm run test:e2e -- tests/progress-and-character.spec.js --workers=1
 npm run test:e2e -- tests/leaderboard.spec.js --workers=1
 npm run test:e2e -- tests/admin.spec.js --workers=1
 npm run test:e2e -- tests/tokenized-editor.spec.js --workers=1
+npm run test:e2e -- tests/passage-reconstruction.spec.js --workers=1
 ```
 
-### Repository checks
+### Current combined regression
 
-Return to the repository root:
+```powershell
+npm run test:e2e -- `
+  tests/auth.spec.js `
+  tests/site-navigation.spec.js `
+  tests/platform-pages.spec.js `
+  tests/progress-and-character.spec.js `
+  tests/leaderboard.spec.js `
+  tests/admin.spec.js `
+  tests/tokenized-editor.spec.js `
+  tests/passage-reconstruction.spec.js `
+  --workers=1
+```
+
+Expected:
+
+```text
+154 passed
+```
+
+Do not use bare `npm run test:e2e`, because Playwright may discover team-owned tests under `client/tests/admin/`.
+
+### Repository checks
 
 ```powershell
 cd C:\Users\Nawaf\Desktop\word_complex
@@ -119,103 +151,89 @@ git diff --stat
 git diff --name-status
 ```
 
-Generated reports, test results, source dumps, `.env` files, build output, and
-dependency directories must not be staged.
+Do not stage generated reports, test results, source dumps, `.env` files, build output, or dependency directories.
+
+## Verified gameplay milestones
+
+### Passage Reconstruction
+
+```text
+Spec:                                  tests/passage-reconstruction.spec.js
+Fixtures:                              tests/helpers/passage-reconstruction-fixtures.js
+Focused result:                        20/20 passed
+Verified non-game result:              134/134 passed
+Combined verified regression:          154/154 passed
+Client production build:               GREEN
+```
+
+Coverage includes English, Sanskrit, selected-story propagation, preview and timer behavior, deterministic phrase and slot state, one real canvas drag, partial and wrong answers, Reset, hints, attempt exhaustion, retry, scoring, round progression, timeout, natural completion, time bonus, Play Again, guest and signed-in score rules, score-request failure, and teardown cleanup.
+
+Detailed documentation:
+
+```text
+client/tests/docs/README_PASSAGE_RECONSTRUCTION_e2e_TESTS.md
+```
+
+Gameplay progress:
+
+- [x] Passage Reconstruction — 20/20 focused, 154/154 combined
+- [ ] Context Cloze Quest — next
+- [ ] Meaning Bridge
+- [ ] Word Hunt
 
 ## Interactive Playwright modes
 
-### Run tests in a visible browser
-
-Headed mode opens Chromium so the browser can be watched while the test runs.
-
-Run one focused spec:
+### Headed mode
 
 ```powershell
 npm run test:e2e:headed -- `
-  tests/admin.spec.js `
+  tests/passage-reconstruction.spec.js `
   --workers=1
 ```
 
-Run one matching test:
+One matching test:
 
 ```powershell
 npm run test:e2e:headed -- `
-  tests/admin.spec.js `
-  --grep "failed upload preserves the selected file" `
+  tests/passage-reconstruction.spec.js `
+  --grep "performs a real canvas drag" `
   --workers=1
 ```
 
-Run the complete non-game suite in a visible browser:
-
-```powershell
-npm run test:e2e:headed -- `
-  tests/auth.spec.js `
-  tests/site-navigation.spec.js `
-  tests/platform-pages.spec.js `
-  tests/progress-and-character.spec.js `
-  tests/leaderboard.spec.js `
-  tests/admin.spec.js `
-  tests/tokenized-editor.spec.js `
-  --workers=1
-```
-
-Headed mode is intended for local inspection. CI remains headless.
-
-### Debug with Playwright Inspector
+### Inspector
 
 ```powershell
 npm run test:e2e -- `
-  tests/admin.spec.js `
-  --grep "failed Story Set deletion" `
+  tests/passage-reconstruction.spec.js `
+  --grep "three wrong checks reach round-over" `
   --debug
 ```
 
-The Inspector can pause execution, step through actions, inspect locators, and
-continue the test.
-
-### Open Playwright UI mode
+### UI mode
 
 ```powershell
-npm run test:e2e:ui
+npm run test:e2e:ui -- tests/passage-reconstruction.spec.js
 ```
 
-Open only one spec:
-
-```powershell
-npm run test:e2e:ui -- tests/admin.spec.js
-```
-
-UI mode supports selecting individual tests, rerunning failures, watching
-browser actions, and reviewing traces.
-
-### Open the HTML report
-
-After a run that generated a report:
+### HTML report
 
 ```powershell
 npx playwright show-report
 ```
 
-## Workflow design decisions
+## Workflow design
 
-### Node version
+### Node and installation
 
-The Playwright workflow uses Node.js `24.12.0`, matching the verified local
-client development environment.
+The workflow uses Node.js 24.12.0 and `npm ci`. Keep `client/package-lock.json` synchronized with `client/package.json`.
 
-### Lockfile installation
+### One worker
 
-The workflow uses `npm ci`, so `client/package-lock.json` must remain committed
-and synchronized with `client/package.json`.
+Verified suites use `--workers=1` for reproducibility and to avoid cross-test resource contention.
 
-### One Playwright worker
+### Explicit CI inventory
 
-The browser suite uses `--workers=1` for reproducibility and to avoid cross-test
-resource contention in GitHub-hosted runners.
-
-### Explicit test inventory
-
-The workflow names all seven verified non-game specs:
+The reusable workflow currently runs:
 
 ```text
 tests/auth.spec.js
@@ -227,90 +245,90 @@ tests/admin.spec.js
 tests/tokenized-editor.spec.js
 ```
 
-Historical gameplay files are excluded until each game suite is deliberately
-rebuilt and validated.
+Passage Reconstruction remains outside the reusable workflow until all four game suites are complete. This avoids changing CI after every game and allows one deliberate full-platform workflow update.
 
-### Deterministic browser tests
+### Deterministic browser testing
 
-The Playwright suite starts the Vite web server configured by
-`playwright.config.js`.
+Verified browser suites start the Vite server and use deterministic authentication and API fixtures. They do not require Express, MongoDB, live Firebase, or external story services.
 
-Authentication and platform/Admin API calls are intercepted by deterministic
-E2E hooks and shared fixtures. The browser suite does not require the Express
-server, MongoDB, Firebase, or external story services.
+Canvas test bridges must:
 
-### Headless CI
-
-GitHub Actions runs Chromium headlessly. Headed mode, Playwright Inspector, and
-UI mode require an interactive desktop session and remain local-only.
-
-### Concurrency cancellation
-
-A newer push to the same branch cancels an older in-progress Playwright run.
-This reduces GitHub Actions usage and avoids reviewing obsolete results.
+- be clearly commented;
+- be enabled only in development/E2E conditions;
+- invoke production game functions rather than duplicate game rules;
+- be removed during teardown;
+- never expose credentials or tokens.
 
 ### Failure artifacts
 
-Playwright reports and traces can contain application data. The workflow uploads
-only generated diagnostics, only after failure, and retains them for 14 days.
+Only generated diagnostics should be uploaded after failure. Never include secrets, `.env` files, storage state, database exports, or raw request dumps.
 
-Secrets and `.env` files must never be added to artifact paths.
+## Admin authorization
 
-## Recommended branch protection
+The `/admin` and `/tokenized-editor` routes are wrapped by `RequireAdmin`.
 
-For `development`, require this check before merge:
+Production behavior:
+
+1. the client checks the user's private Firestore account document for the Admin flag;
+2. protected requests include the user's Firebase ID token;
+3. the server independently verifies the token and Admin flag;
+4. the server remains the authoritative authorization boundary.
+
+The deterministic E2E environment uses E2E-only authorization configuration and does not call live Firebase or Firestore.
+
+## Branch protection
+
+The reusable job is named:
 
 ```text
 Build and run 134 non-game E2E tests
 ```
 
-Do not require the workflow until it has completed successfully at least once
-and its exact check name is visible in the branch-protection settings.
+Because it is called by the promotion workflow, confirm the exact GitHub check name before configuring branch protection.
 
-Pull requests must target `development`. The separate repository-policy workflow
-blocks pull requests that target `testing` or `main`.
+Pull requests target `development`. Repository policy blocks pull requests targeting `testing` or `main`.
 
-## Extending the Playwright workflow
+## Extending gameplay coverage
 
-When a new verified gameplay suite is completed:
+For every game:
 
-1. run it locally from a clean `npm ci` installation;
-2. document its exact test count and scope;
-3. add its spec path to the client workflow, or rename the workflow when it
-   becomes a full-platform suite;
-4. update `client/tests/docs/README_e2e.md`;
-5. update the expected total and branch-protection check name;
-6. confirm the full CI job remains stable with one worker.
+1. inspect current production and service paths;
+2. add the minimum commented ZIM E2E plumbing;
+3. use deterministic API fixtures;
+4. include a real player interaction where practical;
+5. run the focused spec;
+6. run the explicit combined regression;
+7. run the production build;
+8. document the count and coverage;
+9. commit the game milestone independently.
 
-All four gameplay suites will be rebuilt using one consistent ZIMJS canvas
-Playwright methodology:
+After all four games are complete:
 
-1. Passage Reconstruction
-2. Context Cloze Quest
-3. Meaning Bridge
-4. Word Hunt
+1. add all four specs to CI together;
+2. rename the workflow if it becomes a full-platform suite;
+3. update `client/tests/docs/README_e2e.md`;
+4. update the total and branch-protection check name;
+5. run the full CI job with one worker;
+6. confirm the workflow tests the exact `testing` candidate.
 
 ## Security notes
 
-- The workflow uses read-only repository contents permission.
-- No production secrets are required for the deterministic non-game browser suite.
-- Do not add production Firebase, MongoDB, API-key, or Python-service secrets.
-- Do not upload `.env`, browser storage-state files, database exports, or raw
-  request dumps as artifacts.
-- Admin routes use a client-side `RequireAdmin` gate for user experience.
-- Protected Admin API operations are independently enforced server-side using a
-  verified Firebase ID token and the Firestore Admin flag.
-- The deterministic Playwright suite uses only E2E authorization plumbing and
-  does not require live Firebase or Firestore access.
+- No production secrets are required for deterministic browser tests.
+- Do not add Firebase, MongoDB, API-key, or Python-service secrets.
+- Do not upload `.env`, storage-state files, database exports, or raw request dumps.
+- E2E hooks must not expose credentials, tokens, or private account data.
+- Server-side authentication and authorization remain authoritative.
 
 ## Pull-request evidence
 
-A pull request for this milestone should include:
-
 ```text
-Platform-page Playwright result: 15/15 passed
-Complete non-game Playwright result: 134/134 passed
+Platform-page Playwright result:          15/15 passed
+Complete non-game Playwright result:     134/134 passed
+Passage Reconstruction result:            20/20 passed
+Combined verified regression:            154/154 passed
 Client build command and GREEN result
-GitHub Playwright workflow result
+Reusable 134-test Playwright workflow result
 git diff --check clean result
 ```
+
+Do not claim that Passage Reconstruction ran in GitHub Actions until gameplay is added to the reusable workflow.
