@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   playwright:
-    name: Build and run 133 non-game E2E tests
+    name: Build and run 134 non-game E2E tests
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
