@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  promote:
+  promote-to-testing:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,6 +28,17 @@ jobs:
           git merge origin/development --no-edit
           git push origin testing
 
+  playwright:
+    needs: promote-to-testing
+    uses: ./.github/workflows/playwright-non-game.yml
+    with:
+      checkout_ref: testing
+
+  promote-to-main:
+    needs: playwright
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Checkout testing
         uses: actions/checkout@v4
         with:
