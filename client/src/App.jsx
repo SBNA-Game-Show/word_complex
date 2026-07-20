@@ -21,6 +21,7 @@ import { usePreloadImages } from "./preloadImages";
 import "./App.css";
 import AdminPage from "./components/AdminPage";
 import TokenizedEditor from "./components/TokenizedEditor";
+import RequireAdmin from "./components/RequireAdmin";
 
 const CHARACTER_STORAGE_KEY = "wc:selectedCharacter";
 
@@ -80,12 +81,22 @@ function AuthenticatedApp() {
     setScreen("launcher");
   }
 
-  // Admins skip the game shell entirely (after all hooks have run).
+  // Admins skip the game shell entirely (after all hooks have run). RequireAdmin
+  // gates both routes so only signed-in admins reach the admin surface; everyone
+  // else gets a "not authorized" screen (the server enforces this too).
   if (isAdminRoute) {
-    return <AdminPage />;
+    return (
+      <RequireAdmin>
+        <AdminPage />
+      </RequireAdmin>
+    );
   }
   if (isTokenizedEditorRoute) {
-    return <TokenizedEditor />;
+    return (
+      <RequireAdmin>
+        <TokenizedEditor />
+      </RequireAdmin>
+    );
   }
 
   function openGame(gameId) {

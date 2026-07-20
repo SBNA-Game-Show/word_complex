@@ -19,6 +19,11 @@ jest.mock("../wordhunt/service/gameservice", () => ({
   initWordHuntRepo: jest.fn().mockResolvedValue({}),
 }));
 
+// These are route/service tests; the admin gate is verified separately in
+// middleware/requireAdmin.test.js. Bypass it here so requests don't need a real
+// Firebase token (the .set(ADMIN) headers below are now harmless no-ops).
+jest.mock("../middleware/requireAdmin", () => (req, res, next) => next());
+
 const connectDb = require("../config/dataConnectConfig");
 const {
   retrieveStoryById,
@@ -110,20 +115,8 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
-// TEMP: skipped while requireAdmin is disabled on the mount in app.js (2026-07-08).
-// Un-skip when the gate is restored.
-describe.skip("admin gate", () => {
-  it("401s without a role header", async () => {
-    await request(app).get("/api/v1/admin/storySets").expect(401);
-  });
-
-  it("403s with a non-admin role", async () => {
-    await request(app)
-      .get("/api/v1/admin/storySets")
-      .set("x-role", "PLAYER")
-      .expect(403);
-  });
-});
+// The admin gate itself is covered in middleware/requireAdmin.test.js; here the
+// middleware is mocked (see jest.mock above) so these focus on route behavior.
 
 describe("GET /api/v1/admin/storySets", () => {
   it("lists all sets and flags the active one", async () => {
