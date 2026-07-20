@@ -97,6 +97,10 @@ describe("requireAdmin middleware", () => {
   });
 
   it("500s when the admin check itself fails", async () => {
+    // The middleware logs this failure on purpose. Silence it so the expected
+    // error doesn't clutter the test output, and assert it was reported.
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
     mockVerify({ resolves: { uid: "u1" } });
     mockFirestore({ rejects: true });
 
@@ -104,5 +108,8 @@ describe("requireAdmin middleware", () => {
       .get("/protected")
       .set("Authorization", "Bearer good")
       .expect(500);
+
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });
