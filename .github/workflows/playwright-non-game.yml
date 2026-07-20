@@ -1,6 +1,13 @@
 name: Client Playwright Non-Game E2E
 
 on:
+  workflow_call:
+    inputs:
+      checkout_ref:
+        description: Branch or commit to test
+        required: false
+        type: string
+
   push:
     branches:
       - development
@@ -41,6 +48,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.checkout_ref || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
