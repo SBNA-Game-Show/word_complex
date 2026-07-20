@@ -30,6 +30,60 @@ const E2E_USER = {
   isGuest: true,
 };
 
+const E2E_AUTH_ACTIONS = Object.freeze({
+  EMAIL_SIGN_IN: "email-sign-in",
+  EMAIL_SIGN_UP: "email-sign-up",
+  GOOGLE_SIGN_IN: "google-sign-in",
+});
+
+function readE2EAuthConfig() {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  return window.__WORD_COMPLEX_E2E_AUTH__ ?? {};
+}
+
+function recordE2EAuthCall(action, payload) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const currentCalls = Array.isArray(window.__WORD_COMPLEX_E2E_AUTH_CALLS__)
+    ? window.__WORD_COMPLEX_E2E_AUTH_CALLS__
+    : [];
+
+  window.__WORD_COMPLEX_E2E_AUTH_CALLS__ = [
+    ...currentCalls,
+    {
+      action,
+      payload: payload ?? null,
+    },
+  ];
+}
+
+function waitForE2EAuthDelay(delayMs) {
+  const safeDelay = Number(delayMs);
+
+  if (!Number.isFinite(safeDelay) || safeDelay <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, safeDelay);
+  });
+}
+
+function createE2EAuthError(failure) {
+  const error = new Error(failure?.message ?? "E2E authentication failed.");
+
+  if (failure?.code) {
+    error.code = failure.code;
+  }
+
+  return error;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -69,6 +123,28 @@ export function AuthProvider({ children }) {
     return Promise.resolve(nextUser);
   }, []);
 
+  const runE2EAuthFlow = useCallback(
+    async (action, payload, defaultUser) => {
+      const config = readE2EAuthConfig();
+
+      recordE2EAuthCall(action, payload);
+
+      await waitForE2EAuthDelay(config.delayMsByAction?.[action]);
+
+      const failure = config.failureByAction?.[action];
+
+      if (failure) {
+        throw createE2EAuthError(failure);
+      }
+
+      return signInWithE2EUser({
+        ...defaultUser,
+        ...(config.userByAction?.[action] ?? {}),
+      });
+    },
+    [signInWithE2EUser],
+  );
+
   // Wrap a Firebase auth action with shared loading/error handling. The user
   // state itself is set by the onAuthStateChanged subscription above.
   const runAuthAction = useCallback(async (action) => {
@@ -85,19 +161,82 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(
-    (credentials) => runAuthAction(() => loginWithEmail(credentials)),
-    [runAuthAction],
+    (credentials) => {
+      const normalizedCredentials = {
+        ...credentials,
+        email: credentials?.email?.trim() ?? "",
+      };
+
+      if (E2E_AUTH_BYPASS) {
+        return runAuthAction(() =>
+          runE2EAuthFlow(
+            E2E_AUTH_ACTIONS.EMAIL_SIGN_IN,
+            normalizedCredentials,
+            {
+              id: "e2e-email-user",
+              name: "Email Reader",
+              nickname: "Email",
+              username: normalizedCredentials.email,
+              role: "Reader",
+              isGuest: false,
+            },
+          ),
+        );
+      }
+
+      return runAuthAction(() => loginWithEmail(normalizedCredentials));
+    },
+    [runAuthAction, runE2EAuthFlow],
   );
 
   const signUp = useCallback(
-    (account) => runAuthAction(() => signUpWithEmail(account)),
-    [runAuthAction],
+    (account) => {
+      const normalizedAccount = {
+        ...account,
+        name: account?.name?.trim() ?? "",
+        email: account?.email?.trim() ?? "",
+      };
+
+      if (E2E_AUTH_BYPASS) {
+        const displayName = normalizedAccount.name || "New Reader";
+
+        return runAuthAction(() =>
+          runE2EAuthFlow(E2E_AUTH_ACTIONS.EMAIL_SIGN_UP, normalizedAccount, {
+            id: "e2e-signup-user",
+            name: displayName,
+            nickname: displayName.split(/\s+/)[0] || "Reader",
+            username: normalizedAccount.email,
+            role: "Reader",
+            isGuest: false,
+          }),
+        );
+      }
+
+      return runAuthAction(() => signUpWithEmail(normalizedAccount));
+    },
+    [runAuthAction, runE2EAuthFlow],
   );
 
-  const loginWithGoogle = useCallback(
-    () => runAuthAction(() => signInWithGoogle()),
-    [runAuthAction],
-  );
+  const loginWithGoogle = useCallback(() => {
+    if (E2E_AUTH_BYPASS) {
+      return runAuthAction(() =>
+        runE2EAuthFlow(
+          E2E_AUTH_ACTIONS.GOOGLE_SIGN_IN,
+          {},
+          {
+            id: "e2e-google-user",
+            name: "Google Reader",
+            nickname: "Google",
+            username: "google-reader@example.test",
+            role: "Reader",
+            isGuest: false,
+          },
+        ),
+      );
+    }
+
+    return runAuthAction(() => signInWithGoogle());
+  }, [runAuthAction, runE2EAuthFlow]);
 
   const loginAsGuest = useCallback(() => {
     if (E2E_AUTH_BYPASS) {

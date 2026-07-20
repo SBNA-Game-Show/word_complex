@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   playwright:
-    name: Build and run 102 non-game E2E tests
+    name: Build and run 122 non-game E2E tests
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
@@ -61,6 +61,7 @@ jobs:
       - name: Run verified non-game Playwright suite
         run: >
           npm run test:e2e --
+          tests/auth.spec.js
           tests/site-navigation.spec.js
           tests/platform-pages.spec.js
           tests/progress-and-character.spec.js

@@ -6,7 +6,7 @@ Verified locally on July 17, 2026:
 
 ```text
 Client build:                    GREEN
-Non-game Playwright tests:       102 passed
+Non-game Playwright tests:       122 passed
 Playwright browser:              Chromium
 Execution mode:                  sequential / one worker
 Backend required for E2E:        No
@@ -20,15 +20,15 @@ External APIs are intercepted with deterministic Playwright route mocks.
 
 ## Test inventory
 
-| Spec | Tests | Primary scope |
-|---|---:|---|
-| `site-navigation.spec.js` | 14 | Guest login, Story Picker, launcher, shared GameScene navigation, logout, progress fallback |
-| `platform-pages.spec.js` | 9 | About page and approved How-to-Play flows |
-| `progress-and-character.spec.js` | 12 | Daily rewards, streak toast, character selection, persistence, purchases |
-| `leaderboard.spec.js` | 13 | Board switching, loading, errors, podium/list rendering, rank pinning, refresh |
-| `admin.spec.js` | 22 | Story sources, downloads, metadata, uploads, tokenized stories, Story Sets |
-| `tokenized-editor.spec.js` | 32 | Loading, filtering, dirty state, save/discard, English tokens, Sanskrit sentences and words |
-| **Total** | **102** | **Completed non-game milestone** |
+| Spec                             |   Tests | Primary scope                                                                               |
+| -------------------------------- | ------: | ------------------------------------------------------------------------------------------- |
+| `site-navigation.spec.js`        |      14 | Guest login, Story Picker, launcher, shared GameScene navigation, logout, progress fallback |
+| `platform-pages.spec.js`         |       9 | About page and approved How-to-Play flows                                                   |
+| `progress-and-character.spec.js` |      12 | Daily rewards, streak toast, character selection, persistence, purchases                    |
+| `leaderboard.spec.js`            |      13 | Board switching, loading, errors, podium/list rendering, rank pinning, refresh              |
+| `admin.spec.js`                  |      22 | Story sources, downloads, metadata, uploads, tokenized stories, Story Sets                  |
+| `tokenized-editor.spec.js`       |      32 | Loading, filtering, dirty state, save/discard, English tokens, Sanskrit sentences and words |
+| **Total**                        | **122** | **Completed non-game milestone**                                                            |
 
 ## Files
 
@@ -98,7 +98,7 @@ npm run test:e2e -- tests/tokenized-editor.spec.js
 npm run build
 ```
 
-The client build and the 102-test suite should both pass before a pull request is
+The client build and the 122-test suite should both pass before a pull request is
 opened or merged.
 
 ## Test architecture

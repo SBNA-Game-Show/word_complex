@@ -76,7 +76,7 @@ Expected:
 
 ```text
 Client build:               GREEN
-Non-game Playwright suite:  102 passed
+Non-game Playwright suite:  122 passed
 ```
 
 ### Server
@@ -131,7 +131,7 @@ days. Secrets and `.env` files must never be added to artifact paths.
 For `development` and `main`, require these checks before merge:
 
 ```text
-Build and run 102 non-game E2E tests
+Build and run 122 non-game E2E tests
 Run server npm test
 ```
 
@@ -164,7 +164,7 @@ A pull request for this milestone should include:
 
 ```text
 Client build command and GREEN result
-102/102 non-game Playwright result
+122/122 non-game Playwright result
 Server npm test result
 GitHub Playwright workflow result
 GitHub server workflow result

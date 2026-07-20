@@ -219,4 +219,166 @@ test.describe("Context Cloze Quest How to Play", () => {
 
     await returnToLauncherFromScene(page, "context-cloze-quest");
   });
+
+  test.describe("Meaning Bridge How to Play", () => {
+    test.beforeEach(async ({ page }) => {
+      await mockSharedPlatformApis(page);
+      await openAppAsGuest(page);
+
+      await page.getByTestId("game-help-meaning-bridge").click();
+
+      await expect(
+        page.getByTestId("how-to-play-page-meaning-bridge"),
+      ).toBeVisible();
+    });
+
+    test("displays the Meaning Bridge guide", async ({ page }) => {
+      await expect(
+        page.getByRole("heading", {
+          name: "Meaning Bridge",
+          exact: true,
+        }),
+      ).toBeVisible();
+
+      await expect(
+        page.locator('[data-testid^="how-to-play-step-meaning-bridge-"]'),
+      ).toHaveCount(3);
+
+      await expect(
+        page.getByRole("heading", {
+          name: "Read the clue",
+        }),
+      ).toBeVisible();
+
+      await expect(
+        page.getByRole("heading", {
+          name: "Choose its buddy",
+        }),
+      ).toBeVisible();
+
+      await expect(
+        page.getByRole("heading", {
+          name: "Build a streak",
+        }),
+      ).toBeVisible();
+
+      await expect(
+        page.locator('[data-testid^="how-to-play-tip-meaning-bridge-"]'),
+      ).toHaveCount(4);
+
+      await expect(
+        page.getByText("Read every option", {
+          exact: true,
+        }),
+      ).toBeVisible();
+    });
+
+    test("Back returns to the launcher", async ({ page }) => {
+      await page.getByTestId("how-to-play-back-meaning-bridge").click();
+
+      await expect(page.getByTestId("launcher-page")).toBeVisible();
+    });
+
+    test("Play launches Meaning Bridge", async ({ page }) => {
+      await page.getByTestId("how-to-play-play-meaning-bridge").click();
+
+      await expect(page.getByTestId("game-scene-meaning-bridge")).toBeVisible({
+        timeout: 15_000,
+      });
+
+      await expect(page.getByTestId("zim-meaning-bridge")).toBeVisible({
+        timeout: 15_000,
+      });
+
+      await returnToLauncherFromScene(page, "meaning-bridge");
+    });
+  });
+
+  test.describe("Word Hunt How to Play", () => {
+    test.beforeEach(async ({ page }) => {
+      await mockSharedPlatformApis(page);
+      await openAppAsGuest(page);
+
+      await page.getByTestId("game-help-word-hunt").click();
+
+      await expect(
+        page.getByTestId("how-to-play-page-word-hunt"),
+      ).toBeVisible();
+    });
+
+    test("displays the complete Word Hunt guide", async ({ page }) => {
+      await expect(
+        page.getByRole("heading", {
+          name: "Word Hunt",
+          exact: true,
+        }),
+      ).toBeVisible();
+
+      await expect(
+        page.locator('[data-testid^="how-to-play-step-word-hunt-"]'),
+      ).toHaveCount(3);
+
+      await expect(
+        page.getByRole("heading", {
+          name: "Scan the passage",
+        }),
+      ).toBeVisible();
+
+      await expect(
+        page.getByRole("heading", {
+          name: "Select the word",
+        }),
+      ).toBeVisible();
+
+      await expect(
+        page.getByRole("heading", {
+          name: "Tap the hint Icon",
+        }),
+      ).toBeVisible();
+
+      await expect(
+        page.locator('[data-testid^="how-to-play-tip-word-hunt-"]'),
+      ).toHaveCount(4);
+
+      await expect(
+        page.getByText(
+          "If replaying a passage, your best previous performance is used as the starting benchmark.",
+          { exact: true },
+        ),
+      ).toBeVisible();
+
+      await expect(
+        page.getByText(
+          "Using hints reduces your final score by 25% per hint used.",
+          { exact: true },
+        ),
+      ).toBeVisible();
+
+      await expect(
+        page.getByText("No bonus is awarded after 3/4 of the allotted time.", {
+          exact: true,
+        }),
+      ).toBeVisible();
+    });
+
+    test("Back returns to the launcher", async ({ page }) => {
+      await page.getByTestId("how-to-play-back-word-hunt").click();
+
+      await expect(page.getByTestId("launcher-page")).toBeVisible();
+    });
+
+    test("Play launches Word Hunt", async ({ page }) => {
+      await page.getByTestId("how-to-play-play-word-hunt").click();
+
+      await expect(page.getByTestId("game-scene-word-hunt")).toBeVisible({
+        timeout: 15_000,
+      });
+
+      await expect(page.getByTestId("word-hunt")).toBeVisible({
+        timeout: 15_000,
+      });
+
+      await returnToLauncherFromScene(page, "word-hunt");
+    });
+  });
 });
