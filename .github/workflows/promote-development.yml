@@ -31,8 +31,6 @@ jobs:
   playwright:
     needs: promote-to-testing
     uses: ./.github/workflows/playwright-non-game.yml
-    with:
-      checkout_ref: testing
 
   promote-to-main:
     needs: playwright
