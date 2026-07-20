@@ -1,4 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { loginAsAdmin } from "./adminAuth";
+
+test.beforeEach(async ({ page }) => {
+  await loginAsAdmin(page);
+});
 
 test.describe("Complete Story Set Workflow", () => {
 
