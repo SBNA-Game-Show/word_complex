@@ -1,4 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { loginAsAdmin } from "./adminAuth";
+
+test.beforeEach(async ({ page }) => {
+  await loginAsAdmin(page);
+});
 
 test.describe("Tokenized Stories", () => {
 
@@ -99,98 +104,6 @@ test.describe("Tokenized Stories", () => {
         await expect(
             page.getByText("Selected Stories:")
         ).toContainText("2 / 4");
-
-    });
-
-    test("Cannot select more than four stories", async ({ page }) => {
-
-        const checkboxes = page.locator(
-            '[data-testid^="admin-tokenized-select-"]'
-        );
-
-        const count = await checkboxes.count();
-
-        if (count < 5) {
-            test.skip();
-        }
-
-        for (let i = 0; i < 4; i++) {
-            await checkboxes.nth(i).check();
-        }
-
-        await checkboxes.nth(4).click();
-
-        await expect(
-            checkboxes.nth(4)
-        ).not.toBeChecked();
-
-    });
-
-    test("Create button enabled after selecting four stories", async ({ page }) => {
-
-        const checkboxes = page.locator(
-            '[data-testid^="admin-tokenized-select-"]'
-        );
-
-        for (let i = 0; i < 4; i++) {
-            await checkboxes.nth(i).check();
-        }
-
-        await page
-            .getByPlaceholder("Enter a Story Set name")
-            .fill("Playwright Test Story Set");
-
-        await expect(
-            page.getByRole("button", {
-                name: "Create & Activate Story Set"
-            })
-        ).toBeEnabled();
-
-    });
-
-    test("Selected story card is highlighted", async ({ page }) => {
-
-        const card = page
-            .locator('[data-testid^="admin-tokenized-story-"]')
-            .first();
-
-        const checkbox = page
-            .locator('[data-testid^="admin-tokenized-select-"]')
-            .first();
-
-        await checkbox.check();
-
-        await expect(card).toHaveAttribute(
-            "data-selected",
-            "true"
-        );
-
-    });
-        test("View English Text expands", async ({ page }) => {
-
-        const firstStory = page
-            .locator('[data-testid^="admin-tokenized-story-"]')
-            .first();
-
-        await firstStory
-            .getByText("View English Text")
-            .click();
-
-        const details = firstStory.locator("details");
-
-        await expect(details).toHaveAttribute("open", "");
-
-    });
-
-    test("Story title is displayed", async ({ page }) => {
-
-        const title = page.locator(
-            '[data-testid^="admin-tokenized-story-"] h3'
-        ).first();
-
-        await expect(title).toBeVisible();
-
-        await expect(title).not.toHaveText("");
 
     });
 

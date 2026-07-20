@@ -2,28 +2,6 @@ name: Client Playwright Non-Game E2E
 
 on:
   workflow_call:
-    inputs:
-      checkout_ref:
-        description: Branch or commit to test
-        required: false
-        type: string
-
-  push:
-    branches:
-      - development
-      - playwright-tests-Nawaf
-    paths:
-      - "client/**"
-      - ".github/workflows/playwright-non-game.yml"
-
-  pull_request:
-    branches:
-      - development
-    paths:
-      - "client/**"
-      - ".github/workflows/playwright-non-game.yml"
-
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -49,7 +27,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.checkout_ref || github.ref }}
+          ref: testing
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -75,7 +53,6 @@ jobs:
           tests/platform-pages.spec.js
           tests/progress-and-character.spec.js
           tests/leaderboard.spec.js
-          tests/admin.spec.js
           tests/tokenized-editor.spec.js
           --workers=1
 

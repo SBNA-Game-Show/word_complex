@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const ENV = {
   PORT: process.env.PORT || 5000,

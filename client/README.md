@@ -43,7 +43,24 @@ Short version:
 1. Create `src/games/YourGame/index.jsx` with a `meta` export and default component
 2. Register it in `src/games/index.js` — the launcher updates automatically, no other files needed
 
+See also: [`../docs/zim-canvas-lifecycle.md`](../docs/zim-canvas-lifecycle.md) (build a ZIM
+game with clean teardown + zoom) and [`../docs/scenes-and-game-characters.md`](../docs/scenes-and-game-characters.md)
+(give the game an environment and a reacting character).
+
+## Adding a Character
+
+See [`../docs/adding-characters.md`](../docs/adding-characters.md). Short version: drop a
+`.webp` in `public/characters/<id>.webp`, add an entry to `CHARACTERS` in
+`src/components/CharacterSelect.jsx`, and set how it's earned in the server's
+`progress/progressConfig.js`.
+
 ## Notes
 
-- Auth is currently a fake in-memory client (`src/auth/fakeAuthClient.js`) — real auth is not yet wired up
+- Auth is Firebase (Google, email/password, and guest). See [`../docs/authentication.md`](../docs/authentication.md) for how it works and how to maintain it.
 - `src/services/api.js` handles communication with the backend server
+- Admin routes (`/admin`, `/tokenized-editor`) are gated by `RequireAdmin`
+  (`src/components/RequireAdmin.jsx`), which reads `isAdmin` from Firestore
+  (`users/{uid}/private/account.isAdmin`) via `src/auth/adminClient.js`. The
+  admin's Firebase token is attached to admin API calls by the fetch interceptor
+  in `src/auth/adminAuthInterceptor.js` (installed in `main.jsx`). See
+  [`../docs/admin-access.md`](../docs/admin-access.md) for the full guide.

@@ -156,6 +156,23 @@ test.describe("Admin story sources", () => {
     );
   });
 
+  test("a non-admin is blocked and sees the not-authorized screen", async ({
+    page,
+  }) => {
+    await mockAdminApis(page);
+
+    // Seed a non-admin session on the app origin, then load the gated route so
+    // the RequireAdmin gate reads the flag and denies access.
+    await page.goto("/");
+    await page.evaluate(() =>
+      window.localStorage.setItem("wc:e2eIsAdmin", "false"),
+    );
+    await page.goto("/admin");
+
+    await expect(page.getByTestId("admin-denied")).toBeVisible();
+    await expect(page.getByTestId("admin-page")).toHaveCount(0);
+  });
+
   test.describe("Admin tokenized stories and Story Sets", () => {
     test("Get Tokenized Stories renders stories and existing Story Sets", async ({
       page,

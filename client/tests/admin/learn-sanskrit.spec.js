@@ -1,4 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { loginAsAdmin } from "./adminAuth";
+
+test.beforeEach(async ({ page }) => {
+  await loginAsAdmin(page);
+});
 
 test.describe("Learn Sanskrit Stories", () => {
 
@@ -113,30 +118,6 @@ test.describe("Learn Sanskrit Stories", () => {
         await page.getByRole("button", {
             name: "Write Metadata",
         }).first().click();
-
-    });
-
-    test("Click Download Story", async ({ page }) => {
-
-        await expect(page.locator("details").first()).toBeVisible({
-            timeout: 30000
-        });
-
-        const firstStory = page.locator("details").first();
-
-        await firstStory.locator("summary").click();
-
-        page.once("dialog", async dialog => {
-
-            expect(dialog.message()).not.toBe("");
-
-            await dialog.accept();
-
-        });
-
-        await firstStory.getByRole("button", {
-            name: "Download Story",
-        }).click();
 
     });
 

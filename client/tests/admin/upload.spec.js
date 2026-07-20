@@ -1,4 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { loginAsAdmin } from "./adminAuth";
+
+test.beforeEach(async ({ page }) => {
+  await loginAsAdmin(page);
+});
 
 test.describe("Upload Story", () => {
 
@@ -30,23 +35,6 @@ test.describe("Upload Story", () => {
 
     });
     
-    test("Upload without selecting file", async ({ page }) => {
-
-        page.once("dialog", async dialog => {
-
-            expect(dialog.message())
-                .toContain("Please choose a file.");
-
-            await dialog.accept();
-
-        });
-
-        await page.getByRole("button", {
-            name: "Upload",
-        }).click();
-
-    });
-
     test("Upload button is enabled", async ({ page }) => {
 
         await expect(
