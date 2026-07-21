@@ -644,6 +644,27 @@ export async function mockLeaderboardApis(page, options = {}) {
   return calls;
 }
 
+export const E2E_AUTH_ACTIONS = Object.freeze({
+  EMAIL_SIGN_IN: "email-sign-in",
+  EMAIL_SIGN_UP: "email-sign-up",
+  GOOGLE_SIGN_IN: "google-sign-in",
+});
+
+/**
+ * Configures deterministic auth behaviour before the application loads.
+ * AuthContext reads this object only when VITE_E2E_AUTH_BYPASS is enabled.
+ */
+export async function configureE2EAuth(page, options = {}) {
+  await page.addInitScript((config) => {
+    window.__WORD_COMPLEX_E2E_AUTH__ = config;
+    window.__WORD_COMPLEX_E2E_AUTH_CALLS__ = [];
+  }, options);
+}
+
+export async function readE2EAuthCalls(page) {
+  return page.evaluate(() => window.__WORD_COMPLEX_E2E_AUTH_CALLS__ ?? []);
+}
+
 /**
  * SHARED AUTH FLOW:
  * Uses the existing VITE_E2E_AUTH_BYPASS guest path. Authentication should stop

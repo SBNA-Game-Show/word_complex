@@ -58,8 +58,8 @@ const guides = {
       ["Stars stack up", "Every correct round adds to your score."],
     ],
   },
-  "word-match": {
-    title: "Word Match",
+  "meaning-bridge": {
+    title: "Meaning Bridge",
     label: "Vocabulary pairs",
     steps: [
       {
@@ -302,7 +302,7 @@ export default function HowToPlay({
         <section className="htp-section">
           <p className="htp-section-label">Good to know</p>
           <div className="htp-tips">
-            {guide.tips.map(([title, copy], index) => (
+            {guide.tips.map(([title, ...copyLines], index) => (
               <div
                 className="htp-tip"
                 data-testid={`how-to-play-tip-${gameId}-${index + 1}`}
@@ -314,9 +314,13 @@ export default function HowToPlay({
                 >
                   {index + 1}
                 </span>
+
                 <div>
                   <strong>{title}</strong>
-                  <p>{copy}</p>
+
+                  {copyLines.map((copy, copyIndex) => (
+                    <p key={`${title}-${copyIndex}`}>{copy}</p>
+                  ))}
                 </div>
               </div>
             ))}

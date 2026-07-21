@@ -1,4 +1,4 @@
-name: Client Playwright Non-Game E2E
+name: Client Playwright E2E
 
 on:
   workflow_call:
@@ -12,9 +12,9 @@ concurrency:
 
 jobs:
   playwright:
-    name: Build and run 102 non-game E2E tests
+    name: Build and run 181 client E2E tests
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
 
     defaults:
       run:
@@ -45,21 +45,25 @@ jobs:
       - name: Build client
         run: npm run build
 
-      - name: Run verified non-game Playwright suite
+      - name: Run verified client Playwright suite
         run: >
           npm run test:e2e --
+          tests/auth.spec.js
           tests/site-navigation.spec.js
           tests/platform-pages.spec.js
           tests/progress-and-character.spec.js
           tests/leaderboard.spec.js
+          tests/admin.spec.js
           tests/tokenized-editor.spec.js
+          tests/passage-reconstruction.spec.js
+          tests/context-cloze-quest.spec.js
           --workers=1
 
       - name: Upload Playwright diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-non-game-diagnostics-${{ github.run_id }}
+          name: playwright-client-e2e-diagnostics-${{ github.run_id }}
           path: |
             client/playwright-report/
             client/test-results/

@@ -281,4 +281,144 @@ test.describe("Launcher and shared scene navigation", () => {
       page.getByTestId(`story-card-${TEST_STORY.storyId}`),
     ).toHaveAttribute("aria-pressed", "true");
   });
+
+  test("Meaning Bridge opens in GameScene and returns", async ({ page }) => {
+    await mockSharedPlatformApis(page);
+    await openAppAsGuest(page);
+
+    await openGameScene(page, {
+      gameId: "meaning-bridge",
+      zimTestId: "zim-meaning-bridge",
+    });
+
+    await returnToLauncherFromScene(page, "meaning-bridge");
+  });
+
+  test("Word Hunt opens in GameScene and returns", async ({ page }) => {
+    await mockSharedPlatformApis(page);
+    await openAppAsGuest(page);
+
+    await openGameScene(page, {
+      gameId: "word-hunt",
+      zimTestId: "word-hunt",
+    });
+
+    await returnToLauncherFromScene(page, "word-hunt");
+  });
+
+  test("shared canvas zoom changes, resets, and enforces its minimum", async ({
+    page,
+  }) => {
+    await mockSharedPlatformApis(page);
+    await openAppAsGuest(page);
+
+    await openGameScene(page, {
+      gameId: "sentence-builder",
+      zimTestId: "zim-sentence-game",
+    });
+
+    const scene = page.getByTestId("game-scene-sentence-builder");
+
+    const zoomIn = page.getByRole("button", {
+      name: "Zoom in",
+    });
+
+    const zoomOut = page.getByRole("button", {
+      name: "Zoom out",
+    });
+
+    const resetZoom = page.getByRole("button", {
+      name: "Reset zoom",
+    });
+
+    await expect(page.getByText("100%", { exact: true })).toBeVisible();
+
+    await zoomIn.click();
+    await zoomIn.click();
+
+    await expect(page.getByText("120%", { exact: true })).toBeVisible();
+
+    await expect
+      .poll(() =>
+        scene.evaluate((element) =>
+          element.style.getPropertyValue("--canvas-zoom"),
+        ),
+      )
+      .toBe("1.2");
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => window.localStorage.getItem("wc:canvasZoom")),
+      )
+      .toBe("1.2");
+
+    await resetZoom.click();
+
+    await expect(page.getByText("100%", { exact: true })).toBeVisible();
+
+    for (let index = 0; index < 5; index += 1) {
+      await zoomOut.click();
+    }
+
+    await expect(page.getByText("50%", { exact: true })).toBeVisible();
+
+    await expect(zoomOut).toBeDisabled();
+
+    await expect
+      .poll(() =>
+        scene.evaluate((element) =>
+          element.style.getPropertyValue("--canvas-zoom"),
+        ),
+      )
+      .toBe("0.5");
+
+    await returnToLauncherFromScene(page, "sentence-builder");
+  });
+
+  test("canvas zoom persists when moving between game scenes", async ({
+    page,
+  }) => {
+    await mockSharedPlatformApis(page);
+    await openAppAsGuest(page);
+
+    await openGameScene(page, {
+      gameId: "sentence-builder",
+      zimTestId: "zim-sentence-game",
+    });
+
+    await page
+      .getByRole("button", {
+        name: "Zoom in",
+      })
+      .click();
+
+    await expect(page.getByText("110%", { exact: true })).toBeVisible();
+
+    await returnToLauncherFromScene(page, "sentence-builder");
+
+    await openGameScene(page, {
+      gameId: "word-hunt",
+      zimTestId: "word-hunt",
+    });
+
+    await expect(page.getByText("110%", { exact: true })).toBeVisible();
+
+    await expect
+      .poll(() =>
+        page
+          .getByTestId("game-scene-word-hunt")
+          .evaluate((element) =>
+            element.style.getPropertyValue("--canvas-zoom"),
+          ),
+      )
+      .toBe("1.1");
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => window.localStorage.getItem("wc:canvasZoom")),
+      )
+      .toBe("1.1");
+
+    await returnToLauncherFromScene(page, "word-hunt");
+  });
 });

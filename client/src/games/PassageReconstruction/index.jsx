@@ -67,6 +67,253 @@ export default createZimGame({
     const tiles = [];
     const zones = [];
 
+    let e2eScreen = "language-picker";
+    let e2eMessage = "";
+    let e2eLastHintText = "";
+    let e2eResultSummary = null;
+
+    // E2E TEST HOOKS:
+    // Passage Reconstruction is rendered entirely inside a ZIM canvas, so
+    // Playwright cannot inspect its internal controls through normal DOM
+    // locators. In development/E2E only, this bridge publishes observable game
+    // state and small setup commands for the live ZIM objects.
+    //
+    // The hooks do not replace scoring, hint, checking, timer, or result logic.
+    // Tests still call the real gameplay functions. The placement helpers only
+    // arrange the current phrase clouds so those real rules can be exercised
+    // deterministically without depending on random canvas coordinates.
+    function shouldExposePassageReconstructionTestHooks() {
+      if (typeof window === "undefined") return false;
+
+      if (import.meta.env.DEV || import.meta.env.VITE_E2E === "true") {
+        return true;
+      }
+
+      try {
+        return window.localStorage.getItem("passageReconstructionE2E") === "1";
+      } catch {
+        return false;
+      }
+    }
+
+    function getCurrentRoundForE2E() {
+      return rounds[roundIndex] || null;
+    }
+
+    function getPlacedChunksForE2E() {
+      return zones.map((zone) => zone.tile?.chunk || null);
+    }
+
+    function publishPassageReconstructionDebugState() {
+      if (!shouldExposePassageReconstructionTestHooks()) return;
+
+      const currentRound = getCurrentRoundForE2E();
+
+      window.__passageReconstructionZimDebug = {
+        screen: e2eScreen,
+        message: e2eMessage,
+        lastHintText: e2eLastHintText,
+        resultSummary: e2eResultSummary ? { ...e2eResultSummary } : null,
+        language: currentLanguage,
+        roundIndex,
+        roundNumber: rounds.length ? roundIndex + 1 : 0,
+        roundCount: rounds.length,
+        score,
+        attemptsLeft,
+        checks,
+        correctChecks,
+        hintsRemaining: hintPolicy.remaining(),
+        hintsUsedTotal,
+        timeRemaining: countdown.remaining(),
+        timerPaused: countdown.isPaused(),
+        feedbackActive,
+        gameOver,
+        isStarting,
+        sentence: currentRound?.sentence || "",
+        chunks: [...(currentRound?.chunks || [])],
+        answer: [...(currentRound?.answer || [])],
+        placedChunks: getPlacedChunksForE2E(),
+
+        tileGeometry: tiles.map((tile) => ({
+          chunk: tile.chunk,
+          zoneIndex: tile.zoneIndex,
+          x: tile.x,
+          y: tile.y,
+          width: tile.widthValue,
+          height: tile.heightValue,
+          centerX: tile.x + tile.widthValue / 2,
+          centerY: tile.y + tile.heightValue / 2,
+        })),
+
+        zoneGeometry: zones.map((zone, index) => ({
+          index,
+          chunk: zone.tile?.chunk || null,
+          x: zone.x,
+          y: zone.y,
+          width: zone.widthValue,
+          height: zone.heightValue,
+          centerX: zone.x + zone.widthValue / 2,
+          centerY: zone.y + zone.heightValue / 2,
+        })),
+      };
+    }
+
+    function placeChunksForE2E(targetChunks) {
+      if (!shouldExposePassageReconstructionTestHooks()) return false;
+      if (e2eScreen !== "gameplay") return false;
+
+      const availableTiles = [...tiles];
+
+      zones.forEach((zone) => {
+        zone.tile = null;
+      });
+
+      tiles.forEach((tile) => {
+        tile.zoneIndex = null;
+        tile.x = tile.homeX;
+        tile.y = tile.homeY;
+      });
+
+      let placedCount = 0;
+
+      targetChunks.slice(0, zones.length).forEach((chunk, zoneIndex) => {
+        const tileIndex = availableTiles.findIndex(
+          (tile) => tile.chunk === chunk,
+        );
+
+        if (tileIndex === -1) return;
+
+        const [tile] = availableTiles.splice(tileIndex, 1);
+        const zone = zones[zoneIndex];
+
+        zone.tile = tile;
+        tile.zoneIndex = zoneIndex;
+        tile.x = zone.x + (zone.widthValue - tile.widthValue) / 2;
+        tile.y = zone.y + (zone.heightValue - tile.heightValue) / 2;
+
+        placedCount += 1;
+      });
+
+      stage.update();
+      publishPassageReconstructionDebugState();
+
+      return placedCount;
+    }
+
+    function publishPassageReconstructionTestHooks() {
+      if (!shouldExposePassageReconstructionTestHooks()) return;
+
+      window.__passageReconstructionZimTestHooks = {
+        getState() {
+          publishPassageReconstructionDebugState();
+          return window.__passageReconstructionZimDebug;
+        },
+
+        async startLanguageForTest(language = "english") {
+          await loadAndStart(language);
+          publishPassageReconstructionDebugState();
+          return window.__passageReconstructionZimDebug;
+        },
+
+        showBoardForTest() {
+          if (!rounds.length || gameOver) return false;
+
+          renderRound();
+          return true;
+        },
+
+        placeCorrectAnswerForTest() {
+          const answer = getCurrentRoundForE2E()?.answer || [];
+          return placeChunksForE2E(answer);
+        },
+
+        placeWrongAnswerForTest() {
+          const answer = [...(getCurrentRoundForE2E()?.answer || [])];
+
+          if (answer.length < 2) return false;
+
+          answer.push(answer.shift());
+          return placeChunksForE2E(answer);
+        },
+
+        placePartialAnswerForTest(count = 1) {
+          const answer = getCurrentRoundForE2E()?.answer || [];
+          const safeCount = Math.max(
+            0,
+            Math.min(answer.length, Number(count) || 0),
+          );
+
+          return placeChunksForE2E(answer.slice(0, safeCount));
+        },
+
+        checkAnswerForTest() {
+          checkAnswer();
+          publishPassageReconstructionDebugState();
+          return window.__passageReconstructionZimDebug;
+        },
+
+        useHintForTest() {
+          applyHint();
+          publishPassageReconstructionDebugState();
+          return window.__passageReconstructionZimDebug;
+        },
+
+        resetBoardForTest() {
+          renderRound();
+          return true;
+        },
+
+        advanceAfterCorrectForTest() {
+          if (e2eScreen !== "correct-feedback") return false;
+
+          if (roundIndex === rounds.length - 1) {
+            showComplete();
+          } else {
+            roundIndex += 1;
+            attemptsLeft = 3;
+            showSentencePreview();
+          }
+
+          return true;
+        },
+
+        retryAfterRoundOverForTest() {
+          if (e2eScreen !== "round-over") return false;
+
+          attemptsLeft = 3;
+          showSentencePreview();
+          return true;
+        },
+
+        expireTimerForTest() {
+          if (!rounds.length || gameOver) return false;
+
+          countdown.resume();
+
+          while (!countdown.expired()) {
+            countdown.tick();
+          }
+
+          endByTimeout();
+          return true;
+        },
+
+        playAgainForTest() {
+          if (!gameOver) return false;
+
+          showLanguagePicker();
+          return true;
+        },
+      };
+    }
+
+    function syncPassageReconstructionE2E() {
+      if (!shouldExposePassageReconstructionTestHooks()) return;
+
+      publishPassageReconstructionDebugState();
+      publishPassageReconstructionTestHooks();
+    }
+
     // --- Dynamic cloud / slot sizing -------------------------------------
     // Clouds size themselves to their phrase: the label wraps at TILE_WRAP and
     // the cloud grows (mainly taller) around it. Slots are made uniform per
@@ -95,9 +342,18 @@ export default createZimGame({
     let layoutCache = { round: -1, layout: null };
 
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-    const contentFont = () => currentLanguage === "sanskrit" ? sanskritFont : zimFont;
+    const contentFont = () =>
+      currentLanguage === "sanskrit" ? sanskritFont : zimFont;
 
-    function addLabel(text, size, color, x, y, align = "left", container = stage) {
+    function addLabel(
+      text,
+      size,
+      color,
+      x,
+      y,
+      align = "left",
+      container = stage,
+    ) {
       const label = new zim.Label(text, size, zimFont, color);
       label.textAlign = align;
       label.addTo(container);
@@ -120,7 +376,10 @@ export default createZimGame({
       if (!timerLabel) return;
       timerLabel.text = `Time ${formatTime(countdown.remaining())}`;
       // Warm gold normally, coral in the final 15s for urgency.
-      timerLabel.color = countdown.remaining() <= 15 ? "#d2553f" : palette.inkSoft;
+      timerLabel.color =
+        countdown.remaining() <= 15 ? "#d2553f" : palette.inkSoft;
+
+      syncPassageReconstructionE2E();
       stage.update();
     }
 
@@ -172,6 +431,8 @@ export default createZimGame({
       countdown.reset();
       hintPolicy.reset();
       hintsUsedTotal = 0;
+      e2eLastHintText = "";
+      e2eResultSummary = null;
     }
 
     function makeLanguageButton({ language, label, detail, x }) {
@@ -194,7 +455,9 @@ export default createZimGame({
         downBackgroundColor: isSanskrit ? "#4d8a44" : "#b58c33",
         color: "#ffffff",
         corner: 24,
-      }).addTo(stage).loc(x, 395);
+      })
+        .addTo(stage)
+        .loc(x, 395);
 
       button.tap(() => loadAndStart(language));
 
@@ -206,11 +469,17 @@ export default createZimGame({
         align: "center",
         valign: "top",
         lineWidth: 230,
-      }).addTo(stage).loc(x + 105, 474);
+      })
+        .addTo(stage)
+        .loc(x + 105, 474);
     }
 
     function showLanguagePicker() {
       if (disposed) return;
+
+      e2eScreen = "language-picker";
+      e2eMessage = "";
+
       resetSessionState();
       stage.removeAllChildren();
       makeBackground();
@@ -219,8 +488,16 @@ export default createZimGame({
       const panelH = 360;
       const panelX = (W - panelW) / 2;
       const panelY = 170;
-      new zim.Rectangle(panelW, panelH, "rgba(255,255,255,.84)", palette.goldDeep, 4, 28)
-        .addTo(stage).loc(panelX, panelY);
+      new zim.Rectangle(
+        panelW,
+        panelH,
+        "rgba(255,255,255,.84)",
+        palette.goldDeep,
+        4,
+        28,
+      )
+        .addTo(stage)
+        .loc(panelX, panelY);
 
       new zim.Label({
         text: "Passage Reconstruction",
@@ -230,7 +507,9 @@ export default createZimGame({
         align: "center",
         valign: "top",
         bold: true,
-      }).addTo(stage).loc(W / 2, 218);
+      })
+        .addTo(stage)
+        .loc(W / 2, 218);
 
       new zim.Label({
         text: "Choose a language",
@@ -239,7 +518,9 @@ export default createZimGame({
         color: palette.inkSoft,
         align: "center",
         valign: "top",
-      }).addTo(stage).loc(W / 2, 286);
+      })
+        .addTo(stage)
+        .loc(W / 2, 286);
 
       makeLanguageButton({
         language: "english",
@@ -253,6 +534,8 @@ export default createZimGame({
         detail: "देवनागरी वाक्यं पुनर्निर्माणं कुरु।",
         x: W / 2 + 35,
       });
+
+      syncPassageReconstructionE2E();
 
       stage.update();
     }
@@ -270,16 +553,22 @@ export default createZimGame({
       const sky = new zim.GradientColor(
         [palette.skyTop, palette.skyMid, palette.meadow],
         [0, 0.62, 1],
-        0, 0, 0, H
+        0,
+        0,
+        0,
+        H,
       );
       new zim.Rectangle(W, H, sky).addTo(stage);
 
       // Soft meadow ground band with a gentle rolling top edge.
       const ground = new zim.Shape().addTo(stage);
-      ground.f(palette.meadow)
+      ground
+        .f(palette.meadow)
         .mt(0, H - 96)
         .bt(W * 0.25, H - 124, W * 0.55, H - 78, W, H - 110)
-        .lt(W, H).lt(0, H).cp();
+        .lt(W, H)
+        .lt(0, H)
+        .cp();
       ground.alpha = 0.55;
 
       // A few drifting clouds for depth (decorative, behind the play area).
@@ -290,28 +579,74 @@ export default createZimGame({
 
     // Lightweight decorative cloud puff for the sky (no interaction).
     function makeSkyCloud(x, y, width, alpha) {
-      const cloud = makeCloudShape(palette.cloud, palette.cloud, 0, width).addTo(stage).loc(x, y);
+      const cloud = makeCloudShape(palette.cloud, palette.cloud, 0, width)
+        .addTo(stage)
+        .loc(x, y);
       cloud.alpha = alpha;
       return cloud;
     }
 
     function makeStatus(message) {
       const hud = new zim.Container().addTo(stage);
-      const round = new zim.Label(`Round ${roundIndex + 1}/${rounds.length}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(0, 0);
-      const scoreLabel = new zim.Label(`Score ${score}`, 18, zimFont, palette.inkSoft).addTo(hud).loc(round.width + 16, 0);
-      const attemptsLabel = new zim.Label(`Attempts ${attemptsLeft}`, 18, zimFont, palette.inkSoft)
-        .addTo(hud).loc(round.width + scoreLabel.width + 32, 0);
+      const round = new zim.Label(
+        `Round ${roundIndex + 1}/${rounds.length}`,
+        18,
+        zimFont,
+        palette.inkSoft,
+      )
+        .addTo(hud)
+        .loc(0, 0);
+      const scoreLabel = new zim.Label(
+        `Score ${score}`,
+        18,
+        zimFont,
+        palette.inkSoft,
+      )
+        .addTo(hud)
+        .loc(round.width + 16, 0);
+      const attemptsLabel = new zim.Label(
+        `Attempts ${attemptsLeft}`,
+        18,
+        zimFont,
+        palette.inkSoft,
+      )
+        .addTo(hud)
+        .loc(round.width + scoreLabel.width + 32, 0);
       // Live countdown segment. Re-pointing `timerLabel` here (the same trick used
       // for hintButton) keeps the reference valid after stage.removeAllChildren().
-      timerLabel = new zim.Label(`Time ${formatTime(countdown.remaining())}`, 18, zimFont, palette.inkSoft)
-        .addTo(hud).loc(round.width + scoreLabel.width + attemptsLabel.width + 48, 0);
-      timerLabel.color = countdown.remaining() <= 15 ? "#d2553f" : palette.inkSoft;
-      hud.setBounds(0, 0, round.width + scoreLabel.width + attemptsLabel.width + timerLabel.width + 48, 24);
+      timerLabel = new zim.Label(
+        `Time ${formatTime(countdown.remaining())}`,
+        18,
+        zimFont,
+        palette.inkSoft,
+      )
+        .addTo(hud)
+        .loc(round.width + scoreLabel.width + attemptsLabel.width + 48, 0);
+      timerLabel.color =
+        countdown.remaining() <= 15 ? "#d2553f" : palette.inkSoft;
+      hud.setBounds(
+        0,
+        0,
+        round.width +
+          scoreLabel.width +
+          attemptsLabel.width +
+          timerLabel.width +
+          48,
+        24,
+      );
 
       // Soft rounded "card" behind the HUD so it reads against the sky.
       const pad = 16;
-      new zim.Rectangle(hud.width + pad * 2, 34, "rgba(255,255,255,0.66)", palette.cloudEdge, 1.5, 17)
-        .addTo(stage).loc((W - hud.width) / 2 - pad, 28);
+      new zim.Rectangle(
+        hud.width + pad * 2,
+        34,
+        "rgba(255,255,255,0.66)",
+        palette.cloudEdge,
+        1.5,
+        17,
+      )
+        .addTo(stage)
+        .loc((W - hud.width) / 2 - pad, 28);
       hud.top();
       hud.loc((W - hud.width) / 2, 34);
 
@@ -321,8 +656,10 @@ export default createZimGame({
         font: zimFont,
         color: palette.ink,
         align: "center",
-        valign: "center"
-      }).addTo(stage).loc(W / 2, 651);
+        valign: "center",
+      })
+        .addTo(stage)
+        .loc(W / 2, 651);
     }
 
     function makeBottomControls() {
@@ -337,8 +674,10 @@ export default createZimGame({
         rollBackgroundColor: palette.gold,
         downBackgroundColor: "#b58c33",
         color: "#ffffff",
-        corner: 21
-      }).addTo(controls).loc(0, 0);
+        corner: 21,
+      })
+        .addTo(controls)
+        .loc(0, 0);
       checkButton.on("click", checkAnswer);
       const resetLabel = new zim.Label("Reset", 18, zimFont, palette.ink);
       resetLabel.fontOptions = "bold";
@@ -352,8 +691,10 @@ export default createZimGame({
         color: palette.ink,
         borderColor: palette.cloudEdge,
         borderWidth: 2,
-        corner: 21
-      }).addTo(controls).loc(148, 0);
+        corner: 21,
+      })
+        .addTo(controls)
+        .loc(148, 0);
       resetButton.on("click", () => renderRound());
       // Total group width: Check (132) + gap (16) + Reset (132) + gap (16) + Hint (132) = 428
       controls.setBounds(0, 0, 280, 42);
@@ -369,7 +710,12 @@ export default createZimGame({
         y: 674,
         policy: hintPolicy,
         onUse: applyHint,
-        palette: { bg: palette.gold, rollBg: "#ffd97a", downBg: palette.goldDeep, color: palette.ink },
+        palette: {
+          bg: palette.gold,
+          rollBg: "#ffd97a",
+          downBg: palette.goldDeep,
+          color: palette.ink,
+        },
       });
     }
 
@@ -384,7 +730,15 @@ export default createZimGame({
       tile.setBounds(0, 0, w, h);
       tile.mouseChildren = false;
 
-      const shadow = makeCloudShape(palette.cloudShadow, palette.cloudShadow, 0, w, h).addTo(tile).loc(0, 9);
+      const shadow = makeCloudShape(
+        palette.cloudShadow,
+        palette.cloudShadow,
+        0,
+        w,
+        h,
+      )
+        .addTo(tile)
+        .loc(0, 9);
       shadow.alpha = 0.9;
       makeCloudShape(palette.cloud, palette.cloudEdge, 3, w, h).addTo(tile);
 
@@ -396,7 +750,7 @@ export default createZimGame({
         align: "center",
         valign: "center",
         bold: true,
-        lineWidth: TILE_WRAP
+        lineWidth: TILE_WRAP,
       });
       label.addTo(tile).loc(w / 2, h * TEXT_VALIGN);
       tile.cursor = "pointer";
@@ -414,15 +768,26 @@ export default createZimGame({
 
       // Sandy "story stone" slot that echoes the path/stones in the background.
       new zim.Rectangle(w, 12, palette.stoneShadow, palette.stoneShadow, 0, 14)
-        .addTo(zone).loc(0, h - 6);
+        .addTo(zone)
+        .loc(0, h - 6);
 
-      const tablet = new zim.Rectangle(w, h, "rgba(241,227,189,0.62)", palette.stoneEdge, 2, 14)
-        .addTo(zone);
+      const tablet = new zim.Rectangle(
+        w,
+        h,
+        "rgba(241,227,189,0.62)",
+        palette.stoneEdge,
+        2,
+        14,
+      ).addTo(zone);
       tablet.setBounds(0, 0, w, h);
 
       // Dashed inner guide so empty slots read as "drop here".
       const guide = new zim.Shape().addTo(zone);
-      guide.s(palette.stoneEdge).ss(2).sd([7, 6]).rr(12, 12, w - 24, h - 24, 10);
+      guide
+        .s(palette.stoneEdge)
+        .ss(2)
+        .sd([7, 6])
+        .rr(12, 12, w - 24, h - 24, 10);
 
       new zim.Label({
         text: String(index + 1),
@@ -431,17 +796,28 @@ export default createZimGame({
         color: palette.goldDeep,
         align: "center",
         valign: "center",
-        bold: true
-      }).addTo(zone).loc(w / 2, h / 2);
+        bold: true,
+      })
+        .addTo(zone)
+        .loc(w / 2, h / 2);
       zones.push(zone);
     }
 
     // Cloud puff drawn in a 180×118 box, then scaled to the requested width and
     // height. Height defaults to the natural ratio so decorative sky clouds (which
     // pass width only) keep their original proportions.
-    function makeCloudShape(fill, stroke, strokeWidth, width = 180, height = (width * 118) / 180) {
+    function makeCloudShape(
+      fill,
+      stroke,
+      strokeWidth,
+      width = 180,
+      height = (width * 118) / 180,
+    ) {
       const cloud = new zim.Shape();
-      cloud.f(fill).s(stroke).ss(strokeWidth)
+      cloud
+        .f(fill)
+        .s(stroke)
+        .ss(strokeWidth)
         .mt(31, 70)
         .bt(15, 70, 8, 58, 14, 46)
         .bt(20, 34, 34, 32, 44, 34)
@@ -468,11 +844,19 @@ export default createZimGame({
         size: TILE_FONT,
         font: contentFont(),
         bold: true,
-        lineWidth: TILE_WRAP
+        lineWidth: TILE_WRAP,
       });
       return {
-        w: clamp(probe.width * CLOUD_W_RATIO + CLOUD_W_EXTRA, CLOUD_MIN_W, CLOUD_MAX_W),
-        h: clamp(probe.height * CLOUD_H_RATIO + CLOUD_H_EXTRA, CLOUD_MIN_H, CLOUD_MAX_H)
+        w: clamp(
+          probe.width * CLOUD_W_RATIO + CLOUD_W_EXTRA,
+          CLOUD_MIN_W,
+          CLOUD_MAX_W,
+        ),
+        h: clamp(
+          probe.height * CLOUD_H_RATIO + CLOUD_H_EXTRA,
+          CLOUD_MIN_H,
+          CLOUD_MAX_H,
+        ),
       };
     }
 
@@ -534,7 +918,7 @@ export default createZimGame({
           w,
           h,
           x: areaX0 + col * cellW + (cellW - w) / 2 + jitterX,
-          y: areaTop + row * cellH + (cellH - h) / 2 + jitterY
+          y: areaTop + row * cellH + (cellH - h) / 2 + jitterY,
         };
       });
 
@@ -544,7 +928,8 @@ export default createZimGame({
     // Cache the layout per round so the scattered positions stay put across the
     // re-renders triggered by Reset and wrong-answer dismissal.
     function getLayout(current) {
-      if (layoutCache.round === roundIndex && layoutCache.layout) return layoutCache.layout;
+      if (layoutCache.round === roundIndex && layoutCache.layout)
+        return layoutCache.layout;
       layoutCache = { round: roundIndex, layout: computeLayout(current) };
       return layoutCache.layout;
     }
@@ -562,7 +947,10 @@ export default createZimGame({
       if (matchedZone) {
         if (matchedZone.tile && matchedZone.tile !== tile) {
           matchedZone.tile.zoneIndex = null;
-          matchedZone.tile.animate({ props: { x: matchedZone.tile.homeX, y: matchedZone.tile.homeY }, time: 0.25 });
+          matchedZone.tile.animate({
+            props: { x: matchedZone.tile.homeX, y: matchedZone.tile.homeY },
+            time: 0.25,
+          });
         }
         if (tile.zoneIndex !== null) zones[tile.zoneIndex].tile = null;
         matchedZone.tile = tile;
@@ -570,9 +958,9 @@ export default createZimGame({
         tile.animate({
           props: {
             x: matchedZone.x + (matchedZone.widthValue - tile.widthValue) / 2,
-            y: matchedZone.y + (matchedZone.heightValue - tile.heightValue) / 2
+            y: matchedZone.y + (matchedZone.heightValue - tile.heightValue) / 2,
           },
-          time: 0.2
+          time: 0.2,
         });
       } else {
         if (tile.zoneIndex !== null) zones[tile.zoneIndex].tile = null;
@@ -617,12 +1005,20 @@ export default createZimGame({
       hintsUsedTotal += 1;
       score = Math.max(0, score - hintPolicy.penalty);
       if (hintButton) hintButton.refresh();
-      emit("hint", { text: `"${answer[target]}" goes in slot ${target + 1}.` });
+      const hintText = `"${answer[target]}" goes in slot ${target + 1}.`;
+
+      e2eLastHintText = hintText;
+      emit("hint", { text: hintText });
+      syncPassageReconstructionE2E();
     }
 
     // Shows the full sentence for ~1.5s with a progress bar, then calls renderRound.
     // Mirrors the landing-screen behaviour from the proof of concept.
     function showSentencePreview() {
+      e2eScreen = "preview";
+      e2eMessage = "Memorise the sentence — then arrange the clouds!";
+      e2eLastHintText = "";
+
       // Refill hints for the new round. Done here (not in renderRound) so the Reset
       // button — which calls renderRound — keeps hints already spent this round.
       hintPolicy.reset();
@@ -644,8 +1040,16 @@ export default createZimGame({
       const panelX = (W - panelW) / 2;
       const panelY = H / 2 - panelH / 2 - 50;
 
-      new zim.Rectangle(panelW, panelH, "rgba(255,255,255,0.92)", "#ffffff", 4, 28)
-        .addTo(stage).loc(panelX, panelY);
+      new zim.Rectangle(
+        panelW,
+        panelH,
+        "rgba(255,255,255,0.92)",
+        "#ffffff",
+        4,
+        28,
+      )
+        .addTo(stage)
+        .loc(panelX, panelY);
 
       // Eyebrow label
       new zim.Label({
@@ -654,8 +1058,10 @@ export default createZimGame({
         font: zimFont,
         color: palette.inkSoft,
         align: "center",
-        valign: "center"
-      }).addTo(stage).loc(W / 2, panelY + 32);
+        valign: "center",
+      })
+        .addTo(stage)
+        .loc(W / 2, panelY + 32);
 
       // The sentence — large and clear
       new zim.Label({
@@ -666,8 +1072,10 @@ export default createZimGame({
         align: "center",
         valign: "center",
         bold: true,
-        lineWidth: panelW - 80
-      }).addTo(stage).loc(W / 2, panelY + 108);
+        lineWidth: panelW - 80,
+      })
+        .addTo(stage)
+        .loc(W / 2, panelY + 108);
 
       // Progress bar track
       const barW = 520;
@@ -676,13 +1084,23 @@ export default createZimGame({
       const barY = panelY + panelH + 44;
 
       new zim.Rectangle(barW, barH, "#e7e2d0", "#e7e2d0", 0, barH / 2)
-        .addTo(stage).loc(barX, barY);
+        .addTo(stage)
+        .loc(barX, barY);
 
       // Fill bar — starts scaled to near-zero, animates to full width over 1.5s
-      const barFill = new zim.Rectangle(barW, barH, palette.gold, palette.gold, 0, barH / 2)
-        .addTo(stage).loc(barX, barY);
+      const barFill = new zim.Rectangle(
+        barW,
+        barH,
+        palette.gold,
+        palette.gold,
+        0,
+        barH / 2,
+      )
+        .addTo(stage)
+        .loc(barX, barY);
       barFill.scaleX = 0.001;
 
+      syncPassageReconstructionE2E();
       stage.update();
 
       barFill.animate({
@@ -691,15 +1109,21 @@ export default createZimGame({
         ease: "linear",
         call: () => {
           if (!disposed) renderRound();
-        }
+        },
       });
     }
 
-    function renderRound(message = "Drag each phrase into the numbered story slots.") {
+    function renderRound(
+      message = "Drag each phrase into the numbered story slots.",
+    ) {
       if (disposed) return;
       // If the clock ran out (e.g. while a wrong-answer popup's auto-dismiss tween
       // was still pending), the results screen is already up — don't rebuild over it.
       if (gameOver) return;
+
+      e2eScreen = "gameplay";
+      e2eMessage = message;
+
       feedbackActive = false;
       // Active play — make sure the clock is running (it was paused for the preview;
       // Reset and wrong-popup dismissal also route here and should keep it running).
@@ -713,12 +1137,22 @@ export default createZimGame({
       const current = rounds[roundIndex];
       const layout = getLayout(current);
       current.answer.forEach((_, index) =>
-        makeZone(index, layout.zoneX[index], layout.zoneY, layout.zoneW, layout.zoneH));
+        makeZone(
+          index,
+          layout.zoneX[index],
+          layout.zoneY,
+          layout.zoneW,
+          layout.zoneH,
+        ),
+      );
       current.chunks.forEach((chunk, index) => {
         const t = layout.tiles[index];
         makeTile(chunk, t.x, t.y, t.w, t.h);
       });
       makeBottomControls();
+
+      syncPassageReconstructionE2E();
+
       stage.update();
     }
 
@@ -734,7 +1168,9 @@ export default createZimGame({
         return;
       }
 
-      const isCorrect = placed.every((chunk, index) => chunk === rounds[roundIndex].answer[index]);
+      const isCorrect = placed.every(
+        (chunk, index) => chunk === rounds[roundIndex].answer[index],
+      );
       if (isCorrect) {
         feedbackActive = true;
         score += 100;
@@ -750,14 +1186,25 @@ export default createZimGame({
     }
 
     function showWrong() {
+      e2eScreen = "wrong-feedback";
+      e2eMessage = `Not quite! (-${WRONG_PENALTY})`;
+
       emit("wrong");
       const panelW = 520;
       const panelH = 170;
       const panelX = (W - panelW) / 2;
       const panelY = 275;
 
-      const pane = new zim.Rectangle(panelW, panelH, "#fff8f6", "#e8836a", 3, 22)
-        .loc(panelX, panelY).addTo(stage);
+      const pane = new zim.Rectangle(
+        panelW,
+        panelH,
+        "#fff8f6",
+        "#e8836a",
+        3,
+        22,
+      )
+        .loc(panelX, panelY)
+        .addTo(stage);
 
       const popup = new zim.Container().addTo(stage);
 
@@ -768,8 +1215,10 @@ export default createZimGame({
         font: zimFont,
         color: "#7a2316",
         align: "center",
-        valign: "center"
-      }).addTo(popup).loc(0, 18);
+        valign: "center",
+      })
+        .addTo(popup)
+        .loc(0, 18);
 
       // Hint line (also tells the player a wrong check cost points)
       new zim.Label({
@@ -778,8 +1227,10 @@ export default createZimGame({
         font: zimFont,
         color: "#a0513e",
         align: "center",
-        valign: "center"
-      }).addTo(popup).loc(0, 60);
+        valign: "center",
+      })
+        .addTo(popup)
+        .loc(0, 60);
 
       // OK button — white bg, dark text, coral border for clear visibility
       const okLabel = new zim.Label("OK", 20, zimFont, "#5a1a0e");
@@ -793,17 +1244,23 @@ export default createZimGame({
         downBackgroundColor: "#f5d0c8",
         borderColor: "#e8836a",
         borderWidth: 2,
-        corner: 20
-      }).addTo(popup).loc(-60, 94);
+        corner: 20,
+      })
+        .addTo(popup)
+        .loc(-60, 94);
 
       // Countdown bar — drains left-to-right over 2s
       const barW = panelW - 48;
       const bar = new zim.Rectangle(barW, 6, "#e8836a", "#e8836a", 0, 3)
-        .addTo(popup).loc(-(barW / 2), 148);
+        .addTo(popup)
+        .loc(-(barW / 2), 148);
 
       popup.setBounds(-(panelW / 2), 0, panelW, panelH);
       popup.loc(W / 2, panelY);
       pane.bot();
+
+      syncPassageReconstructionE2E();
+
       stage.update();
 
       let dismissed = false;
@@ -821,13 +1278,18 @@ export default createZimGame({
         props: { scaleX: 0.001 },
         time: 2,
         ease: "linear",
-        call: dismiss
+        call: dismiss,
       });
     }
 
     function showCorrect() {
+      e2eScreen = "correct-feedback";
+      e2eMessage = "Wonderful ordering!";
+
       emit("correct");
-      const pane = new zim.Rectangle(570, 160, "#eef7df", "#7fae5a", 5, 24).loc(265, 356).addTo(stage);
+      const pane = new zim.Rectangle(570, 160, "#eef7df", "#7fae5a", 5, 24)
+        .loc(265, 356)
+        .addTo(stage);
       const success = new zim.Container().addTo(stage);
       new zim.Label({
         text: "Wonderful ordering!",
@@ -835,17 +1297,22 @@ export default createZimGame({
         font: zimFont,
         color: "#2f6f45",
         align: "center",
-        valign: "center"
-      }).addTo(success).loc(0, 17);
+        valign: "center",
+      })
+        .addTo(success)
+        .loc(0, 17);
       new zim.Label({
         text: "You rebuilt the sentence like a careful reader.",
         size: 22,
         font: zimFont,
         color: "#456b3f",
         align: "center",
-        valign: "center"
-      }).addTo(success).loc(0, 55);
-      const nextLabel = roundIndex === rounds.length - 1 ? "Finish" : "Next Round";
+        valign: "center",
+      })
+        .addTo(success)
+        .loc(0, 55);
+      const nextLabel =
+        roundIndex === rounds.length - 1 ? "Finish" : "Next Round";
       const nextButtonLabel = new zim.Label(nextLabel, 18, zimFont, "#ffffff");
       nextButtonLabel.fontOptions = "bold";
       const next = new zim.Button({
@@ -856,8 +1323,10 @@ export default createZimGame({
         rollBackgroundColor: "#6aae5d",
         downBackgroundColor: "#4d8a44",
         color: "#ffffff",
-        corner: 20
-      }).addTo(success).loc(-75, 74);
+        corner: 20,
+      })
+        .addTo(success)
+        .loc(-75, 74);
       next.on("click", () => {
         if (disposed) return;
         if (roundIndex === rounds.length - 1) {
@@ -871,12 +1340,25 @@ export default createZimGame({
       success.setBounds(-260, 0, 520, 118);
       success.loc(W / 2, 390);
       pane.bot();
+
+      syncPassageReconstructionE2E();
+
       stage.update();
     }
 
     function showRoundOver() {
+      e2eScreen = "round-over";
+      e2eMessage = "No attempts left.";
+
       emit("roundOver");
-      addLabel("No attempts left. The story magic resets this round.", 23, "#8a3a2d", W / 2, 360, "center");
+      addLabel(
+        "No attempts left. The story magic resets this round.",
+        23,
+        "#8a3a2d",
+        W / 2,
+        360,
+        "center",
+      );
       const retryLabel = new zim.Label("Try Again", 18, zimFont, "#ffffff");
       retryLabel.fontOptions = "bold";
       const retry = new zim.Button({
@@ -887,13 +1369,18 @@ export default createZimGame({
         rollBackgroundColor: palette.gold,
         downBackgroundColor: "#b58c33",
         color: "#ffffff",
-        corner: 20
-      }).loc(475, 398).addTo(stage);
+        corner: 20,
+      })
+        .loc(475, 398)
+        .addTo(stage);
       retry.on("click", () => {
         if (disposed) return;
         attemptsLeft = 3;
         showSentencePreview();
       });
+
+      syncPassageReconstructionE2E();
+
       stage.update();
     }
 
@@ -908,6 +1395,10 @@ export default createZimGame({
     // reports the final score plus how many rounds were right vs. missed.
     function showResults({ timedOut }) {
       if (disposed) return;
+
+      e2eScreen = timedOut ? "results-timeout" : "results-complete";
+      e2eMessage = timedOut ? "Time's Up!" : "Quest Complete";
+
       gameOver = true;
       if (timerInterval) {
         timerInterval.clear();
@@ -944,29 +1435,76 @@ export default createZimGame({
             console.log("Passage Reconstruction score result:", result);
           })
           .catch((error) => {
-            console.error("Could not save Passage Reconstruction score:", error);
+            console.error(
+              "Could not save Passage Reconstruction score:",
+              error,
+            );
           });
       }
 
       const roundsRight = correctChecks;
       const roundsWrong = rounds.length - correctChecks; // unreached rounds count as missed
-      const accuracy = checks ? Math.round((correctChecks / checks) * 100) : 100;
+      const accuracy = checks
+        ? Math.round((correctChecks / checks) * 100)
+        : 100;
 
+      e2eResultSummary = {
+        timedOut,
+        timeBonus,
+        finalScore: score,
+        roundsRight,
+        roundsWrong,
+        accuracy,
+      };
       stage.removeAllChildren(); // wipes any board/popup that was on screen at timeout
       makeBackground();
-      new zim.Rectangle(680, 360, "rgba(255,255,255,.82)", palette.goldDeep, 5, 28).loc(210, 168).addTo(stage);
+      new zim.Rectangle(
+        680,
+        360,
+        "rgba(255,255,255,.82)",
+        palette.goldDeep,
+        5,
+        28,
+      )
+        .loc(210, 168)
+        .addTo(stage);
       const makecenteredLabel = (text, size, color, y) =>
-        new zim.Label({ text, size, font: zimFont, color, align: "center", valign: "top" })
-          .addTo(stage).loc(W / 2, y);
-      makecenteredLabel(timedOut ? "Time's Up!" : "Quest Complete", 48, palette.ink, 210);
+        new zim.Label({
+          text,
+          size,
+          font: zimFont,
+          color,
+          align: "center",
+          valign: "top",
+        })
+          .addTo(stage)
+          .loc(W / 2, y);
+      makecenteredLabel(
+        timedOut ? "Time's Up!" : "Quest Complete",
+        48,
+        palette.ink,
+        210,
+      );
       makecenteredLabel(
         timeBonus > 0
           ? `Final score: ${score} (+${timeBonus} time bonus)`
           : `Final score: ${score}`,
-        32, "#3a5240", 282,
+        32,
+        "#3a5240",
+        282,
       );
-      makecenteredLabel(`Rounds right: ${roundsRight}/${rounds.length}`, 28, "#3a7a4a", 332);
-      makecenteredLabel(`Rounds missed: ${roundsWrong}/${rounds.length}`, 28, "#a05038", 372);
+      makecenteredLabel(
+        `Rounds right: ${roundsRight}/${rounds.length}`,
+        28,
+        "#3a7a4a",
+        332,
+      );
+      makecenteredLabel(
+        `Rounds missed: ${roundsWrong}/${rounds.length}`,
+        28,
+        "#a05038",
+        372,
+      );
       makecenteredLabel(`Accuracy: ${accuracy}%`, 22, palette.inkSoft, 414);
       const againLabel = new zim.Label("Play Again", 18, zimFont, "#ffffff");
       againLabel.fontOptions = "bold";
@@ -978,18 +1516,27 @@ export default createZimGame({
         rollBackgroundColor: palette.gold,
         downBackgroundColor: "#b58c33",
         color: "#ffffff",
-        corner: 20
-      }).loc(455, 456).addTo(stage);
+        corner: 20,
+      })
+        .loc(455, 456)
+        .addTo(stage);
       again.tap(() => {
         if (disposed) return;
         showLanguagePicker();
       });
+
+      syncPassageReconstructionE2E();
+
       stage.update();
     }
 
     async function loadAndStart(language = "english") {
       if (disposed) return;
       if (isStarting) return;
+
+      e2eScreen = "loading";
+      e2eMessage = `Loading ${language === "sanskrit" ? "Sanskrit" : "English"} story...`;
+
       currentLanguage = language;
       resetSessionState();
       isStarting = true;
@@ -998,8 +1545,12 @@ export default createZimGame({
         `Loading ${language === "sanskrit" ? "Sanskrit" : "English"} story...`,
         28,
         language === "sanskrit" ? sanskritFont : zimFont,
-        "#073b49"
-      ).addTo(stage).center(stage);
+        "#073b49",
+      )
+        .addTo(stage)
+        .center(stage);
+
+      syncPassageReconstructionE2E();
       stage.update();
 
       const response = await getPassageReconstructionGame(language);
@@ -1009,8 +1560,18 @@ export default createZimGame({
       if (!response || !response.data || !response.data.rounds) {
         isStarting = false;
         stage.removeAllChildren();
-        new zim.Label("Failed to load story. Please refresh.", 22, zimFont, "#8a3a2d")
-          .addTo(stage).center(stage);
+        new zim.Label(
+          "Failed to load story. Please refresh.",
+          22,
+          zimFont,
+          "#8a3a2d",
+        )
+          .addTo(stage)
+          .center(stage);
+
+        e2eScreen = "load-error";
+        e2eMessage = "Failed to load story. Please refresh.";
+        syncPassageReconstructionE2E();
         stage.update();
         return;
       }
@@ -1025,15 +1586,26 @@ export default createZimGame({
 
     return () => {
       disposed = true;
+
       if (timerInterval) {
         timerInterval.clear();
         timerInterval = null;
       }
+
       timerLabel = null;
+
+      // E2E TEST HOOK CLEANUP:
+      // Remove the development/E2E-only globals when the ZIM game unmounts so a
+      // later scene cannot observe stale Passage Reconstruction state or commands.
+      if (typeof window !== "undefined") {
+        delete window.__passageReconstructionZimDebug;
+        delete window.__passageReconstructionZimTestHooks;
+      }
+
       stage.removeAllChildren();
       stage.update();
     };
-  }
+  },
 });
 
 export const meta = {

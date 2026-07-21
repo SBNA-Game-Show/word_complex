@@ -30,7 +30,7 @@ jobs:
 
   playwright:
     needs: promote-to-testing
-    uses: ./.github/workflows/playwright-non-game.yml
+    uses: ./.github/workflows/playwright-client-e2e.yml
 
   promote-to-main:
     needs: playwright
@@ -74,7 +74,6 @@ jobs:
           git checkout main
           git merge origin/testing --no-edit
           git push origin main
-
 
       - name: Trigger Vercel Deploy Hook
         run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
