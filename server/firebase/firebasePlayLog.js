@@ -31,7 +31,10 @@
  */
 
 require("dotenv").config();
-const admin = require("firebase-admin");
+// firebase-admin v14 dropped the old namespaced API (admin.credential.*,
+// admin.firestore(), admin.apps). Use the modular subpath imports instead.
+const { initializeApp, getApps, cert } = require("firebase-admin/app");
+const { getFirestore: getFirestoreInstance } = require("firebase-admin/firestore");
 
 // --- config knobs (all provisional; rename freely) ----------------------
 
@@ -59,7 +62,7 @@ let firestore;
 function getFirestore() {
   if (firestore) return firestore;
 
-  if (!admin.apps.length) {
+  if (!getApps().length) {
     const raw = process.env[SERVICE_ACCOUNT_ENV];
     if (!raw) {
       throw new Error(
@@ -74,12 +77,12 @@ function getFirestore() {
       throw new Error(`${SERVICE_ACCOUNT_ENV} is not valid JSON: ${e.message}`);
     }
 
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+    initializeApp({
+      credential: cert(serviceAccount),
     });
   }
 
-  firestore = admin.firestore();
+  firestore = getFirestoreInstance();
   return firestore;
 }
 
@@ -120,6 +123,9 @@ function monthlyDocId(timestampMs) {
  * @returns {Promise<boolean>}
  */
 async function writeFirebaseDB({ uuid, score, gameTimeSeconds, miniGame }) {
+  // Never touch real Firestore from the test runner (jest sets NODE_ENV=test).
+  if (process.env.NODE_ENV === "test") return false;
+
   try {
     // --- validate -------------------------------------------------------
     const subCollection = MINI_GAMES[miniGame];
