@@ -623,9 +623,17 @@ export async function dragContextClozeWordToBlank(page, word, blankIndex) {
 
   await page.mouse.down();
 
+  // ZIM updates its drag state from canvas pointer events. Give slower CI
+  // runners a frame to register the press before sending movement events.
+  await page.waitForTimeout(50);
+
   await page.mouse.move(end.x, end.y, {
-    steps: 12,
+    steps: 20,
   });
+
+  // Allow ZIM to process the final move while the pointer is over the blank
+  // before pressup performs the production hit test.
+  await page.waitForTimeout(100);
 
   await page.mouse.up();
 
