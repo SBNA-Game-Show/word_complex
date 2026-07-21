@@ -24,6 +24,7 @@
 const {
   getPassageReconstructionCollection,
 } = require("../db/passageReconstructionCollection");
+const { writeFirebaseDB } = require("../../firebase/firebasePlayLog");
 
 /** true when run A beats run B under score -> time -> hints. */
 function isBetterRun(a, b) {
@@ -52,6 +53,15 @@ async function saveBestRun({
   if (!Number.isFinite(hintsUsed) || hintsUsed < 0) {
     throw new Error("hintsUsed must be a non-negative number");
   }
+
+  // Mirror every play to Firestore (before the best-check below, so non-best
+  // attempts still get logged). time is in ms; the mirror wants seconds.
+  writeFirebaseDB({
+    uuid,
+    score,
+    gameTimeSeconds: time / 1000,
+    miniGame: "passageReconstruction",
+  });
 
   const collection = await getPassageReconstructionCollection();
   const current = await collection.findOne({ _id: uuid });

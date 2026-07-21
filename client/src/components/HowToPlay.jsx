@@ -58,8 +58,8 @@ const guides = {
       ["Stars stack up", "Every correct round adds to your score."],
     ],
   },
-  "word-match": {
-    title: "Word Match",
+  "meaning-bridge": {
+    title: "Meaning Bridge",
     label: "Vocabulary pairs",
     steps: [
       {
@@ -216,13 +216,13 @@ const guides = {
     tips: [
       [
         "Timed challenge",
-        "You are given limited time based on the number of words to find.",
+        "You are given 5 seconds for each word depending on the number of words to find.",
         "If replaying a passage, your best previous performance is used as the starting benchmark.",
       ],
       [
         "Scoring",
-        "Each correct word earns 1 point.",
-        "Using hints reduces your final score by 25% per hint used.",
+        "Each correct word earns 10 point.",
+        "Using hints reduces your score by 25% for every hint used.",
       ],
       [
         "Time bonuses",
@@ -231,7 +231,7 @@ const guides = {
         "Finish within 3/4 of the allotted time: +3 bonus points.",
         "No bonus is awarded after 3/4 of the allotted time.",
       ],
-      ["Coins", "Earn 2 coins for every 10 points scored."],
+      ["Coins", "Earn 2 coins for every 20 points scored."],
     ],
   },
 };
@@ -302,7 +302,7 @@ export default function HowToPlay({
         <section className="htp-section">
           <p className="htp-section-label">Good to know</p>
           <div className="htp-tips">
-            {guide.tips.map(([title, copy], index) => (
+            {guide.tips.map(([title, ...copyLines], index) => (
               <div
                 className="htp-tip"
                 data-testid={`how-to-play-tip-${gameId}-${index + 1}`}
@@ -314,9 +314,13 @@ export default function HowToPlay({
                 >
                   {index + 1}
                 </span>
+
                 <div>
                   <strong>{title}</strong>
-                  <p>{copy}</p>
+
+                  {copyLines.map((copy, copyIndex) => (
+                    <p key={`${title}-${copyIndex}`}>{copy}</p>
+                  ))}
                 </div>
               </div>
             ))}

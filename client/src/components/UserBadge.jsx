@@ -4,13 +4,23 @@ export default function UserBadge({ user, onLogout }) {
     .toUpperCase();
 
   return (
-    <div className="user-badge">
-      <div className="user-avatar" aria-hidden="true">{initials}</div>
-      <div className="user-badge-copy">
-        <span>{user?.nickname ?? "Player"}</span>
-        <small>{user?.role ?? "Reader"}</small>
+    <div className="user-badge" data-testid="user-badge">
+      <div className="user-avatar" aria-hidden="true">
+        {initials}
       </div>
-      <button className="logout-button" type="button" onClick={onLogout}>
+
+      <div className="user-badge-copy">
+        <span data-testid="user-badge-name">{user?.nickname ?? "Player"}</span>
+
+        <small data-testid="user-badge-role">{user?.role ?? "Reader"}</small>
+      </div>
+
+      <button
+        className="logout-button"
+        data-testid="logout-button"
+        type="button"
+        onClick={onLogout}
+      >
         Log out
       </button>
     </div>

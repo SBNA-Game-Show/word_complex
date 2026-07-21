@@ -20,6 +20,7 @@
  */
 
 const { getMeaningBridgeCollection } = require("../db/meaningBridgeCollection");
+const { writeFirebaseDB } = require("../../firebase/firebasePlayLog");
 
 const assertNonNegativeNumber = (value, label) => {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
@@ -124,6 +125,15 @@ const saveBestScore = async ({
     pipeline,
     { upsert: true, returnDocument: "after" },
   );
+
+  // Mirror every play to Firestore. timeSeconds is already seconds — no
+  // conversion needed.
+  writeFirebaseDB({
+    uuid: safeUuid,
+    score,
+    gameTimeSeconds: timeSeconds,
+    miniGame: "meaningBridge",
+  });
 
   return { isNewBest, entry: result || null };
 };

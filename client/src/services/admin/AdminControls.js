@@ -14,38 +14,26 @@ export const getAllStories = async () => {
     return await response.json();
   } catch (error) {
     console.error("Failed to fetch stories:", error);
-    return [];
+    throw error;
   }
 };
 /**
  * Get all available stories from Sanskrit.Samskrutam.com
  */
 export const getUnusedStories = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/getUnused`);
 
-    try {
-
-        const response = await fetch(
-            `${API_BASE}/getUnused`
-        );
-
-        if (!response.ok) {
-            throw new Error(`Request failed: ${response.status}`);
-        }
-
-        return await response.json();
-
-    }
-    catch(error){
-
-        console.error(error);
-
-        return {
-            success:false,
-            data:[]
-        };
-
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`);
     }
 
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to fetch available Sanskrit stories:", error);
+
+    throw error;
+  }
 };
 
 /**
@@ -62,7 +50,8 @@ export const getAllTokenizedStories = async () => {
     return await response.json();
   } catch (error) {
     console.error("Failed to fetch tokenized stories:", error);
-    return [];
+
+    throw error;
   }
 };
 
@@ -71,12 +60,9 @@ export const getAllTokenizedStories = async () => {
  */
 export const downloadStory = (story) => {
   try {
-    const blob = new Blob(
-      [JSON.stringify(story, null, 2)],
-      {
-        type: "application/json",
-      }
-    );
+    const blob = new Blob([JSON.stringify(story, null, 2)], {
+      type: "application/json",
+    });
 
     const url = window.URL.createObjectURL(blob);
 
@@ -111,7 +97,7 @@ export const addNewStory = async (storyId) => {
       `${API_BASE}/addNew?story_id=${encodeURIComponent(storyId)}`,
       {
         method: "POST",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -133,7 +119,7 @@ export const addNewSamskrutamStory = async (storyId) => {
       `${API_BASE}/addNewStory?story_id=${encodeURIComponent(storyId)}`,
       {
         method: "POST",
-      }
+      },
     );
 
     const data = await response.json();
@@ -153,22 +139,19 @@ export const addNewSamskrutamStory = async (storyId) => {
  */
 export const writeLearnSanskritMeta = async () => {
   try {
-    const response = await fetch(
-      `${API_BASE}/writeMeta`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          workflow: [
-            "Fetches Meta data from LearnSanskrit.cc",
-            "Cleans and normalizes text",
-            "Stores processed output in MongoDB Atlas",
-          ],
-        }),
-      }
-    );
+    const response = await fetch(`${API_BASE}/writeMeta`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        workflow: [
+          "Fetches Meta data from LearnSanskrit.cc",
+          "Cleans and normalizes text",
+          "Stores processed output in MongoDB Atlas",
+        ],
+      }),
+    });
 
     if (!response.ok) {
       throw new Error(`Request failed: ${response.status}`);
