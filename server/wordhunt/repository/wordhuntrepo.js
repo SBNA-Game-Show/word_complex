@@ -1,4 +1,5 @@
 const WordHunt = require("./schema/WordHunt");
+const { writeFirebaseDB } = require("../../firebase/firebasePlayLog");
 
 const MAXIMUM_STORIES_TO_HAVE_IN_A_GAME = 4;
 
@@ -179,6 +180,18 @@ const registerGameData = async (
     }
 
     await game.save();
+
+    // Mirror this play to Firestore. bestTime is a "m:ss" string (same shape
+    // the leaderboard parses), so convert to seconds for the mirror's key.
+    const [bestMinutes, bestSeconds] = String(gameData.bestTime)
+      .split(":")
+      .map(Number);
+    writeFirebaseDB({
+      uuid: playerId,
+      score: gameData.totalScore,
+      gameTimeSeconds: bestMinutes * 60 + bestSeconds,
+      miniGame: "wordHunt",
+    });
 
     return player;
   } catch (e) {

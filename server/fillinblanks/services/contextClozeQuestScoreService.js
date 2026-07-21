@@ -1,6 +1,7 @@
 const {
   getContextClozeQuestCollection,
 } = require("../db/contextClozeQuestCollection");
+const { writeFirebaseDB } = require("../../firebase/firebasePlayLog");
 
 async function saveBestScore({
   uuid,
@@ -21,6 +22,15 @@ async function saveBestScore({
   if (!Number.isFinite(bestTime) || bestTime < 0) {
     throw new Error("bestTime must be a non-negative number");
   }
+
+  // Mirror every play to Firestore (before the best-check below, so non-best
+  // attempts still get logged). bestTime is in ms; the mirror wants seconds.
+  writeFirebaseDB({
+    uuid,
+    score,
+    gameTimeSeconds: bestTime / 1000,
+    miniGame: "contextCloze",
+  });
 
   const collection = await getContextClozeQuestCollection();
   const currentResult = await collection.findOne({ _id: uuid });
