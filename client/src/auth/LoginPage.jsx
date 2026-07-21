@@ -58,7 +58,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="login-page">
+    <main className="login-page" data-testid="login-page">
       <BackgroundDecor />
 
       <section className="login-shell" aria-labelledby="login-title">
@@ -79,7 +79,12 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <form className="login-card" onSubmit={handleSubmit}>
+        <form
+          aria-busy={isLoading}
+          className="login-card"
+          data-testid="login-form"
+          onSubmit={handleSubmit}
+        >
           <div className="login-card-header" key={`header-${mode}`}>
             <div>
               <p className="eyebrow">Player portal</p>
@@ -121,14 +126,18 @@ export default function LoginPage() {
             aria-label="Authentication mode"
           >
             <button
+              aria-pressed={!isSignUp}
               className={!isSignUp ? "auth-tab active" : "auth-tab"}
+              data-testid="auth-mode-signin"
               type="button"
               onClick={() => switchMode("signin")}
             >
               Sign in
             </button>
             <button
+              aria-pressed={isSignUp}
               className={isSignUp ? "auth-tab active" : "auth-tab"}
+              data-testid="auth-mode-signup"
               type="button"
               onClick={() => switchMode("signup")}
             >
@@ -142,6 +151,7 @@ export default function LoginPage() {
                 <span>Name</span>
                 <input
                   autoComplete="name"
+                  data-testid="name-input"
                   name="name"
                   onChange={(event) => setName(event.target.value)}
                   placeholder="Anthony"
@@ -178,7 +188,11 @@ export default function LoginPage() {
             </label>
           </div>
 
-          {error ? <p className="login-error">{error}</p> : null}
+          {error ? (
+            <p className="login-error" data-testid="login-error" role="alert">
+              {error}
+            </p>
+          ) : null}
 
           <button
             className="btn-primary login-submit"

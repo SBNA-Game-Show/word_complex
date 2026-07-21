@@ -39,6 +39,59 @@ async function performDialogAction(page, action, expectedMessage) {
   await Promise.all([dialogHandled, action()]);
 }
 
+async function performPendingDialogAction(
+  page,
+  action,
+  expectedMessage,
+  assertPending,
+) {
+  const dialogPromise = page.waitForEvent("dialog");
+
+  const actionPromise = action();
+
+  await assertPending();
+
+  const dialog = await dialogPromise;
+
+  expect(dialog.type()).toBe("alert");
+  expect(dialog.message()).toBe(expectedMessage);
+
+  await dialog.accept();
+  await actionPromise;
+}
+
+async function performConfirmThenAlertAction(
+  page,
+  action,
+  expectedConfirmMessage,
+  expectedAlertMessage,
+) {
+  const confirmPromise = page.waitForEvent("dialog");
+
+  const actionPromise = action();
+
+  const confirmDialog = await confirmPromise;
+
+  expect(confirmDialog.type()).toBe("confirm");
+
+  expect(confirmDialog.message()).toBe(expectedConfirmMessage);
+
+  // Register before accepting the confirmation so the
+  // following failure alert cannot race past Playwright.
+  const alertPromise = page.waitForEvent("dialog");
+
+  await confirmDialog.accept();
+
+  const alertDialog = await alertPromise;
+
+  expect(alertDialog.type()).toBe("alert");
+
+  expect(alertDialog.message()).toBe(expectedAlertMessage);
+
+  await alertDialog.accept();
+  await actionPromise;
+}
+
 async function performConfirmAction(
   page,
   action,
@@ -101,6 +154,23 @@ test.describe("Admin story sources", () => {
       "data-expanded",
       "false",
     );
+  });
+
+  test("a non-admin is blocked and sees the not-authorized screen", async ({
+    page,
+  }) => {
+    await mockAdminApis(page);
+
+    // Seed a non-admin session on the app origin, then load the gated route so
+    // the RequireAdmin gate reads the flag and denies access.
+    await page.goto("/");
+    await page.evaluate(() =>
+      window.localStorage.setItem("wc:e2eIsAdmin", "false"),
+    );
+    await page.goto("/admin");
+
+    await expect(page.getByTestId("admin-denied")).toBeVisible();
+    await expect(page.getByTestId("admin-page")).toHaveCount(0);
   });
 
   test.describe("Admin tokenized stories and Story Sets", () => {
@@ -516,6 +586,211 @@ test.describe("Admin story sources", () => {
       expect(calls.storySetsGet).toBeGreaterThanOrEqual(1);
     });
 
+    test("tokenized-story retrieval failure keeps Admin on the available-stories view", async ({
+      page,
+    }) => {
+      const calls = await mockAdminApis(page, {
+        tokenizedStatus: 503,
+      });
+
+      await openAdmin(page);
+
+      await performDialogAction(
+        page,
+        () => page.getByTestId("admin-get-tokenized-button").click(),
+        "Failed to retrieve tokenized stories",
+      );
+
+      expect(calls.tokenizedGetAll).toBe(1);
+
+      await expect(
+        page.getByRole("heading", {
+          name: "Available Stories",
+          exact: true,
+        }),
+      ).toBeVisible();
+
+      await expect(page.getByTestId("admin-tokenized-heading")).toHaveCount(0);
+
+      await expect(page.getByTestId("admin-loading")).toHaveCount(0);
+    });
+
+    test("an empty Story Set result displays the empty state", async ({
+      page,
+    }) => {
+      const calls = await mockAdminApis(page, {
+        storySets: [],
+      });
+
+      await openAdmin(page);
+      await openTokenizedView(page);
+
+      await expect(page.getByTestId("admin-story-sets-empty")).toContainText(
+        "No Story Sets created yet.",
+      );
+
+      await expect(
+        page.locator('[data-testid^="admin-story-set-"][data-story-set-id]'),
+      ).toHaveCount(0);
+
+      await expect.poll(() => calls.storySetsGet).toBeGreaterThanOrEqual(1);
+    });
+
+    test("Story Set creation displays its pending state and prevents duplicate submission", async ({
+      page,
+    }) => {
+      const calls = await mockAdminApis(page, {
+        storySetCreateDelayMs: 1_200,
+      });
+
+      await openAdmin(page);
+      await openTokenizedView(page);
+
+      await page
+        .getByTestId("admin-tokenized-select-tokenized-story-1")
+        .check();
+
+      await page
+        .getByTestId("admin-story-set-name-input")
+        .fill("Slow Story Set");
+
+      const createButton = page.getByTestId("admin-story-set-create-button");
+
+      await performPendingDialogAction(
+        page,
+        () => createButton.click(),
+        "Story Set created and activated.",
+        async () => {
+          await expect(createButton).toBeDisabled();
+
+          await expect(createButton).toContainText("Creating...");
+
+          await expect(
+            page.getByTestId("admin-story-sets-loading"),
+          ).toBeVisible();
+        },
+      );
+
+      expect(calls.storySetsCreate).toBe(1);
+      expect(calls.storySetsActivate).toBe(1);
+
+      await expect(page.getByTestId("admin-story-sets-loading")).toHaveCount(0);
+    });
+
+    test("failed automatic activation preserves the new Story Set form and selection", async ({
+      page,
+    }) => {
+      const calls = await mockAdminApis(page, {
+        storySetActivateStatus: 503,
+        storySetActivateMessage: "Created Story Set could not be activated.",
+      });
+
+      await openAdmin(page);
+      await openTokenizedView(page);
+
+      const selectedStory = page.getByTestId(
+        "admin-tokenized-select-tokenized-story-1",
+      );
+
+      const nameInput = page.getByTestId("admin-story-set-name-input");
+
+      await selectedStory.check();
+      await nameInput.fill("Activation Failure Set");
+
+      await performDialogAction(
+        page,
+        () => page.getByTestId("admin-story-set-create-button").click(),
+        "Created Story Set could not be activated.",
+      );
+
+      expect(calls.storySetsCreate).toBe(1);
+      expect(calls.storySetsActivate).toBe(1);
+
+      expect(calls.lastStorySetActivateBody).toEqual({
+        setId: "story-set-created-1",
+      });
+
+      await expect(nameInput).toHaveValue("Activation Failure Set");
+
+      await expect(selectedStory).toBeChecked();
+
+      await expect(
+        page.getByTestId("admin-selected-story-count"),
+      ).toContainText("1 / 4");
+    });
+
+    test("failed activation leaves the existing active Story Set unchanged", async ({
+      page,
+    }) => {
+      const calls = await mockAdminApis(page, {
+        storySetActivateStatus: 500,
+        storySetActivateMessage: "Unable to activate this Story Set.",
+      });
+
+      await openAdmin(page);
+      await openTokenizedView(page);
+
+      await performDialogAction(
+        page,
+        () =>
+          page
+            .getByTestId("admin-story-set-activate-story-set-inactive")
+            .click(),
+        "Unable to activate this Story Set.",
+      );
+
+      expect(calls.storySetsActivate).toBe(1);
+
+      expect(calls.lastStorySetActivateBody).toEqual({
+        setId: "story-set-inactive",
+      });
+
+      await expect(
+        page.getByTestId("admin-story-set-story-set-active"),
+      ).toHaveAttribute("data-active", "true");
+
+      await expect(
+        page.getByTestId("admin-story-set-story-set-inactive"),
+      ).toHaveAttribute("data-active", "false");
+
+      await expect(
+        page.getByTestId("admin-story-set-activate-story-set-inactive"),
+      ).toBeVisible();
+    });
+
+    test("failed Story Set deletion keeps the card available", async ({
+      page,
+    }) => {
+      const calls = await mockAdminApis(page, {
+        storySetDeleteStatus: 500,
+        storySetDeleteMessage: "Unable to delete this Story Set.",
+      });
+
+      await openAdmin(page);
+      await openTokenizedView(page);
+
+      const storySetCard = page.getByTestId(
+        "admin-story-set-story-set-inactive",
+      );
+
+      await expect(storySetCard).toBeVisible();
+
+      await performConfirmThenAlertAction(
+        page,
+        () =>
+          page.getByTestId("admin-story-set-delete-story-set-inactive").click(),
+        "Delete this Story Set?",
+        "Unable to delete this Story Set.",
+      );
+
+      expect(calls.storySetsDelete).toBe(1);
+      expect(calls.lastStorySetDeleteId).toBe("story-set-inactive");
+
+      await expect(storySetCard).toBeVisible();
+
+      await expect(storySetCard).toHaveAttribute("data-active", "false");
+    });
+
     test("Edit Tokenized Stories navigates to the editor without a live API request", async ({
       page,
     }) => {
@@ -605,6 +880,72 @@ test.describe("Admin story sources", () => {
     await toggle.click();
 
     expect(calls.sanskritGetUnused).toBe(1);
+  });
+
+  test("LearnSanskrit retrieval failure alerts and leaves the source retryable", async ({
+    page,
+  }) => {
+    const calls = await mockAdminApis(page, {
+      learnStatus: 503,
+    });
+
+    await openAdmin(page);
+
+    const toggle = page.getByTestId("admin-learn-toggle");
+
+    await performDialogAction(
+      page,
+      () => toggle.click(),
+      "Failed to load LearnSanskrit stories",
+    );
+
+    expect(calls.learnGetAll).toBe(1);
+
+    await expect(toggle).toHaveAttribute("data-expanded", "true");
+
+    await expect(page.getByTestId("admin-learn-source")).toHaveAttribute(
+      "data-loaded",
+      "false",
+    );
+
+    await expect(
+      page.locator('[data-testid^="admin-learn-story-"]'),
+    ).toHaveCount(0);
+
+    await expect(page.getByTestId("admin-loading")).toHaveCount(0);
+  });
+
+  test("Sanskrit retrieval failure alerts and leaves the source retryable", async ({
+    page,
+  }) => {
+    const calls = await mockAdminApis(page, {
+      sanskritStatus: 503,
+    });
+
+    await openAdmin(page);
+
+    const toggle = page.getByTestId("admin-sanskrit-toggle");
+
+    await performDialogAction(
+      page,
+      () => toggle.click(),
+      "Failed to load Sanskrit stories",
+    );
+
+    expect(calls.sanskritGetUnused).toBe(1);
+
+    await expect(toggle).toHaveAttribute("data-expanded", "true");
+
+    await expect(page.getByTestId("admin-sanskrit-source")).toHaveAttribute(
+      "data-loaded",
+      "false",
+    );
+
+    await expect(
+      page.locator('[data-testid^="admin-sanskrit-story-"]'),
+    ).toHaveCount(0);
+
+    await expect(page.getByTestId("admin-loading")).toHaveCount(0);
   });
 
   test("LearnSanskrit story download sends the selected story ID", async ({
@@ -709,6 +1050,50 @@ test.describe("Admin story sources", () => {
     ]);
   });
 
+  test("failed LearnSanskrit metadata generation displays its failure alert", async ({
+    page,
+  }) => {
+    const calls = await mockAdminApis(page, {
+      learnMetadataStatus: 500,
+    });
+
+    await openAdmin(page);
+
+    await page.getByTestId("admin-learn-toggle").click();
+
+    await performDialogAction(
+      page,
+      () => page.getByTestId("admin-learn-metadata-button").click(),
+      "LearnSanskrit metadata generation failed.",
+    );
+
+    expect(calls.learnMetadata).toBe(1);
+
+    await expect(page.getByTestId("admin-loading")).toHaveCount(0);
+  });
+
+  test("failed Samskrutam metadata generation displays its failure alert", async ({
+    page,
+  }) => {
+    const calls = await mockAdminApis(page, {
+      sanskritMetadataStatus: 500,
+    });
+
+    await openAdmin(page);
+
+    await page.getByTestId("admin-sanskrit-toggle").click();
+
+    await performDialogAction(
+      page,
+      () => page.getByTestId("admin-sanskrit-metadata-button").click(),
+      "Samskrutam metadata generation failed.",
+    );
+
+    expect(calls.sanskritMetadata).toBe(1);
+
+    await expect(page.getByTestId("admin-loading")).toHaveCount(0);
+  });
+
   test("Upload requires a selected file", async ({ page }) => {
     const calls = await mockAdminApis(page);
 
@@ -757,6 +1142,50 @@ test.describe("Admin story sources", () => {
     await expect(page.getByTestId("admin-upload-filename")).toContainText(
       "No file selected",
     );
+  });
+
+  test("failed upload preserves the selected file for retry", async ({
+    page,
+  }) => {
+    const calls = await mockAdminApis(page, {
+      uploadStatus: 500,
+    });
+
+    await openAdmin(page);
+
+    const input = page.getByTestId("admin-upload-input");
+
+    await input.setInputFiles({
+      name: "retry-story.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(
+        JSON.stringify({
+          title: "Retry Story",
+        }),
+      ),
+    });
+
+    await expect(page.getByTestId("admin-upload-filename")).toContainText(
+      "retry-story.json",
+    );
+
+    await performDialogAction(
+      page,
+      () => page.getByTestId("admin-upload-button").click(),
+      "Upload failed.",
+    );
+
+    expect(calls.upload).toBe(1);
+
+    expect(calls.lastUploadContentType).toContain("multipart/form-data");
+
+    expect(calls.lastUploadBody).toContain("retry-story.json");
+
+    await expect(page.getByTestId("admin-upload-filename")).toContainText(
+      "retry-story.json",
+    );
+
+    await expect(page.getByTestId("admin-loading")).toHaveCount(0);
   });
 
   test("Refresh collapses both sources and returns to clean available-story state", async ({

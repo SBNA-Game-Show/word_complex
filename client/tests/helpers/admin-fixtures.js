@@ -271,15 +271,19 @@ export async function mockAdminApis(page, options = {}) {
 
     storySets = MOCK_ADMIN_STORY_SETS,
     storySetsStatus = 200,
+    storySetsDelayMs = 0,
 
     storySetCreateStatus = 201,
     storySetCreateMessage = "Story Set already exists.",
+    storySetCreateDelayMs = 0,
 
     storySetActivateStatus = 200,
     storySetActivateMessage = "Failed to activate Story Set.",
+    storySetActivateDelayMs = 0,
 
     storySetDeleteStatus = 200,
     storySetDeleteMessage = "Failed to delete Story Set.",
+    storySetDeleteDelayMs = 0,
   } = options;
 
   const calls = {
@@ -621,6 +625,10 @@ export async function mockAdminApis(page, options = {}) {
       if (method === "GET" && suffix === "") {
         calls.storySetsGet += 1;
 
+        if (storySetsDelayMs > 0) {
+          await delay(storySetsDelayMs);
+        }
+
         await fulfillJson(
           route,
           storySetsStatus >= 200 && storySetsStatus < 300
@@ -649,6 +657,10 @@ export async function mockAdminApis(page, options = {}) {
         }
 
         calls.lastStorySetCreateBody = body;
+
+        if (storySetCreateDelayMs > 0) {
+          await delay(storySetCreateDelayMs);
+        }
 
         if (storySetCreateStatus < 200 || storySetCreateStatus >= 300) {
           await fulfillJson(
@@ -698,6 +710,10 @@ export async function mockAdminApis(page, options = {}) {
 
         calls.lastStorySetActivateBody = body;
 
+        if (storySetActivateDelayMs > 0) {
+          await delay(storySetActivateDelayMs);
+        }
+
         if (storySetActivateStatus < 200 || storySetActivateStatus >= 300) {
           await fulfillJson(
             route,
@@ -736,6 +752,10 @@ export async function mockAdminApis(page, options = {}) {
 
         calls.storySetsDelete += 1;
         calls.lastStorySetDeleteId = setId;
+
+        if (storySetDeleteDelayMs > 0) {
+          await delay(storySetDeleteDelayMs);
+        }
 
         if (storySetDeleteStatus < 200 || storySetDeleteStatus >= 300) {
           await fulfillJson(

@@ -17,7 +17,11 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+<<<<<<< HEAD
     "firebase-admin": "^14.2.0",
+=======
+    "firebase-admin": "^13.10.0",
+>>>>>>> 86112b0da2db9d3b009be272dfc60b0bf6211f8e
     "mongodb": "^7.2.0",
     "mongodb-memory-server": "^11.1.0",
     "mongoose": "^9.6.2",

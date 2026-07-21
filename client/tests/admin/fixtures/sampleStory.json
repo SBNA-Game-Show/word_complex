@@ -1,0 +1,6 @@
+{
+  "title": "Playwright Test Story",
+  "category": "Animals",
+  "englishVersion": "This is a sample story used for Playwright integration testing.",
+  "actors": ["Lion", "Mouse"]
+}

@@ -48,6 +48,40 @@ Runs at `http://localhost:5000`
 docker-compose up
 ```
 
+## Admin access
+
+The admin surface (`/admin`, `/tokenized-editor`) is restricted to admin users.
+Admin status is a boolean in Cloud Firestore at `users/{uid}/private/account.isAdmin`
+(set it from the Firebase console). Access is enforced on two layers:
+
+- **Client** — the `RequireAdmin` gate (`client/src/components/RequireAdmin.jsx`)
+  reads `isAdmin` from Firestore and shows a "not authorized" screen otherwise.
+- **Server** — `middleware/requireAdmin.js` verifies the caller's Firebase ID
+  token and re-checks `isAdmin` in Firestore on `/api/v1/admin/*` and the tokenized
+  story write endpoint. The client attaches the token via a fetch interceptor.
+
+Setup: set `FIREBASE_SERVICE_ACCOUNT_JSON` on the server (see `server/.env.example`),
+and designate admins by setting `isAdmin: true` on their `users/{uid}/private/account`
+doc in the Firestore console.
+
+Firestore security rules are managed centrally in the Firebase console (the project
+is shared across several apps). The relevant `users/{userId}/private/**` rules already
+let an owner read their own `isAdmin` while blocking clients from ever writing it —
+only an admin (or the Admin SDK) can grant admin — so a user cannot self-promote.
+
+**Full guide (how it works + how to make someone an admin):** [docs/admin-access.md](docs/admin-access.md)
+
+## Guides
+
+- [Admin access](docs/admin-access.md) - how the admin gate works and how to make someone an admin
+- [Adding characters](docs/adding-characters.md) - how to add a new reading buddy (it's easy)
+- [Scenes and in-game characters](docs/scenes-and-game-characters.md) - how a game gets an environment + reacting buddy
+- [Art, preload, and loading](docs/art-preload-and-loading.md) - compressing/preloading art and the loading splash
+- [ZIM canvas lifecycle](docs/zim-canvas-lifecycle.md) - canvas zoom controls and clean game teardown
+- [Authentication](docs/authentication.md) - Firebase / Google sign-in and how to maintain it
+- [Hint system](docs/hint-system-guide.md)
+- [Testing & CI](docs/TESTING_AND_CI.md)
+
 ## Games
 
 ### Meaning Bridge

@@ -47,7 +47,7 @@ class Helper {
   }
 
   calculateScore(foundCount, totalCount, hintsUsed) {
-    const baseWordValue = this.game.BASE_SCORE ?? 1; // 1.00
+    const baseWordValue = this.game.BASE_SCORE ?? 10; // 1.00
     const basePenalty = this.game.BASE_PENALTY ?? 0.25; // 0.25
 
     // 1. Calculate the raw deduction (0.25 per hint)

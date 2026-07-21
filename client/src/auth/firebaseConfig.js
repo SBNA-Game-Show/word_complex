@@ -7,6 +7,7 @@ import {
   getAuth,
   setPersistence,
 } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const isE2EAuthBypass = import.meta.env.VITE_E2E_AUTH_BYPASS === "true";
 
@@ -31,6 +32,10 @@ const firebaseConfig = isE2EAuthBypass
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
+
+// Firestore holds the admin flag at users/{uid}/private/account.isAdmin. The
+// instance is created lazily; it makes no network call until the first read.
+export const db = getFirestore(app);
 
 // Keep the user signed in across refreshes. This returns a promise; firing it
 // at module load is fine because Firebase queues auth calls until it settles.
