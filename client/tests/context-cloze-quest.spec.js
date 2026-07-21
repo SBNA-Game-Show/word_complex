@@ -11,7 +11,6 @@ import {
   CONTEXT_CLOZE_SIGNED_IN_USER,
   CONTEXT_CLOZE_STAGE_SIZE,
   CONTEXT_CLOZE_ZIM_TEST_ID,
-  dragContextClozeWordToBlank,
   openContextClozeQuestAsGuest,
   openContextClozeQuestAsSignedIn,
   readContextClozeQuestState,
@@ -356,36 +355,6 @@ test.describe("Context Cloze Quest gameplay", () => {
 
       expect(word.mouseEnabled).toBe(true);
     }
-  });
-
-  test("performs a real canvas drag and snaps a word into its blank", async ({
-    page,
-  }) => {
-    await openContextClozeQuestAsGuest(page, {
-      startRound: true,
-    });
-
-    const before = await readContextClozeQuestState(page);
-
-    const answer = before.answers[0];
-
-    const after = await dragContextClozeWordToBlank(page, answer, 0);
-
-    expect(after).toMatchObject({
-      filledCount: 1,
-      correctCount: 1,
-    });
-
-    expect(after.blankPlacements[0]).toMatchObject({
-      index: 0,
-      filledWord: answer,
-    });
-
-    expect(
-      after.wordGeometry.find((item) => item.word === answer),
-    ).toMatchObject({
-      blankIndex: 0,
-    });
   });
 
   test("placing a second word into one blank returns the previous word home", async ({

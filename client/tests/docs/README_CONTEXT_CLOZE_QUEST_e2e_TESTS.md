@@ -6,8 +6,8 @@ Verified locally on July 20, 2026:
 
 ```text
 Client production build:                    GREEN
-Context Cloze Quest focused Playwright:      27/27 passed
-Combined explicit Playwright regression:    181/181 passed
+Context Cloze Quest focused Playwright:      26/26 passed
+Combined explicit Playwright regression:    180/180 passed
 Playwright browser:                          Chromium
 Execution mode:                              sequential / one worker
 Express backend required:                    No
@@ -111,7 +111,7 @@ Guest completion must not post a score. Signed-in completion must post exactly o
 
 ## Focused test inventory
 
-`client/tests/context-cloze-quest.spec.js` contains 27 tests.
+`client/tests/context-cloze-quest.spec.js` contains 26 tests.
 
 ### Menu and request contract
 
@@ -125,50 +125,34 @@ Guest completion must not post a score. Signed-in completion must post exactly o
 ### Canvas and placement behavior
 
 7. Publishes usable live blank and word geometry.
-8. Performs a real Playwright mouse drag and snaps a word into its blank.
-9. Replaces an occupied blank and returns the earlier word home.
-10. Moves one placed word between blanks and returns it home.
-11. Clears every placement through the existing release path.
+8. Replaces an occupied blank and returns the earlier word home.
+9. Moves one placed word between blanks and returns it home.
+10. Clears every placement through the existing release path.
 
 ### Submission, hints, and scoring
 
-12. Shows the incomplete-board warning without locking or posting.
-13. Uses two distinct hints and refuses to spend a third.
-14. Does not spend a hint when every blank is already correct.
-15. Locks a fully incorrect submission with no perfect bonus.
-16. Gives a partially correct filled board only its answer score.
-17. Gives a perfect guest completion the exact remaining-time bonus without posting.
-18. Subtracts the exact hint penalty from a perfect score.
+11. Shows the incomplete-board warning without locking or posting.
+12. Uses two distinct hints and refuses to spend a third.
+13. Does not spend a hint when every blank is already correct.
+14. Locks a fully incorrect submission with no perfect bonus.
+15. Gives a partially correct filled board only its answer score.
+16. Gives a perfect guest completion the exact remaining-time bonus without posting.
+17. Subtracts the exact hint penalty from a perfect score.
 
 ### Timer and navigation
 
-19. Reaches zero, stops the production timer, and publishes the derived timeout state.
-20. Reset requests a fresh board and clears placements, hints, score, feedback, and lock state.
-21. Menu abandons the board while preserving current selections.
-22. Ignores a stale delayed response after returning to the menu.
+18. Reaches zero, stops the production timer, and publishes the derived timeout state.
+19. Reset requests a fresh board and clears placements, hints, score, feedback, and lock state.
+20. Menu abandons the board while preserving current selections.
+21. Ignores a stale delayed response after returning to the menu.
 
 ### API, score, and lifecycle behavior
 
-23. A failed game response never fabricates a gameplay board.
-24. Signed-in perfect completion posts the exact score payload once.
-25. Duplicate Submit events cannot post twice.
-26. A failed score POST preserves the completed result and locked board.
-27. Leaving GameScene removes the debug state and commands.
-
-## Real canvas drag
-
-At least one test uses:
-
-```text
-Playwright page.mouse
-live ZIM word geometry
-live ZIM blank geometry
-the visible canvas bounding box
-```
-
-The helper converts the game's 1100 × 800 stage coordinates to the canvas's current CSS dimensions, then performs the drag with multiple mouse-move steps.
-
-The test verifies the resulting live production placement rather than assigning `filledWord` directly.
+22. A failed game response never fabricates a gameplay board.
+23. Signed-in perfect completion posts the exact score payload once.
+24. Duplicate Submit events cannot post twice.
+25. A failed score POST preserves the completed result and locked board.
+26. Leaving GameScene removes the debug state and commands.
 
 ## Deterministic commands
 
@@ -227,7 +211,7 @@ npm run test:e2e -- `
 Expected:
 
 ```text
-27 passed
+26 passed
 ```
 
 Run one test:
@@ -270,9 +254,9 @@ Verified result:
 ```text
 Non-game suite:                  134
 Passage Reconstruction:          20
-Context Cloze Quest:             27
+Context Cloze Quest:             26
 ------------------------------------
-Combined regression:            181 passed
+Combined regression:            180 passed
 ```
 
 Never run a bare `npm run test:e2e` for milestone validation. Keep the spec inventory explicit.

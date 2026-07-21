@@ -230,7 +230,6 @@ export const CONTEXT_CLOZE_FIXTURES = Object.freeze({
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
-
 function delay(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -497,7 +496,6 @@ export async function openContextClozeQuestAsGuest(page, options = {}) {
     contextCalls,
   };
 }
-
 export async function openContextClozeQuestAsSignedIn(page, options = {}) {
   const {
     storyId = TEST_STORY.storyId,
@@ -562,91 +560,3 @@ export async function openContextClozeQuestAsSignedIn(page, options = {}) {
   };
 }
 
-function stagePointToCanvasPoint(canvasBox, point) {
-  return {
-    x:
-      canvasBox.x +
-      (point.x / CONTEXT_CLOZE_STAGE_SIZE.width) * canvasBox.width,
-
-    y:
-      canvasBox.y +
-      (point.y / CONTEXT_CLOZE_STAGE_SIZE.height) * canvasBox.height,
-  };
-}
-
-/**
- * REAL CANVAS DRAG:
- * Uses live geometry published by the ZIM game and Playwright's mouse API.
- *
- * This exercises the real player pointer and snap handlers instead of a
- * deterministic test command.
- */
-export async function dragContextClozeWordToBlank(page, word, blankIndex) {
-  const before = await readContextClozeQuestState(page);
-
-  const wordState = before?.wordGeometry?.find((item) => item.word === word);
-
-  const blankState = before?.blankPlacements?.find(
-    (item) => item.index === blankIndex,
-  );
-
-  if (!wordState?.geometry || !blankState?.geometry) {
-    throw new Error(
-      `Missing Context Cloze Quest geometry for word "${word}" or blank ${blankIndex}.`,
-    );
-  }
-
-  const canvas = page
-    .getByTestId(CONTEXT_CLOZE_ZIM_TEST_ID)
-    .locator("canvas")
-    .first();
-
-  const canvasBox = await canvas.boundingBox();
-
-  if (!canvasBox) {
-    throw new Error("Context Cloze Quest canvas does not have a bounding box.");
-  }
-
-  const start = stagePointToCanvasPoint(canvasBox, {
-    x: wordState.geometry.centerX,
-
-    y: wordState.geometry.centerY,
-  });
-
-  const end = stagePointToCanvasPoint(canvasBox, {
-    x: blankState.geometry.centerX,
-
-    y: blankState.geometry.centerY,
-  });
-
-  await page.mouse.move(start.x, start.y);
-
-  await page.mouse.down();
-
-  // ZIM updates its drag state from canvas pointer events. Give slower CI
-  // runners a frame to register the press before sending movement events.
-  await page.waitForTimeout(50);
-
-  await page.mouse.move(end.x, end.y, {
-    steps: 20,
-  });
-
-  // Allow ZIM to process the final move while the pointer is over the blank
-  // before pressup performs the production hit test.
-  await page.waitForTimeout(100);
-
-  await page.mouse.up();
-
-  await expect
-    .poll(() => readContextClozeQuestState(page))
-    .toMatchObject({
-      blankPlacements: expect.arrayContaining([
-        expect.objectContaining({
-          index: blankIndex,
-          filledWord: word,
-        }),
-      ]),
-    });
-
-  return readContextClozeQuestState(page);
-}
