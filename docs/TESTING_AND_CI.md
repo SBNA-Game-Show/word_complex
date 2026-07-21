@@ -8,14 +8,14 @@ The current GitHub Actions browser workflow is:
 .github/workflows/playwright-client-e2e.yml
 ```
 
-It is the explicit verified **181-test client Playwright** quality gate:
+It is the explicit verified **180-test client Playwright** quality gate:
 
 ```text
 Non-game suite:                  134
 Passage Reconstruction:          20
-Context Cloze Quest:             27
+Context Cloze Quest:             26
 ------------------------------------
-Complete client E2E gate:       181
+Complete client E2E gate:       180
 ```
 
 Server-test automation remains outside this Playwright closeout scope.
@@ -64,17 +64,17 @@ GitHub Actions runs Chromium headlessly. Headed mode, Playwright Inspector, and 
 | Spec | Tests | Primary scope |
 |---|---:|---|
 | `passage-reconstruction.spec.js` | 20 | Canvas rounds, drag/order behavior, hints, scoring, timer, API, results, reset, and cleanup |
-| `context-cloze-quest.spec.js` | 27 | Menu, languages, difficulties, real drag, placement, hints, scoring, timer, API, score posting, reset, stale requests, and cleanup |
-| **Gameplay total** | **47** | **Verified gameplay portion of CI** |
+| `context-cloze-quest.spec.js` | 26 | Menu, languages, difficulties, placement, hints, scoring, timer, API, score posting, reset, stale requests, and cleanup |
+| **Gameplay total** | **46** | **Verified gameplay portion of CI** |
 
 ### Complete verified client E2E gate
 
 ```text
 Non-game:                  134
 Passage Reconstruction:    20
-Context Cloze Quest:       27
+Context Cloze Quest:       26
 --------------------------------
-Total:                     181
+Total:                     180
 ```
 
 ## Local release validation
@@ -147,7 +147,7 @@ npm run test:e2e -- `
 Expected:
 
 ```text
-Context Cloze Quest: 27 passed
+Context Cloze Quest: 26 passed
 ```
 
 ### Run the complete client CI suite
@@ -169,7 +169,7 @@ npm run test:e2e -- `
 Expected:
 
 ```text
-Complete client Playwright suite: 181 passed
+Complete client Playwright suite: 180 passed
 ```
 
 Do not use bare:
@@ -254,7 +254,7 @@ client/tests/docs/README_PASSAGE_RECONSTRUCTION_e2e_TESTS.md
 Verified:
 
 ```text
-27/27 focused
+26/26 focused
 ```
 
 Coverage includes:
@@ -265,7 +265,6 @@ Coverage includes:
 - multiple word types and final-selection protection;
 - selected-story and query serialization;
 - live word and blank geometry;
-- real canvas drag;
 - occupied-blank replacement and word return;
 - incomplete, perfect, partial, and incorrect submissions;
 - hint limits, no-spend cases, and penalties;
@@ -334,15 +333,6 @@ npm run test:e2e:headed -- `
 
 Headed mode is intended for local inspection. CI remains headless.
 
-### Playwright Inspector
-
-```powershell
-npm run test:e2e -- `
-  tests/context-cloze-quest.spec.js `
-  --grep "real canvas drag" `
-  --debug
-```
-
 ### Playwright UI mode
 
 ```powershell
@@ -407,7 +397,7 @@ Never add secrets, `.env` files, browser storage-state files, database exports, 
 Require the complete client E2E check:
 
 ```text
-Build and run 181 client E2E tests
+Build and run 180 client E2E tests
 ```
 
 Do not configure a guessed check name. Let the workflow run successfully once, then select the exact visible check in branch-protection settings.
@@ -444,8 +434,8 @@ A pull request containing the two completed gameplay milestones should include:
 ```text
 Non-game Playwright result:                 134/134 passed
 Passage Reconstruction focused result:        20/20 passed
-Context Cloze Quest focused result:            27/27 passed
-Complete client Playwright CI result:         181/181 passed
+Context Cloze Quest focused result:            26/26 passed
+Complete client Playwright CI result:         180/180 passed
 Client production build:                     GREEN
 git diff --check:                             clean
 ```
