@@ -34,10 +34,9 @@ app.use("/api/v1/leaderboard", leaderboard);
 app.use("/api/v1/stories", stories);
 app.use("/api/v1/progress", progress);
 
-// Admin-only routes.
-// TEMP (2026-07-08): requireAdmin check disabled until the auth system is decided —
-// re-enable by restoring:  app.use("/api/v1/admin/storySets", requireAdmin, storySets);
-app.use("/api/v1/admin/storySets", storySets);
+// Admin-only routes. requireAdmin verifies the caller's Firebase ID token and
+// their isAdmin flag in Firestore (see middleware/requireAdmin.js).
+app.use("/api/v1/admin/storySets", requireAdmin, storySets);
 
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, "./views/404.html"));

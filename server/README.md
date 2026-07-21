@@ -28,7 +28,7 @@ server/
 │   ├── retrieveTokenizedStoryById.js   # retrieveStoryById(), retrieveRandomStory()
 │   └── retrieveAllTokenizedStories.js
 ├── middleware/                    # Shared middleware
-│   ├── requireAdmin.js            # Admin protection (defined but not yet used)
+│   ├── requireAdmin.js            # Admin gate: verifies Firebase token + Firestore isAdmin
 │   └── ...
 ├── views/                         # HTML error pages (401, 403, 404)
 ├── explore-stories.js             # Dev script — prints raw MongoDB story structure
@@ -112,7 +112,14 @@ Test files:
 ## Notes
 
 - `ATLAS_URI` must be set in `server/.env`
+- `FIREBASE_SERVICE_ACCOUNT_JSON` must be set for admin routes — the full JSON of a
+  Firebase service-account key (Firebase console → Project settings → Service
+  accounts → Generate new private key), as a single-line string. See `.env.example`.
 - MongoDB Atlas IP whitelist must include your current network IP
-- `requireAdmin` middleware exists but is not attached to any route yet
+- `requireAdmin` (`middleware/requireAdmin.js`) is active on the admin routes
+  (`/api/v1/admin/*` and `PUT /api/v1/stories/tokenized/:id`). It verifies the
+  caller's Firebase ID token and reads their admin flag from Firestore at
+  `users/{uid}/private/account.isAdmin`. The matching Firestore security rules
+  (owner-read, no client write of `isAdmin`) are managed in the Firebase console.
 - Round and score data is stored in-memory (resets on server restart) — not persisted to MongoDB yet
 - `explore-stories.js` is a dev-only script to inspect the raw MongoDB story structure: `node explore-stories.js`
