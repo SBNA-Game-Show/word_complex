@@ -39,7 +39,7 @@ const { getFirestore: getFirestoreInstance } = require("firebase-admin/firestore
 // --- config knobs (all provisional; rename freely) ----------------------
 
 // Env var holding the service-account JSON, as a single-line JSON string.
-const SERVICE_ACCOUNT_ENV = "FIREBASE_SERVICE_ACCOUNT_KEY";
+const SERVICE_ACCOUNT_ENV = "FIREBASE_SERVICE_ACCOUNT_JSON";
 
 // Top-level doc under `leaderboards`. Sibling of bp26-Game*.
 const ROOT_COLLECTION = "leaderboards";

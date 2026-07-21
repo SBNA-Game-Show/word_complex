@@ -72,10 +72,10 @@ Word Hunt logs one entry per completed instance (Noun / Verb / Adjective).
    **Service accounts** → **Generate new private key**.
 3. Put the JSON as a **single line** in `server/.env`, single-quoted:
    ```
-   FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account", ... }'
+   FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account", ... }'
    ```
    (Minify with `node -e "console.log(JSON.stringify(require('./key.json')))"`.)
-4. **Deploy:** add the same `FIREBASE_SERVICE_ACCOUNT_KEY` to the Render/Vercel
+4. **Deploy:** add the same `FIREBASE_SERVICE_ACCOUNT_JSON` to the Render/Vercel
    backend environment — it's not in git.
 
 The service-account key is a full-admin secret. Never commit it, never put it in
