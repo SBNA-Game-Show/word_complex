@@ -348,7 +348,7 @@ test.describe("Word Hunt How to Play", () => {
 
     await expect(
       page.getByText(
-        "Using hints reduces your final score by 25% per hint used.",
+        "Using hints reduces your score by 25% for every hint used.",
         { exact: true },
       ),
     ).toBeVisible();
