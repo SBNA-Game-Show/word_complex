@@ -14,6 +14,9 @@ const progress = require("./progress/routes/progressRoutes");
 
 // Middleware
 const requireAdmin = require("./middleware/requireAdmin");
+const {
+  getActiveSet,
+} = require("./storySets/controller/publicStorySetsController");
 
 const app = express();
 
@@ -33,6 +36,10 @@ app.use("/api/v1/meaningBridge", meaningBridge);
 app.use("/api/v1/leaderboard", leaderboard);
 app.use("/api/v1/stories", stories);
 app.use("/api/v1/progress", progress);
+
+// Player-facing, read-only Story Set state used by Word Hunt. This intentionally
+// exposes only the active ID; listing and all mutations remain admin-only.
+app.get("/api/v1/storySets/active", getActiveSet);
 
 // Admin-only routes. requireAdmin verifies the caller's Firebase ID token and
 // their isAdmin flag in Firestore (see middleware/requireAdmin.js).

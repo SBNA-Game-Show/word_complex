@@ -4,10 +4,10 @@ import {
   writeStoryInformation,
   writeGameInformation,
   getPlayerInfo,
+  getActiveStorySetId,
 } from "../../../services/wordHuntService";
 import GameManager from "./GameManager";
 
-import { getStorySets } from "../../../services/admin/StorySetService";
 import { StoryInfo } from "../DTO/StoryInfo";
 /**
  * The following class will be responsible for connecting with services to make api calls to retrieve data from database
@@ -167,24 +167,7 @@ class GameServiceManager {
   }
   async extractGameId() {
     try {
-      const response = await getStorySets();
-
-      if (!response || !Array.isArray(response.data)) {
-        throw new Error("Invalid response from getStorySets()");
-      }
-
-      const activeStorySet = response.data.find(
-        (storySet) => storySet.isActive,
-      );
-
-      if (!activeStorySet) {
-        throw new Error("No active game found");
-      }
-
-      this.game.currentGameId = activeStorySet._id;
-
-      // console.log("Active Game:", activeStorySet);
-      // console.log("Game Id:", this.game.currentGameId);
+      this.game.currentGameId = await getActiveStorySetId();
     } catch (error) {
       throw new Error(error.message);
     }

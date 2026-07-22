@@ -1,5 +1,23 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
+export const getActiveStorySetId = async () => {
+  const response = await fetch(`${API_BASE}/storySets/active`);
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      result?.message || `Failed to load active story set: ${response.status}`,
+    );
+  }
+
+  const setId = result?.data?.setId;
+  if (!setId) {
+    throw new Error("Active story set response did not include setId");
+  }
+
+  return setId;
+};
+
 // PASSAGE END POINT CONNECTION
 export const retrieveEnglishVersion = async (storyId) => {
   try {
@@ -128,6 +146,7 @@ export const getPlayerInfo = async (gameId, storyId, playerName) => {
 };
 
 export default {
+  getActiveStorySetId,
   retrieveEnglishVersion,
   retrieveSanskritVersion,
   writeStoryInformation,

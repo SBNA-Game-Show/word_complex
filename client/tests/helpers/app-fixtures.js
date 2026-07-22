@@ -268,6 +268,7 @@ function delay(ms) {
 export async function mockSharedPlatformApis(page, options = {}) {
   const {
     activeStories = MOCK_ACTIVE_STORIES,
+    activeStorySetId = "e2e-active-story-set",
     storiesStatus = 200,
     storiesDelayMs = 0,
     progressConfig = MOCK_PROGRESS_CONFIG,
@@ -283,6 +284,7 @@ export async function mockSharedPlatformApis(page, options = {}) {
 
   const calls = {
     storiesActive: 0,
+    storySetActive: 0,
     progressConfig: 0,
     progressVisit: 0,
     progressBuy: 0,
@@ -309,6 +311,15 @@ export async function mockSharedPlatformApis(page, options = {}) {
           },
       storiesStatus,
     );
+  });
+
+  await page.route("**/api/v1/storySets/active", async (route) => {
+    calls.storySetActive += 1;
+
+    await fulfillJson(route, {
+      success: true,
+      data: { setId: activeStorySetId },
+    });
   });
 
   await page.route("**/api/v1/progress/config", async (route) => {
