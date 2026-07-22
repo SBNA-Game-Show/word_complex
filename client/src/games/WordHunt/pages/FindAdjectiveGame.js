@@ -231,6 +231,8 @@ class FindAdjectiveGame {
           //   this.foundWords.length,
           //   this.game.adjGameKey,
           // );
+          this.game.TOTAL_SCORE = 0;
+          this.game.EARNED_COINS = 0;
         }
 
         emit("hint", { text: this.timeUpKey });
@@ -359,8 +361,6 @@ class FindAdjectiveGame {
         this.foundWords.length,
         this.game.adjGameKey,
       );
-      this.game.TOTAL_SCORE = 0;
-      this.game.EARNED_COINS = 0;
       // sending data to backend irrespective user [guest, signed in user]
       // const res = await this.manager.writeGameInformation(
       //   completionTime,
@@ -368,6 +368,8 @@ class FindAdjectiveGame {
       //   this.foundWords.length,
       //   this.game.adjGameKey,
       // );
+      this.game.TOTAL_SCORE = 0;
+      this.game.EARNED_COINS = 0;
       this.game.hasGameStarted = false;
       emit("complete");
     }

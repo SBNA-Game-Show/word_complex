@@ -51,3 +51,50 @@ A few bits of this file are more involved than the rest, so here's why they exis
 ## One naming thing to know
 
 The game's public id, the one the launcher uses, is `sentence-builder` (see the `meta` export at the bottom). The internal ZIM id is `zim-sentence-game`. They're different for historical reasons. If you're wiring this game up somewhere, `sentence-builder` is the one you want.
+
+## Playwright E2E testing
+
+Passage Reconstruction has a deterministic Playwright gameplay suite:
+
+```text
+client/tests/passage-reconstruction.spec.js
+
+Its supporting fixtures live at:
+
+client/tests/helpers/passage-reconstruction-fixtures.js
+
+Because the game is rendered entirely inside a ZIM canvas, normal DOM selectors
+cannot reliably inspect its language controls, phrase clouds, numbered slots,
+feedback, timer, or results screens.
+
+index.jsx therefore exposes a development/E2E-only bridge:
+
+window.__passageReconstructionZimDebug
+window.__passageReconstructionZimTestHooks
+
+The bridge is enabled only during development, when VITE_E2E=true, or when the
+local Passage Reconstruction E2E flag is explicitly enabled. It does not replace
+the game's scoring, checking, hint, timer, results, or score-submission logic.
+
+The test commands arrange the live ZIM objects and invoke the same production
+functions used by the game. One focused test also performs a real Playwright
+mouse drag against the rendered canvas and verifies the production snap logic.
+
+The bridge publishes:
+
+current screen and message
+language and round state
+score, checks, and attempts
+hint usage and hint text
+timer state
+phrase-cloud and slot geometry
+placed phrases
+final result summary
+
+Both bridge globals are removed when the game unmounts so later scenes cannot
+observe stale Passage Reconstruction state.
+
+Full testing documentation:
+
+client/tests/docs/README_PASSAGE_RECONSTRUCTION_e2e_TESTS.md
+```

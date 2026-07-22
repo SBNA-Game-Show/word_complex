@@ -136,6 +136,39 @@ describe("GET /api/v1/admin/storySets", () => {
   });
 });
 
+describe("GET /api/v1/storySets/active", () => {
+  it("returns only the active Story Set ID without admin authentication", async () => {
+    seedSet({ _id: "set-active", storyIds: ["s1", "s2"], active: true });
+
+    const res = await request(app).get("/api/v1/storySets/active").expect(200);
+
+    expect(res.body).toEqual({
+      success: true,
+      data: { setId: "set-active" },
+    });
+  });
+
+  it("returns JSON 404 when no Story Set is active", async () => {
+    const res = await request(app).get("/api/v1/storySets/active").expect(404);
+
+    expect(res.body).toEqual({
+      success: false,
+      message: "No active story set found",
+    });
+  });
+
+  it("returns JSON 500 when the active pointer cannot be read", async () => {
+    connectDb.mockRejectedValue(new Error("atlas down"));
+
+    const res = await request(app).get("/api/v1/storySets/active").expect(500);
+
+    expect(res.body).toEqual({
+      success: false,
+      message: "atlas down",
+    });
+  });
+});
+
 describe("POST /api/v1/admin/storySets", () => {
   it("creates a set from valid input", async () => {
     const res = await request(app)

@@ -3,6 +3,8 @@ import {
   MOCK_PROGRESS_VISIT,
   mockSharedPlatformApis,
   openAppAsGuest,
+  openGameScene,
+  returnToLauncherFromScene,
 } from "./helpers/app-fixtures.js";
 
 async function openDailyRewards(page) {
@@ -351,5 +353,36 @@ test.describe("Character selection and purchasing", () => {
     await page.getByTestId("character-select-back-button").click();
 
     await expect(page.getByTestId("launcher-page")).toBeVisible();
+  });
+
+  test("selected character appears in the shared game scene", async ({
+    page,
+  }) => {
+    await mockSharedPlatformApis(page);
+    await openAppAsGuest(page);
+    await openCharacterSelect(page);
+
+    await page.getByTestId("character-card-sprout").click();
+
+    await expect(page.getByTestId("character-card-sprout")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await page.getByTestId("character-select-back-button").click();
+
+    await expect(page.getByTestId("launcher-page")).toBeVisible();
+
+    await openGameScene(page, {
+      gameId: "sentence-builder",
+      zimTestId: "zim-sentence-game",
+    });
+
+    await expect(page.locator(".character-helper-img")).toHaveAttribute(
+      "src",
+      /\/characters\/sprout\.webp$/,
+    );
+
+    await returnToLauncherFromScene(page, "sentence-builder");
   });
 });
