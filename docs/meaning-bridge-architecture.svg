@@ -1,0 +1,169 @@
+<svg viewBox="0 0 1500 960" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1500" height="960" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="750" y="46" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">Meaning Bridge — How It Connects to Word Complex</text>
+  <text x="750" y="74" text-anchor="middle" font-size="14" fill="#64748b">game id: meaning-bridge · card 02 · ZIM canvas game inside the React scene shell</text>
+
+  <!-- ================= CLIENT REGION ================= -->
+  <rect x="30" y="100" width="820" height="800" rx="16" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="55" y="132" font-size="14" font-weight="700" fill="#1d4ed8" letter-spacing="1">BROWSER — REACT CLIENT (Vite · localhost:5173)</text>
+
+  <!-- Row 1: player -> login -> menu -->
+  <rect x="70" y="150" width="120" height="60" rx="10" fill="#ffffff" stroke="#60a5fa" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="130" y="186" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Player</text>
+
+  <line x1="190" y1="180" x2="226" y2="180" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="230" y="150" width="250" height="60" rx="10" fill="#ffffff" stroke="#60a5fa" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="355" y="174" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Login — Firebase Auth</text>
+  <text x="355" y="194" text-anchor="middle" font-size="11" fill="#475569">Google · Email · Guest</text>
+
+  <line x1="480" y1="180" x2="516" y2="180" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="520" y="150" width="290" height="60" rx="10" fill="#ffffff" stroke="#60a5fa" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="665" y="174" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">Main Menu — game cards</text>
+  <text x="665" y="194" text-anchor="middle" font-size="11" fill="#475569">player picks card 02 · Meaning Bridge</text>
+
+  <!-- Menu -> App.jsx -->
+  <path d="M 665 210 V 240 H 440 V 261" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="300" y="265" width="280" height="55" rx="10" fill="#ffffff" stroke="#60a5fa" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="440" y="287" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">App.jsx — routing</text>
+  <text x="440" y="306" text-anchor="middle" font-size="11" fill="#475569">getSceneConfig("meaning-bridge") → scene shell</text>
+
+  <line x1="440" y1="320" x2="440" y2="356" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- GameScene container -->
+  <rect x="60" y="360" width="760" height="380" rx="14" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="80" y="388" font-size="13" font-weight="700" fill="#1d4ed8">GameScene — scene shell (sceneConfig.js entry)</text>
+
+  <!-- sceneBus curve -->
+  <path d="M 400 430 C 430 402, 655 402, 686 426" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="545" y="412" text-anchor="middle" font-size="11" fill="#475569">sceneBus: emit("correct" / "wrong" / "hint")</text>
+
+  <!-- Game box -->
+  <rect x="90" y="430" width="400" height="260" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2" filter="url(#shadow)"/>
+  <text x="290" y="458" text-anchor="middle" font-size="14" font-weight="700" fill="#1e3a8a">MeaningBridge — ZIM canvas game</text>
+  <text x="110" y="502" font-size="12" fill="#1e293b">• pick: Synonym / Definition / Opposite Bridge</text>
+  <text x="110" y="528" font-size="12" fill="#1e293b">• Practice or Timed (2:00 / 5:00 / 10:00 / custom)</text>
+  <text x="110" y="554" font-size="12" fill="#1e293b">• match word pairs · count hints &amp; misses</text>
+  <text x="110" y="580" font-size="12" fill="#1e293b">• round-complete + final-score screens</text>
+  <text x="110" y="606" font-size="12" fill="#1e293b">• exit confirmation (button / Esc)</text>
+  <text x="290" y="668" text-anchor="middle" font-size="11" font-style="italic" fill="#3730a3">client/src/games/MeaningBridge/index.jsx</text>
+
+  <!-- Buddy box -->
+  <rect x="580" y="430" width="210" height="110" rx="12" fill="#fdf2f8" stroke="#db2777" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="685" y="458" text-anchor="middle" font-size="13" font-weight="700" fill="#9d174d">CharacterHelper</text>
+  <text x="685" y="480" text-anchor="middle" font-size="11" fill="#475569">reading buddy reacts &amp;</text>
+  <text x="685" y="498" text-anchor="middle" font-size="11" fill="#475569">speaks hints in a bubble</text>
+
+  <line x1="685" y1="575" x2="685" y2="544" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+  <rect x="580" y="575" width="210" height="60" rx="10" fill="#ffffff" stroke="#f9a8d4" stroke-width="1.5"/>
+  <text x="685" y="598" text-anchor="middle" font-size="12" font-weight="700" fill="#9d174d">speechLines.js</text>
+  <text x="685" y="618" text-anchor="middle" font-size="11" fill="#475569">cheer / retry / hint word pools</text>
+
+  <text x="80" y="722" font-size="11" fill="#64748b">background: /scenes/meaning-bridge.webp · zoom pill via useCanvasZoom · buddy = chosen character (default tomely)</text>
+
+  <!-- Game -> API client -->
+  <line x1="290" y1="690" x2="290" y2="766" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- API client box -->
+  <rect x="90" y="770" width="420" height="90" rx="12" fill="#ede9fe" stroke="#7c3aed" stroke-width="2" filter="url(#shadow)"/>
+  <text x="300" y="796" text-anchor="middle" font-size="13" font-weight="700" fill="#4c1d95">meaningBridgeApi.js — the bridge to the server</text>
+  <text x="300" y="818" text-anchor="middle" font-size="11" fill="#475569">fetchMeaningBridgeRound() · submitMeaningBridgeScore()</text>
+  <text x="300" y="838" text-anchor="middle" font-size="11" fill="#475569">saveMeaningBridgeBestScore() · 10s timeout · friendly errors</text>
+
+  <!-- ================= CROSS ARROWS ================= -->
+  <!-- response (dashed) -->
+  <path d="M 925 254 H 856 V 750 H 494" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowGray)"/>
+  <text x="660" y="742" text-anchor="middle" font-size="11" fill="#64748b">returns: round + roundId · saved result summary</text>
+
+  <!-- POST /generate -->
+  <path d="M 510 790 H 868 V 272 H 921" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="545" y="766" width="290" height="19" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="690" y="780" text-anchor="middle" font-size="11" fill="#334155">POST /generate  {mode, pairCount, storyId}</text>
+
+  <!-- POST /submit -->
+  <path d="M 510 835 H 880 V 290 H 921" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="545" y="842" width="290" height="19" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="690" y="856" text-anchor="middle" font-size="11" fill="#334155">POST /submit  {roundId, matches, time, hints}</text>
+
+  <!-- ================= SERVER REGION ================= -->
+  <rect x="890" y="100" width="580" height="470" rx="16" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  <text x="915" y="132" font-size="14" font-weight="700" fill="#15803d" letter-spacing="1">SERVER — EXPRESS API (localhost:5000)</text>
+
+  <rect x="930" y="150" width="500" height="50" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1180" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">app.js</text>
+  <text x="1180" y="190" text-anchor="middle" font-size="11" fill="#475569">mounts /api/v1/meaningBridge</text>
+
+  <line x1="1180" y1="200" x2="1180" y2="246" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="930" y="250" width="500" height="50" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1180" y="272" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">routes/meaningbridgeroutes.js</text>
+  <text x="1180" y="290" text-anchor="middle" font-size="11" fill="#475569">/generate · /submit endpoints</text>
+
+  <line x1="1180" y1="300" x2="1180" y2="336" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="930" y="340" width="500" height="50" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1180" y="362" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">controller/meaningbridgecontroller.js</text>
+  <text x="1180" y="380" text-anchor="middle" font-size="11" fill="#475569">validates requests, calls the services</text>
+
+  <line x1="1050" y1="390" x2="1050" y2="426" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1310" y1="390" x2="1310" y2="426" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="930" y="430" width="235" height="100" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1047" y="454" text-anchor="middle" font-size="12.5" font-weight="700" fill="#14532d">service/generatepuzzle.js</text>
+  <text x="1047" y="476" text-anchor="middle" font-size="11" fill="#475569">builds word pairs from the</text>
+  <text x="1047" y="493" text-anchor="middle" font-size="11" fill="#475569">selected story's tokenized</text>
+  <text x="1047" y="510" text-anchor="middle" font-size="11" fill="#475569">data · returns roundId</text>
+
+  <rect x="1195" y="430" width="235" height="100" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1312" y="454" text-anchor="middle" font-size="12.5" font-weight="700" fill="#14532d">service/</text>
+  <text x="1312" y="470" text-anchor="middle" font-size="12.5" font-weight="700" fill="#14532d">meaningBridgeScoreService.js</text>
+  <text x="1312" y="493" text-anchor="middle" font-size="11" fill="#475569">scores the round · keeps best</text>
+  <text x="1312" y="510" text-anchor="middle" font-size="11" fill="#475569">attempt · feeds leaderboard</text>
+
+  <!-- services -> DB -->
+  <line x1="1047" y1="530" x2="1047" y2="666" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1055" y="590" font-size="10.5" fill="#64748b">raw-data-connect/</text>
+  <text x="1055" y="605" font-size="10.5" fill="#64748b">retrieveTokenizedStoryById</text>
+  <line x1="1312" y1="530" x2="1312" y2="666" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ================= DB REGION ================= -->
+  <rect x="890" y="620" width="580" height="230" rx="16" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="915" y="650" font-size="14" font-weight="700" fill="#b45309" letter-spacing="1">MONGODB ATLAS</text>
+
+  <rect x="930" y="670" width="235" height="140" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1047" y="698" text-anchor="middle" font-size="13" font-weight="700" fill="#78350f">stories</text>
+  <text x="1047" y="722" text-anchor="middle" font-size="11" fill="#475569">tokenized_english_version</text>
+  <text x="1047" y="740" text-anchor="middle" font-size="11" fill="#475569">words with synonyms,</text>
+  <text x="1047" y="758" text-anchor="middle" font-size="11" fill="#475569">antonyms &amp; definitions</text>
+  <text x="1047" y="784" text-anchor="middle" font-size="10.5" font-style="italic" fill="#92400e">uploaded via the Admin Portal</text>
+
+  <rect x="1195" y="670" width="235" height="140" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1312" y="698" text-anchor="middle" font-size="13" font-weight="700" fill="#78350f">meaning-bridge</text>
+  <text x="1312" y="722" text-anchor="middle" font-size="11" fill="#475569">one best-score document</text>
+  <text x="1312" y="740" text-anchor="middle" font-size="11" fill="#475569">per player (uuid) — only the</text>
+  <text x="1312" y="758" text-anchor="middle" font-size="11" fill="#475569">highest attempt is kept</text>
+  <text x="1312" y="784" text-anchor="middle" font-size="10.5" font-style="italic" fill="#92400e">read by the leaderboard</text>
+
+  <!-- Legend -->
+  <line x1="40" y1="928" x2="80" y2="928" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="90" y="932" font-size="11" fill="#64748b">request / flow</text>
+  <line x1="200" y1="928" x2="240" y2="928" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowGray)"/>
+  <text x="250" y="932" font-size="11" fill="#64748b">response / data</text>
+  <text x="1470" y="932" text-anchor="end" font-size="11" fill="#94a3b8">docs/meaning-bridge-architecture.svg</text>
+</svg>
