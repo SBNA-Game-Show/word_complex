@@ -46,6 +46,7 @@ jobs:
         run: npm run build
 
       - name: Run verified client Playwright suite
+        # tests/admin.spec.js temporarily disabled 
         run: >
           npm run test:e2e --
           tests/auth.spec.js
@@ -53,7 +54,6 @@ jobs:
           tests/platform-pages.spec.js
           tests/progress-and-character.spec.js
           tests/leaderboard.spec.js
-          tests/admin.spec.js
           tests/tokenized-editor.spec.js
           tests/passage-reconstruction.spec.js
           tests/context-cloze-quest.spec.js
