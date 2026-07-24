@@ -2,7 +2,7 @@
 
 ## Status
 
-Verified locally on July 23, 2026:
+Verified locally on July 24, 2026:
 
 ```text
 Client production build:                    GREEN
@@ -10,7 +10,8 @@ Non-game Playwright tests:                   134/134 passed
 Passage Reconstruction focused Playwright:    20/20 passed
 Context Cloze Quest focused Playwright:        26/26 passed
 Meaning Bridge focused Playwright:             27/27 passed
-Complete explicit Playwright regression:     207/207 passed
+Word Hunt focused Playwright:                   24/24 passed
+Complete explicit Playwright regression:     231/231 passed
 Playwright browser:                           Chromium
 Execution mode:                               sequential / one worker
 Express backend required:                     No
@@ -26,12 +27,12 @@ NON-GAME-E2E:                         COMPLETE / GREEN
 GAME-E2E-01 — Passage Reconstruction: COMPLETE / GREEN
 GAME-E2E-02 — Context Cloze Quest:     COMPLETE / GREEN
 GAME-E2E-03 — Meaning Bridge:          COMPLETE / GREEN
-GAME-E2E-04 — Word Hunt:               NEXT
+GAME-E2E-04 — Word Hunt:               COMPLETE / GREEN
 ```
 
 The verified client suite covers authentication, the player-facing platform shell,
 progress features, leaderboards, Admin, Story Set management, the Tokenized Story
-Editor, and three completed ZIMJS canvas games. External APIs are intercepted with
+Editor, and four completed ZIMJS canvas games. External APIs are intercepted with
 deterministic Playwright route mocks while the real frontend services, request
 serialization, React navigation, GameScene mounting, ZIM rendering, and game
 handlers remain active.
@@ -58,7 +59,8 @@ handlers remain active.
 | `passage-reconstruction.spec.js`     |    20 | Canvas rounds, drag/order behavior, hints, scoring, timer, API, results, reset, stale responses, and cleanup |
 | `context-cloze-quest.spec.js`        |    26 | Menu, languages, placement, hints, scoring, timer, API, score posting, reset, stale responses, and cleanup  |
 | `meaning-bridge.spec.js`             |    27 | Modes, real canvas matches, progression, hints, penalties, scoring, persistence, leaderboards, keyboard, timer, exit, and cleanup |
-| **Gameplay total**                   | **73** | **Three completed ZIMJS canvas-game milestones**                                                        |
+| `word-hunt.spec.js`                  |    24 | Landing, language, live canvas words and controls, POS matching, hints, timer, queue, scoring, results, persistence, navigation, and cleanup |
+| **Gameplay total**                   | **97** | **Four completed ZIMJS canvas-game milestones**                                                         |
 
 ### Complete verified inventory
 
@@ -67,8 +69,9 @@ Non-game suite:                  134
 Passage Reconstruction:          20
 Context Cloze Quest:             26
 Meaning Bridge:                  27
+Word Hunt:                       24
 ------------------------------------
-Complete explicit regression:   207
+Complete explicit regression:   231
 ```
 
 ## Files
@@ -79,13 +82,15 @@ client/tests/
 │   ├── README_e2e.md
 │   ├── README_PASSAGE_RECONSTRUCTION_e2e_TESTS.md
 │   ├── README_CONTEXT_CLOZE_QUEST_e2e_TESTS.md
-│   └── README_MEANING_BRIDGE_e2e_TESTS.md
+│   ├── README_MEANING_BRIDGE_e2e_TESTS.md
+│   └── README_WORD_HUNT_e2e_TESTS.md
 ├── helpers/
 │   ├── admin-fixtures.js
 │   ├── app-fixtures.js
 │   ├── passage-reconstruction-fixtures.js
 │   ├── context-cloze-quest-fixtures.js
-│   └── meaning-bridge-fixtures.js
+│   ├── meaning-bridge-fixtures.js
+│   └── word-hunt-fixtures.js
 ├── admin.spec.js
 ├── auth.spec.js
 ├── leaderboard.spec.js
@@ -95,7 +100,8 @@ client/tests/
 ├── tokenized-editor.spec.js
 ├── passage-reconstruction.spec.js
 ├── context-cloze-quest.spec.js
-└── meaning-bridge.spec.js
+├── meaning-bridge.spec.js
+└── word-hunt.spec.js
 ```
 
 GitHub Actions workflow:
@@ -199,6 +205,20 @@ Expected:
 27 passed
 ```
 
+### Word Hunt
+
+```powershell
+npm run test:e2e -- `
+  tests/word-hunt.spec.js `
+  --workers=1
+```
+
+Expected:
+
+```text
+24 passed
+```
+
 ## Run the complete explicit regression
 
 From `client`:
@@ -215,13 +235,14 @@ npm run test:e2e -- `
   tests/passage-reconstruction.spec.js `
   tests/context-cloze-quest.spec.js `
   tests/meaning-bridge.spec.js `
+  tests/word-hunt.spec.js `
   --workers=1
 ```
 
 Verified result:
 
 ```text
-Complete explicit Playwright regression: 207 passed
+Complete explicit Playwright regression: 231 passed
 ```
 
 Never run bare:
@@ -247,6 +268,7 @@ npm run test:e2e -- tests/tokenized-editor.spec.js --workers=1
 npm run test:e2e -- tests/passage-reconstruction.spec.js --workers=1
 npm run test:e2e -- tests/context-cloze-quest.spec.js --workers=1
 npm run test:e2e -- tests/meaning-bridge.spec.js --workers=1
+npm run test:e2e -- tests/word-hunt.spec.js --workers=1
 ```
 
 ## Run tests in a visible browser
@@ -284,6 +306,7 @@ npm run test:e2e:headed -- `
   tests/passage-reconstruction.spec.js `
   tests/context-cloze-quest.spec.js `
   tests/meaning-bridge.spec.js `
+  tests/word-hunt.spec.js `
   --workers=1
 ```
 
@@ -334,7 +357,7 @@ npx playwright show-report
 npm run build
 ```
 
-The production client build and the 207-test explicit suite must both pass before
+The production client build and the 231-test explicit suite must both pass before
 a pull request is opened or merged.
 
 The Vite large-chunk message is a warning. Treat a non-zero build exit as the
@@ -383,6 +406,7 @@ Each completed canvas game has a dedicated helper:
 helpers/passage-reconstruction-fixtures.js
 helpers/context-cloze-quest-fixtures.js
 helpers/meaning-bridge-fixtures.js
+helpers/word-hunt-fixtures.js
 ```
 
 These helpers intercept only the real endpoints used by each game, return
@@ -417,6 +441,7 @@ Detailed game evidence:
 client/tests/docs/README_PASSAGE_RECONSTRUCTION_e2e_TESTS.md
 client/tests/docs/README_CONTEXT_CLOZE_QUEST_e2e_TESTS.md
 client/tests/docs/README_MEANING_BRIDGE_e2e_TESTS.md
+client/tests/docs/README_WORD_HUNT_e2e_TESTS.md
 ```
 
 ### Stable selectors
@@ -550,9 +575,30 @@ Download controls inside `<details>` are tested by opening the corresponding
 - persistent and fallback leaderboards
 - loading, generation error, keyboard retry, hint, skip, exit, timer expiry, and cleanup
 
+### Word Hunt
+
+- selected Story Picker ID, active Story Set ID, guest, and signed-in identity
+- English and Sanskrit POS request and persistence contracts
+- real landing Start, language toggle, Back, Hint, Next, Continue, Restart, and Exit clicks
+- live passage-word and control geometry
+- noun, verb, and adjective matching through real canvas clicks
+- duplicate-word protection
+- incorrect POS feedback and runtime-error protection
+- noun, verb, and adjective Hint lifecycle
+- base scoring, Hint penalty, completion multiplier, coins, and persisted metadata
+- production noun-to-verb-to-adjective queue behavior
+- real timer expiry, result controls, restart, exit, and cleanup
+- rendered Noun, Verb, and Adjective winning-message text
+
+Detailed evidence:
+
+```text
+client/tests/docs/README_WORD_HUNT_e2e_TESTS.md
+```
+
 ## CI quality gate
 
-The workflow explicitly runs ten verified specs:
+The workflow explicitly runs eleven verified specs:
 
 ```text
 tests/auth.spec.js
@@ -565,10 +611,11 @@ tests/tokenized-editor.spec.js
 tests/passage-reconstruction.spec.js
 tests/context-cloze-quest.spec.js
 tests/meaning-bridge.spec.js
+tests/word-hunt.spec.js
 ```
 
 It installs dependencies, installs Chromium, builds the production client, runs
-all 207 tests with one worker, and uploads Playwright diagnostics only when the
+all 231 tests with one worker, and uploads Playwright diagnostics only when the
 job fails.
 
 ## Scope boundary
@@ -580,14 +627,7 @@ NON-GAME-E2E:                         COMPLETE / GREEN
 GAME-E2E-01 — Passage Reconstruction: COMPLETE / GREEN
 GAME-E2E-02 — Context Cloze Quest:     COMPLETE / GREEN
 GAME-E2E-03 — Meaning Bridge:          COMPLETE / GREEN
-```
-
-Word Hunt remains outside the explicit quality gate until its focused suite,
-combined regression, production build, documentation closeout, and review are
-GREEN:
-
-```text
-GAME-E2E-04 — Word Hunt: NEXT
+GAME-E2E-04 — Word Hunt:               COMPLETE / GREEN
 ```
 
 Historical, team-owned, retired, experimental, or incomplete specs are not

@@ -8,6 +8,16 @@ import GameManger from "./utils/GameManager";
 import GameServiceManager from "./utils/GameServiceManager";
 import { getSelectedStoryId } from "../../storyPicker/activeStory";
 
+/*
+ * E2E TEST PLUMBING:
+ * The bridge reads the existing Game object for Playwright. It does not own or
+ * modify Word Hunt gameplay, scoring, hints, timer, queue, or API behavior.
+ */
+import {
+  installWordHuntE2EBridge,
+  publishWordHuntE2EState,
+} from "./e2eTestBridge";
+
 class Game {
   constructor(setup) {
     this.frame = setup.frame;
@@ -95,6 +105,13 @@ class Game {
     this.playerInfo = {};
     this.hasGameStarted = false;
     this.isStartingGame = false;
+
+    /*
+     * E2E TEST PLUMBING:
+     * Install only a gated read-only getState() hook. No production callback,
+     * button, timer, score, or queue value is replaced.
+     */
+    installWordHuntE2EBridge(this);
   }
 
   //----------------------------------
@@ -111,6 +128,13 @@ class Game {
     }
     this.landingPage = new LandingPage(this).createLandingPage();
 
+    /*
+     * E2E TEST STATE:
+     * The production landing page now exists. Publish a fresh snapshot without
+     * changing the page or dispatching any interaction.
+     */
+    publishWordHuntE2EState(this);
+
     // 🛠️ FIXED: Removed early API calls from here.
     // They now run dynamically down below when the user taps "Start Adventure".
 
@@ -120,6 +144,13 @@ class Game {
       // Show a quick visual state clue that it's loading data
       this.landingPage.button.text = "Loading...";
       this.stage.update();
+
+      /*
+       * E2E TEST STATE:
+       * Observe the existing disabled Start Adventure button as the loading state.
+       * The bridge does not introduce or control the loading flag.
+       */
+      publishWordHuntE2EState(this);
 
       try {
         // 🛠️ FIXED: Flow control intercepts language configuration on click execution
@@ -139,12 +170,26 @@ class Game {
 
         this.landingPage.hide();
         this.initGame();
+
+        /*
+         * E2E TEST STATE:
+         * initGame() has built the production queue and started its normal countdown.
+         */
+        publishWordHuntE2EState(this);
+
         // this.startNounGame();
       } catch (error) {
         console.error("Failed loading backend content: ", error);
         this.landingPage.button.mouseEnabled = true;
         this.landingPage.button.text = "Start Adventure";
         this.stage.update();
+
+        /*
+         * E2E TEST STATE:
+         * The existing failure path restored the landing button. Publish that current
+         * production state; do not suppress or reinterpret the error.
+         */
+        publishWordHuntE2EState(this);
       }
     });
 
@@ -199,6 +244,12 @@ class Game {
 
     this.currentGameIndex = 0;
     this.startCurrentGame();
+
+    /*
+     * E2E TEST STATE:
+     * Publish the authoritative queue and current index selected by initGame().
+     */
+    publishWordHuntE2EState(this);
   }
   startCurrentGame() {
     const currentGame = this.gameQueue[this.currentGameIndex];
@@ -221,6 +272,13 @@ class Game {
       default:
         console.log("No game found");
     }
+
+    /*
+     * E2E TEST STATE:
+     * The existing switch has selected the production noun, verb, or adjective
+     * countdown. This is observation only.
+     */
+    publishWordHuntE2EState(this);
   }
 
   //----------------------------------
@@ -303,6 +361,12 @@ class Game {
     }
 
     this.startCurrentGame();
+
+    /*
+     * E2E TEST STATE:
+     * Publish the queue position selected by the existing nextGame() progression.
+     */
+    publishWordHuntE2EState(this);
   }
 }
 

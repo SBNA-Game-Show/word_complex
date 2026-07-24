@@ -37,7 +37,12 @@ class FindAdjectiveGame {
     this.restartButton = null;
 
     this.player = this.game.player;
-    this.hintUsed = 0;
+    /*
+     * GAMEPLAY FIX:
+     * Keep the adjective Hint counter name consistent with the completion and
+     * persistence paths, which save the value as hintsUsed.
+     */
+    this.hintsUsed = 0;
 
     this.gameOver = false;
 
@@ -171,11 +176,26 @@ class FindAdjectiveGame {
       if (this.passageDisplay && this.passageDisplay.wordLabels) {
         this.passageDisplay.wordLabels.forEach((wordObj) => {
           if (this.adjectives.includes(wordObj.text)) {
-            wordObj.instance.setColor("white");
+            /*
+             * Preserve already-found words as green when the temporary Hint
+             * highlighting closes.
+             */
+            if (!this.foundWords.includes(wordObj.text)) {
+              wordObj.instance.setColor("white");
+            }
           }
         });
-        this.game.stage.update();
       }
+
+      /*
+       * GAMEPLAY FIX:
+       * Adjective hints temporarily lock passage input while targets are
+       * highlighted. Restore input when the Hint is hidden or expires so the
+       * player can continue the existing round.
+       */
+      this.game.isInputLocked = false;
+
+      this.game.stage.update();
     };
 
     //-----------------------------------
@@ -267,11 +287,11 @@ class FindAdjectiveGame {
           label.cursor = "default";
 
           this.foundWords.push(cleanWord);
-          this.hintUsed = this.controlPanel.hintCounter;
+          this.hintsUsed = this.controlPanel.hintCounter;
           const pointsEarned = this.manager.setScore(
             this.game.adjGameKey,
             this.foundWords.length,
-            this.hintUsed,
+            this.hintsUsed,
           );
 
           this.score += pointsEarned;
@@ -302,7 +322,13 @@ class FindAdjectiveGame {
         // VERB
         //-----------------------------------
         else if (this.verbs.includes(cleanWord)) {
-          label.setcolor("orange");
+          /*
+           * GAMEPLAY FIX:
+           * ZimLabel exposes setColor() with a capital C. The previous setcolor()
+           * call threw at runtime whenever a verb was selected during an adjective
+           * challenge.
+           */
+          label.setColor("orange");
 
           const definition = this.manager.defineVerb();
 
@@ -339,6 +365,15 @@ class FindAdjectiveGame {
         this.foundWords.length,
         elapsedMs,
         this.score,
+        {
+          /*
+           * GAMEPLAY FIX:
+           * Calculate completion rewards against the active adjective round and its
+           * actual Hint usage, not the noun-round defaults.
+           */
+          wordsToFind: this.adjectives.length,
+          hintsUsed: this.hintsUsed,
+        },
       );
       this.game.TOTAL_SCORE += acquiredTotalScore;
       // console.log("New Game Total: ", acquiredTotalScore);
@@ -353,7 +388,13 @@ class FindAdjectiveGame {
 
       const completionTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
-      this.messageBar.showWinningMessage(this.game.nounGameKey, completionTime);
+      /*
+       * GAMEPLAY FIX:
+       * The completed adjective round must identify Adjective in the
+       * player-visible winning message rather than reusing the noun label.
+       */
+      this.messageBar.showWinningMessage(this.game.adjGameKey, completionTime);
+
       // writing to DB for only sanskrit version and signed in player
       const res = await this.manager.addGameData(
         completionTime,

@@ -170,9 +170,19 @@ class FindVerbGame {
             }
           }
         });
-        this.game.stage.update();
       }
+
+      /*
+       * GAMEPLAY FIX:
+       * Verb hints temporarily lock passage input while target words are
+       * highlighted. Restore the shared input lock when the hint is manually
+       * hidden or automatically expires so the player can continue the round.
+       */
+      this.game.isInputLocked = false;
+
+      this.game.stage.update();
     };
+
     //-----------------------------------
     // FOUND VERBS BOX
     //-----------------------------------

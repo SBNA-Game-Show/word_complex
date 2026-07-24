@@ -15,9 +15,20 @@ class ControlPanel {
 
     this.eyeEmojiWrapper = null;
     this.blinkTimer = 0;
+
     this.isClosed = true;
+
+    /*
+     * E2E TEST OBSERVABILITY:
+     * Retain references to the already-created Back and Next ZIM controls so the
+     * gated Playwright bridge can publish their live canvas bounds. These fields do
+     * not replace the controls or change their existing tap callbacks.
+     */
+    this.backButton = null;
     this.nextButton = null;
+
     this.onNextClicked = null;
+
     this.hintClicked = null;
     this.onBackClicked = null;
 
@@ -172,6 +183,14 @@ class ControlPanel {
     if (backBtnInstance && typeof backBtnInstance.pos === "function") {
       backBtnInstance.pos(20, 31);
     }
+
+    /*
+     * E2E TEST OBSERVABILITY:
+     * Store the same live ZIM Button returned by BackButton.create(). No new button
+     * is constructed, and the production backButtonTapped callback below remains
+     * the only behavior attached to this control.
+     */
+    this.backButton = backBtnInstance;
 
     backBtn.backButtonTapped = () => {
       if (this.onBackClicked) {
