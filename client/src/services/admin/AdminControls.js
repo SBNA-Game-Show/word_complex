@@ -1,4 +1,4 @@
-const API_BASE = "https://sbdictionary-942e.onrender.com/api/v1/python/";
+const API_BASE = "https://sbdictionary-942e.onrender.com/api/v1/python";
 
 /**
  * Get all stories

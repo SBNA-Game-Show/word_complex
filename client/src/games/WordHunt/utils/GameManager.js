@@ -188,26 +188,49 @@ class GameManager {
   setScore(gameType, foundCount, hintsUsed) {
     this.wordTypes = this.game.wordTypes;
     this.nounCount = this.wordTypes.nouns.length;
-    // console.log("NOUN COUNT: ", this.nounCount);
     this.verbCount = this.wordTypes.verbs.length;
     this.adjectiveCount = this.wordTypes.adjectives.length;
 
     if (gameType === this.game.nounGameKey) {
       return this.helper.calculateScore(foundCount, this.nounCount, hintsUsed);
     }
+
     if (gameType === this.game.verbGameKey) {
       return this.helper.calculateScore(foundCount, this.verbCount, hintsUsed);
     }
+
+    /*
+     * GAMEPLAY FIX:
+     * Adjective rounds use the same per-word scoring formula as noun and verb
+     * rounds. Without this branch, null is added to the adjective score and the
+     * round remains at zero.
+     */
+    if (gameType === this.game.adjGameKey) {
+      return this.helper.calculateScore(
+        foundCount,
+        this.adjectiveCount,
+        hintsUsed,
+      );
+    }
+
     return null;
   }
 
-  setGameTotal(foundCount, elapsedMs, score) {
+  setGameTotal(foundCount, elapsedMs, score, roundOptions = {}) {
     const timeElapsedInMinutes = elapsedMs / 60000;
-    const hintsUsed = this.controlPanel.hintCounter;
+
+    /*
+     * GAMEPLAY FIX:
+     * Use explicitly supplied active-round information when available. Existing
+     * noun and verb callers retain the original noun-count fallback.
+     */
+    const wordsToFind = roundOptions.wordsToFind ?? this.nounCount;
+
+    const hintsUsed = roundOptions.hintsUsed ?? this.controlPanel.hintCounter;
 
     return this.helper.calculateGameTotal(
       foundCount,
-      this.nounCount,
+      wordsToFind,
       timeElapsedInMinutes,
       score,
       hintsUsed,
