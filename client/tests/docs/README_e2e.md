@@ -1,53 +1,107 @@
-# Word Complex Non-Game Playwright E2E Tests
+# Word Complex Playwright E2E Tests
 
 ## Status
 
-Verified locally on July 20, 2026:
+Verified locally on July 23, 2026:
 
 ```text
-Client build:                    GREEN
-Non-game Playwright tests:       134 passed
-Playwright browser:              Chromium
-Execution mode:                  sequential / one worker
-Backend required for E2E:        No
-Live MongoDB required for E2E:   No
-Live Python story API required:  No
+Client production build:                    GREEN
+Non-game Playwright tests:                   134/134 passed
+Passage Reconstruction focused Playwright:    20/20 passed
+Context Cloze Quest focused Playwright:        26/26 passed
+Meaning Bridge focused Playwright:             27/27 passed
+Complete explicit Playwright regression:     207/207 passed
+Playwright browser:                           Chromium
+Execution mode:                               sequential / one worker
+Express backend required:                     No
+MongoDB required:                             No
+Firebase required:                            No
+External story service required:              No
 ```
 
-The non-game suite validates authentication, the player-facing site shell,
-progress features, leaderboards, Admin, Story Set management, and the Tokenized
-Story Editor. External APIs are intercepted with deterministic Playwright route
-mocks.
+Milestones:
+
+```text
+NON-GAME-E2E:                         COMPLETE / GREEN
+GAME-E2E-01 — Passage Reconstruction: COMPLETE / GREEN
+GAME-E2E-02 — Context Cloze Quest:     COMPLETE / GREEN
+GAME-E2E-03 — Meaning Bridge:          COMPLETE / GREEN
+GAME-E2E-04 — Word Hunt:               NEXT
+```
+
+The verified client suite covers authentication, the player-facing platform shell,
+progress features, leaderboards, Admin, Story Set management, the Tokenized Story
+Editor, and three completed ZIMJS canvas games. External APIs are intercepted with
+deterministic Playwright route mocks while the real frontend services, request
+serialization, React navigation, GameScene mounting, ZIM rendering, and game
+handlers remain active.
 
 ## Test inventory
 
-| Spec                             |   Tests | Primary scope                                                                           |
-| -------------------------------- | ------: | --------------------------------------------------------------------------------------- |
-| `auth.spec.js`                   |       9 | Email, Google, guest, sign-up, errors, pending state, and logout                        |
-| `site-navigation.spec.js`        |      18 | Story Picker, launcher, four shared game scenes, logout, and canvas zoom                |
-| `platform-pages.spec.js`         |      15 | About and all four How-to-Play flows                                                    |
-| `progress-and-character.spec.js` |      13 | Rewards, streak toast, character selection, purchases, and GameScene propagation        |
-| `leaderboard.spec.js`            |      13 | Board switching, loading, errors, ranking, formatting, and refresh                      |
-| `admin.spec.js`                  |      34 | Sources, downloads, metadata, uploads, tokenized stories, Story Sets, and failure paths |
-| `tokenized-editor.spec.js`       |      32 | Loading, filtering, editing, save/discard, and English and Sanskrit tokens              |
-| **Total**                        | **134** | **Completed non-game Playwright milestone**                                             |
+### Non-game inventory
+
+| Spec                             | Tests | Primary scope                                                                           |
+| -------------------------------- | ----: | --------------------------------------------------------------------------------------- |
+| `auth.spec.js`                   |     9 | Email, Google, guest, sign-up, errors, pending state, and logout                        |
+| `site-navigation.spec.js`        |    18 | Story Picker, launcher, four shared game scenes, logout, and canvas zoom                |
+| `platform-pages.spec.js`         |    15 | About and all four How-to-Play flows                                                    |
+| `progress-and-character.spec.js` |    13 | Rewards, streak toast, character selection, purchases, and GameScene propagation        |
+| `leaderboard.spec.js`            |    13 | Board switching, loading, errors, ranking, formatting, and refresh                      |
+| `admin.spec.js`                  |    34 | Sources, downloads, metadata, uploads, tokenized stories, Story Sets, and failure paths |
+| `tokenized-editor.spec.js`       |    32 | Loading, filtering, editing, save/discard, and English and Sanskrit tokens              |
+| **Non-game total**               | **134** | **Completed non-game Playwright milestone**                                           |
+
+### Verified gameplay inventory
+
+| Spec                                 | Tests | Primary scope                                                                                              |
+| ------------------------------------ | ----: | ---------------------------------------------------------------------------------------------------------- |
+| `passage-reconstruction.spec.js`     |    20 | Canvas rounds, drag/order behavior, hints, scoring, timer, API, results, reset, stale responses, and cleanup |
+| `context-cloze-quest.spec.js`        |    26 | Menu, languages, placement, hints, scoring, timer, API, score posting, reset, stale responses, and cleanup  |
+| `meaning-bridge.spec.js`             |    27 | Modes, real canvas matches, progression, hints, penalties, scoring, persistence, leaderboards, keyboard, timer, exit, and cleanup |
+| **Gameplay total**                   | **73** | **Three completed ZIMJS canvas-game milestones**                                                        |
+
+### Complete verified inventory
+
+```text
+Non-game suite:                  134
+Passage Reconstruction:          20
+Context Cloze Quest:             26
+Meaning Bridge:                  27
+------------------------------------
+Complete explicit regression:   207
+```
 
 ## Files
 
 ```text
 client/tests/
 ├── docs/
-│   └── README_e2e.md
+│   ├── README_e2e.md
+│   ├── README_PASSAGE_RECONSTRUCTION_e2e_TESTS.md
+│   ├── README_CONTEXT_CLOZE_QUEST_e2e_TESTS.md
+│   └── README_MEANING_BRIDGE_e2e_TESTS.md
 ├── helpers/
 │   ├── admin-fixtures.js
-│   └── app-fixtures.js
+│   ├── app-fixtures.js
+│   ├── passage-reconstruction-fixtures.js
+│   ├── context-cloze-quest-fixtures.js
+│   └── meaning-bridge-fixtures.js
 ├── admin.spec.js
 ├── auth.spec.js
 ├── leaderboard.spec.js
 ├── platform-pages.spec.js
 ├── progress-and-character.spec.js
 ├── site-navigation.spec.js
-└── tokenized-editor.spec.js
+├── tokenized-editor.spec.js
+├── passage-reconstruction.spec.js
+├── context-cloze-quest.spec.js
+└── meaning-bridge.spec.js
+```
+
+GitHub Actions workflow:
+
+```text
+.github/workflows/playwright-client-e2e.yml
 ```
 
 ## Install
@@ -81,6 +135,12 @@ npm run test:e2e -- `
   --workers=1
 ```
 
+Expected:
+
+```text
+Non-game Playwright suite: 134 passed
+```
+
 Bash:
 
 ```bash
@@ -95,6 +155,85 @@ npm run test:e2e -- \
   --workers=1
 ```
 
+## Run the verified gameplay suites
+
+### Passage Reconstruction
+
+```powershell
+npm run test:e2e -- `
+  tests/passage-reconstruction.spec.js `
+  --workers=1
+```
+
+Expected:
+
+```text
+20 passed
+```
+
+### Context Cloze Quest
+
+```powershell
+npm run test:e2e -- `
+  tests/context-cloze-quest.spec.js `
+  --workers=1
+```
+
+Expected:
+
+```text
+26 passed
+```
+
+### Meaning Bridge
+
+```powershell
+npm run test:e2e -- `
+  tests/meaning-bridge.spec.js `
+  --workers=1
+```
+
+Expected:
+
+```text
+27 passed
+```
+
+## Run the complete explicit regression
+
+From `client`:
+
+```powershell
+npm run test:e2e -- `
+  tests/auth.spec.js `
+  tests/site-navigation.spec.js `
+  tests/platform-pages.spec.js `
+  tests/progress-and-character.spec.js `
+  tests/leaderboard.spec.js `
+  tests/admin.spec.js `
+  tests/tokenized-editor.spec.js `
+  tests/passage-reconstruction.spec.js `
+  tests/context-cloze-quest.spec.js `
+  tests/meaning-bridge.spec.js `
+  --workers=1
+```
+
+Verified result:
+
+```text
+Complete explicit Playwright regression: 207 passed
+```
+
+Never run bare:
+
+```powershell
+npm run test:e2e
+```
+
+Milestone and release validation must name the intended specs explicitly so
+team-owned, retired, experimental, or incomplete tests cannot join the gate
+accidentally.
+
 ## Run a focused suite
 
 ```powershell
@@ -105,6 +244,9 @@ npm run test:e2e -- tests/progress-and-character.spec.js --workers=1
 npm run test:e2e -- tests/leaderboard.spec.js --workers=1
 npm run test:e2e -- tests/admin.spec.js --workers=1
 npm run test:e2e -- tests/tokenized-editor.spec.js --workers=1
+npm run test:e2e -- tests/passage-reconstruction.spec.js --workers=1
+npm run test:e2e -- tests/context-cloze-quest.spec.js --workers=1
+npm run test:e2e -- tests/meaning-bridge.spec.js --workers=1
 ```
 
 ## Run tests in a visible browser
@@ -115,7 +257,7 @@ Run one focused spec:
 
 ```powershell
 npm run test:e2e:headed -- `
-  tests/admin.spec.js `
+  tests/meaning-bridge.spec.js `
   --workers=1
 ```
 
@@ -123,12 +265,12 @@ Run one individual test by title:
 
 ```powershell
 npm run test:e2e:headed -- `
-  tests/admin.spec.js `
-  --grep "failed upload preserves the selected file" `
+  tests/meaning-bridge.spec.js `
+  --grep "performs a real canvas match" `
   --workers=1
 ```
 
-Run the complete non-game suite in a visible browser:
+Run the complete verified suite in a visible browser:
 
 ```powershell
 npm run test:e2e:headed -- `
@@ -139,6 +281,9 @@ npm run test:e2e:headed -- `
   tests/leaderboard.spec.js `
   tests/admin.spec.js `
   tests/tokenized-editor.spec.js `
+  tests/passage-reconstruction.spec.js `
+  tests/context-cloze-quest.spec.js `
+  tests/meaning-bridge.spec.js `
   --workers=1
 ```
 
@@ -150,8 +295,8 @@ Playwright debug mode opens a visible browser and the Playwright Inspector:
 
 ```powershell
 npm run test:e2e -- `
-  tests/admin.spec.js `
-  --grep "failed Story Set deletion" `
+  tests/meaning-bridge.spec.js `
+  --grep "generation error and retries" `
   --debug
 ```
 
@@ -169,7 +314,7 @@ npm run test:e2e:ui
 Open only one spec in UI mode:
 
 ```powershell
-npm run test:e2e:ui -- tests/admin.spec.js
+npm run test:e2e:ui -- tests/meaning-bridge.spec.js
 ```
 
 UI mode is useful for selecting individual tests, reviewing traces, rerunning
@@ -189,8 +334,11 @@ npx playwright show-report
 npm run build
 ```
 
-The client build and the 134-test suite should both pass before a pull request is
-opened or merged.
+The production client build and the 207-test explicit suite must both pass before
+a pull request is opened or merged.
+
+The Vite large-chunk message is a warning. Treat a non-zero build exit as the
+actual failure condition.
 
 ## Test architecture
 
@@ -204,7 +352,7 @@ Authentication tests can configure mapped users, failures, and delays before the
 application loads. Production Firebase behavior remains unchanged outside the E2E
 environment.
 
-### Deterministic API mocks
+### Deterministic platform and Admin API mocks
 
 `helpers/app-fixtures.js` mocks shared platform routes, including:
 
@@ -227,8 +375,49 @@ Story Set retrieval, creation, activation, and deletion
 Tokenized Editor GET and PUT
 ```
 
+### Deterministic canvas-game fixtures
+
+Each completed canvas game has a dedicated helper:
+
+```text
+helpers/passage-reconstruction-fixtures.js
+helpers/context-cloze-quest-fixtures.js
+helpers/meaning-bridge-fixtures.js
+```
+
+These helpers intercept only the real endpoints used by each game, return
+reproducible responses, record request contracts, and expose launch utilities.
+The browser still enters through Login, Story Picker, Launcher, GameScene, and
+the ZIM holder.
+
 The Playwright web server starts the Vite client only. Tests do not depend on
-MongoDB, the Express server, Firebase, or the external Python story service.
+MongoDB, the Express server, Firebase, the external Python story service, or
+production secrets.
+
+### ZIMJS canvas bridges
+
+Canvas internals do not expose normal DOM elements for cards, draggable words,
+slots, timers, score labels, or feedback. Completed game suites therefore use
+development/E2E-only bridges that:
+
+```text
+publish production state
+publish live ZIM geometry
+call or dispatch existing production handlers
+avoid maintaining a second copy of gameplay rules
+remove E2E globals when GameScene unmounts
+```
+
+Where practical, each game suite includes real Playwright mouse interaction
+against live canvas geometry.
+
+Detailed game evidence:
+
+```text
+client/tests/docs/README_PASSAGE_RECONSTRUCTION_e2e_TESTS.md
+client/tests/docs/README_CONTEXT_CLOZE_QUEST_e2e_TESTS.md
+client/tests/docs/README_MEANING_BRIDGE_e2e_TESTS.md
+```
 
 ### Stable selectors
 
@@ -326,17 +515,83 @@ Download controls inside `<details>` are tested by opening the corresponding
 - legacy flat Sanskrit-array normalization
 - simultaneous English and Sanskrit payload preservation
 
+### Passage Reconstruction
+
+- English and Sanskrit rounds
+- loading and request contracts
+- memorization and arrangement phases
+- real canvas drag and order behavior
+- hints, attempts, score penalties, and score floor
+- countdown and results
+- replay, reset, stale-response protection, and cleanup
+
+### Context Cloze Quest
+
+- English and Sanskrit
+- easy, medium, and hard
+- multi-select word types and menu protection
+- live blank and word geometry
+- real placement, replacement, movement, and return behavior
+- incomplete, incorrect, partial, and perfect submissions
+- hint limits, penalties, timer scoring, timeout behavior, score posting, failures, and cleanup
+
+### Meaning Bridge
+
+- Synonym, Definition, and Antonym challenges
+- Practice and Timed Challenge modes
+- timer presets and custom 1-to-60-minute clamping
+- selected-story and generation request contracts
+- live left-card and right-card geometry
+- real correct and wrong canvas matches
+- hint accounting, repeated hints, wrong-attempt penalties, and score floor
+- production 4-to-5-to-6 pair progression
+- guest and signed-in submission behavior
+- duplicate-round protection and nonfatal persistent-save failure
+- persistent and fallback leaderboards
+- loading, generation error, keyboard retry, hint, skip, exit, timer expiry, and cleanup
+
+## CI quality gate
+
+The workflow explicitly runs ten verified specs:
+
+```text
+tests/auth.spec.js
+tests/site-navigation.spec.js
+tests/platform-pages.spec.js
+tests/progress-and-character.spec.js
+tests/leaderboard.spec.js
+tests/admin.spec.js
+tests/tokenized-editor.spec.js
+tests/passage-reconstruction.spec.js
+tests/context-cloze-quest.spec.js
+tests/meaning-bridge.spec.js
+```
+
+It installs dependencies, installs Chromium, builds the production client, runs
+all 207 tests with one worker, and uploads Playwright diagnostics only when the
+job fails.
+
 ## Scope boundary
 
-The workflow intentionally runs the seven verified non-game specs explicitly.
+The verified workflow now includes:
 
-Historical gameplay specs are not automatically included. All four gameplay
-suites will be rebuilt under one consistent ZIMJS canvas Playwright methodology:
+```text
+NON-GAME-E2E:                         COMPLETE / GREEN
+GAME-E2E-01 — Passage Reconstruction: COMPLETE / GREEN
+GAME-E2E-02 — Context Cloze Quest:     COMPLETE / GREEN
+GAME-E2E-03 — Meaning Bridge:          COMPLETE / GREEN
+```
 
-1. Passage Reconstruction
-2. Context Cloze Quest
-3. Meaning Bridge
-4. Word Hunt
+Word Hunt remains outside the explicit quality gate until its focused suite,
+combined regression, production build, documentation closeout, and review are
+GREEN:
+
+```text
+GAME-E2E-04 — Word Hunt: NEXT
+```
+
+Historical, team-owned, retired, experimental, or incomplete specs are not
+automatically included.
 
 ## Admin authorization
 

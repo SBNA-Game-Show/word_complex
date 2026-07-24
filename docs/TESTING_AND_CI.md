@@ -8,14 +8,15 @@ The current GitHub Actions browser workflow is:
 .github/workflows/playwright-client-e2e.yml
 ```
 
-It is the explicit verified **180-test client Playwright** quality gate:
+It is the explicit verified **207-test client Playwright** quality gate:
 
 ```text
 Non-game suite:                  134
 Passage Reconstruction:          20
 Context Cloze Quest:             26
+Meaning Bridge:                  27
 ------------------------------------
-Complete client E2E gate:       180
+Complete client E2E gate:       207
 ```
 
 Server-test automation remains outside this Playwright closeout scope.
@@ -37,10 +38,10 @@ The client E2E job:
 3. runs `npm ci` from `client`;
 4. installs Chromium and its Linux dependencies;
 5. runs the production client build;
-6. runs the seven verified non-game specs plus Passage Reconstruction and Context Cloze Quest with one worker;
+6. runs the seven verified non-game specs plus Passage Reconstruction, Context Cloze Quest, and Meaning Bridge with one worker;
 7. uploads `playwright-report` and `test-results` only when the job fails.
 
-The workflow uses an explicit nine-spec list. Meaning Bridge and Word Hunt remain excluded until each suite completes the same focused and combined validation process.
+The workflow uses an explicit ten-spec list. Word Hunt remains excluded until its focused suite completes the same focused and combined validation process.
 
 GitHub Actions runs Chromium headlessly. Headed mode, Playwright Inspector, and UI mode are local diagnostic tools.
 
@@ -65,7 +66,8 @@ GitHub Actions runs Chromium headlessly. Headed mode, Playwright Inspector, and 
 |---|---:|---|
 | `passage-reconstruction.spec.js` | 20 | Canvas rounds, drag/order behavior, hints, scoring, timer, API, results, reset, and cleanup |
 | `context-cloze-quest.spec.js` | 26 | Menu, languages, difficulties, placement, hints, scoring, timer, API, score posting, reset, stale requests, and cleanup |
-| **Gameplay total** | **46** | **Verified gameplay portion of CI** |
+| `meaning-bridge.spec.js` | 27 | Modes, requests, real canvas matches, hints, penalties, progression, submission, persistence, leaderboards, keyboard, timer, exit, errors, and cleanup |
+| **Gameplay total** | **73** | **Verified gameplay portion of CI** |
 
 ### Complete verified client E2E gate
 
@@ -73,8 +75,9 @@ GitHub Actions runs Chromium headlessly. Headed mode, Playwright Inspector, and 
 Non-game:                  134
 Passage Reconstruction:    20
 Context Cloze Quest:       26
+Meaning Bridge:            27
 --------------------------------
-Total:                     180
+Total:                     207
 ```
 
 ## Local release validation
@@ -150,6 +153,20 @@ Expected:
 Context Cloze Quest: 26 passed
 ```
 
+### Run Meaning Bridge
+
+```powershell
+npm run test:e2e -- `
+  tests/meaning-bridge.spec.js `
+  --workers=1
+```
+
+Expected:
+
+```text
+Meaning Bridge: 27 passed
+```
+
 ### Run the complete client CI suite
 
 ```powershell
@@ -163,13 +180,14 @@ npm run test:e2e -- `
   tests/tokenized-editor.spec.js `
   tests/passage-reconstruction.spec.js `
   tests/context-cloze-quest.spec.js `
+  tests/meaning-bridge.spec.js `
   --workers=1
 ```
 
 Expected:
 
 ```text
-Complete client Playwright suite: 180 passed
+Complete client Playwright suite: 207 passed
 ```
 
 Do not use bare:
@@ -178,7 +196,7 @@ Do not use bare:
 npm run test:e2e
 ```
 
-Milestone and release validation must name the intended specs explicitly so retired, experimental, or incomplete tests cannot join the gate accidentally.
+Milestone and release validation must name the intended specs explicitly so retired, experimental, incomplete, or team-owned tests cannot join the gate accidentally.
 
 ### Syntax and repository checks
 
@@ -198,6 +216,12 @@ node --check `
 
 node --check `
   .\client\tests\context-cloze-quest.spec.js
+
+node --check `
+  .\client\tests\helpers\meaning-bridge-fixtures.js
+
+node --check `
+  .\client\tests\meaning-bridge.spec.js
 
 git diff --check
 git status --short
@@ -287,6 +311,39 @@ Detailed evidence:
 client/tests/docs/README_CONTEXT_CLOZE_QUEST_e2e_TESTS.md
 ```
 
+### Meaning Bridge
+
+Verified:
+
+```text
+27/27 focused
+```
+
+Coverage includes:
+
+- Synonym, Definition, and Antonym challenge modes;
+- Practice and Timed Challenge setup;
+- 2-, 5-, 10-, and custom 1-to-60-minute timer selection;
+- selected Story Picker ID and production request serialization;
+- live left-card and right-card ZIM geometry;
+- real correct and incorrect browser mouse interactions;
+- scoring, wrong-attempt penalties, and hint accounting;
+- production 4-to-5-to-6 pair progression;
+- guest and signed-in submission behavior;
+- duplicate-round protection;
+- persistent best-score success and nonfatal failure;
+- persistent and fallback leaderboards;
+- loading, generation error, and retry;
+- keyboard `H`, `R`, `S`, and `Escape` paths;
+- production timed expiry and next-round advancement;
+- exit cancellation, reset, and lifecycle cleanup.
+
+Detailed evidence:
+
+```text
+client/tests/docs/README_MEANING_BRIDGE_e2e_TESTS.md
+```
+
 ## Deterministic browser tests
 
 The Playwright suite starts the Vite web server configured by `playwright.config.js`.
@@ -311,7 +368,7 @@ Run one focused game suite visibly:
 
 ```powershell
 npm run test:e2e:headed -- `
-  tests/context-cloze-quest.spec.js `
+  tests/meaning-bridge.spec.js `
   --workers=1
 ```
 
@@ -328,6 +385,7 @@ npm run test:e2e:headed -- `
   tests/tokenized-editor.spec.js `
   tests/passage-reconstruction.spec.js `
   tests/context-cloze-quest.spec.js `
+  tests/meaning-bridge.spec.js `
   --workers=1
 ```
 
@@ -336,7 +394,7 @@ Headed mode is intended for local inspection. CI remains headless.
 ### Playwright UI mode
 
 ```powershell
-npm run test:e2e:ui -- tests/context-cloze-quest.spec.js
+npm run test:e2e:ui -- tests/meaning-bridge.spec.js
 ```
 
 ### HTML report
@@ -361,7 +419,7 @@ Browser validation uses `--workers=1` for reproducibility and to avoid cross-tes
 
 ### Explicit test inventory
 
-The current CI workflow names all nine verified specs:
+The current CI workflow names all ten verified specs:
 
 ```text
 tests/auth.spec.js
@@ -373,10 +431,10 @@ tests/admin.spec.js
 tests/tokenized-editor.spec.js
 tests/passage-reconstruction.spec.js
 tests/context-cloze-quest.spec.js
+tests/meaning-bridge.spec.js
 ```
 
-Meaning Bridge and Word Hunt must remain excluded until their focused suites,
-combined regression, production build, and documentation closeout are GREEN.
+Word Hunt must remain excluded until its focused suite, combined regression, production build, and documentation closeout are GREEN.
 
 ### Headless CI
 
@@ -397,7 +455,7 @@ Never add secrets, `.env` files, browser storage-state files, database exports, 
 Require the complete client E2E check:
 
 ```text
-Build and run 180 client E2E tests
+Build and run 207 client E2E tests
 ```
 
 Do not configure a guessed check name. Let the workflow run successfully once, then select the exact visible check in branch-protection settings.
@@ -410,13 +468,13 @@ Verified:
 
 1. Passage Reconstruction — COMPLETE / GREEN
 2. Context Cloze Quest — COMPLETE / GREEN
+3. Meaning Bridge — COMPLETE / GREEN
 
 Next:
 
-3. Meaning Bridge
 4. Word Hunt
 
-Each remaining game should use the same canvas methodology and two-stage validation/commit workflow.
+Word Hunt should use the same canvas methodology and two-stage validation/commit workflow.
 
 ## Security notes
 
@@ -429,13 +487,14 @@ Each remaining game should use the same canvas methodology and two-stage validat
 
 ## Pull-request evidence
 
-A pull request containing the two completed gameplay milestones should include:
+A pull request containing the three completed gameplay milestones should include:
 
 ```text
 Non-game Playwright result:                 134/134 passed
 Passage Reconstruction focused result:        20/20 passed
 Context Cloze Quest focused result:            26/26 passed
-Complete client Playwright CI result:         180/180 passed
+Meaning Bridge focused result:                 27/27 passed
+Complete client Playwright CI result:         207/207 passed
 Client production build:                     GREEN
 git diff --check:                             clean
 ```

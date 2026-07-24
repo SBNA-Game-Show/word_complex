@@ -215,6 +215,13 @@ export default createZimGame({
     let lastMatchLeft = null;
     let freshRound = true; // true only on first render after loading; suppresses re-entrance animation on clicks
 
+    // E2E TEST GEOMETRY:
+    // Playwright cannot locate individual cards inside the ZIM canvas through DOM
+    // selectors. These arrays mirror the live card bounds after each render and do
+    // not participate in selection, matching, scoring, or player-facing behavior.
+    let leftCardGeometry = [];
+    let rightCardGeometry = [];
+
     // ── Layout ───────────────────────────────────────────────────────
     // Header bar (dark navy) contains title + mode tabs + score
     const HEADER_H = 82; // height including 4px accent strip at bottom
@@ -989,8 +996,15 @@ export default createZimGame({
       return { ...(matches || {}) };
     }
 
+    // E2E TEST STATE:
+    // Meaning Bridge renders its player-facing UI inside ZIM canvas, so
+    // Playwright needs a development/E2E-only mirror of the existing game state.
+    // This observes state only and does not change player-facing behavior.
     function publishDebugState() {
-      if (typeof window === "undefined") {
+      if (
+        typeof window === "undefined" ||
+        !shouldExposeMeaningBridgeTestHooks()
+      ) {
         return;
       }
 
@@ -1041,6 +1055,35 @@ export default createZimGame({
         selectedTimerSeconds: getSelectedTimerSeconds(),
         completedPuzzles,
         currentPairCount: getCurrentPairCount(),
+
+        // E2E TEST PUZZLE STATE:
+        // Publish copies so tests cannot mutate the live production puzzle objects.
+        stageSize: {
+          width: W,
+          height: H,
+        },
+        leftItems: (puzzle?.leftItems || []).map((item) => ({
+          id: item.id,
+          label: item.label,
+          sublabel: item.sublabel,
+        })),
+        rightItems: (puzzle?.rightItems || []).map((item) => ({
+          id: item.id,
+          label: item.label,
+          sublabel: item.sublabel,
+        })),
+        answerKey: {
+          ...(puzzle?.answerKey || {}),
+        },
+        hints: {
+          ...(puzzle?.hints || {}),
+        },
+        leftCardGeometry: leftCardGeometry.map((card) => ({
+          ...card,
+        })),
+        rightCardGeometry: rightCardGeometry.map((card) => ({
+          ...card,
+        })),
       };
     }
 
@@ -1056,11 +1099,14 @@ export default createZimGame({
       );
     }
 
+    // E2E TEST HOOKS:
+    // These commands exist because normal DOM selectors cannot reach ZIM canvas
+    // controls. Hooks must observe existing state or invoke existing production
+    // functions; they must not reproduce gameplay, scoring, timer, or API rules.
     function publishMeaningBridgeTestHooks() {
       if (!shouldExposeMeaningBridgeTestHooks()) {
         return;
       }
-
       window.__meaningBridgeZimTestHooks = {
         getState() {
           publishDebugState();
@@ -1452,7 +1498,10 @@ export default createZimGame({
         .loc(stripW / 2, 32);
     }
 
-    function buildSubmittedResultSummary(serverResult = null, serverTotals = null) {
+    function buildSubmittedResultSummary(
+      serverResult = null,
+      serverTotals = null,
+    ) {
       const rounds = completedRoundSubmissions || [];
 
       const correctMatches = rounds.reduce(
@@ -1905,7 +1954,9 @@ export default createZimGame({
         width: 220,
         height: 52,
         label:
-          completedRoundSubmissions.length > 0 ? "Save & Leave" : "Exit to Menu",
+          completedRoundSubmissions.length > 0
+            ? "Save & Leave"
+            : "Exit to Menu",
         color: C.tangerine,
         onClick: () => {
           stopTimedTimer();
@@ -2807,6 +2858,37 @@ export default createZimGame({
         card.cursor = "pointer";
         card.on("click", () => onCardClick(item, side, y, cardH));
       }
+
+      // E2E TEST GEOMETRY:
+      // Record stage-space bounds for the real ZIM card. Playwright converts these
+      // coordinates through the canvas bounding box and performs normal mouse clicks,
+      // which then enter the existing onCardClick() and checkPair() production paths.
+      if (shouldExposeMeaningBridgeTestHooks()) {
+        const geometry = {
+          id: item.id,
+          label: item.label,
+          sublabel: item.sublabel,
+          side,
+          pairIndex: pairIdx,
+          matchPairIndex: matchPairIdx,
+          matched: Boolean(isMatched),
+          selected: Boolean(isSelected),
+          wrong: Boolean(isWrong),
+          mouseEnabled: !isMatched && !isWrong,
+          x: card.x,
+          y: card.y,
+          width: CARD_W,
+          height: cardH,
+          centerX: card.x + CARD_W / 2,
+          centerY: card.y + cardH / 2,
+        };
+
+        if (side === "left") {
+          leftCardGeometry.push(geometry);
+        } else {
+          rightCardGeometry.push(geometry);
+        }
+      }
     }
 
     // ── COLUMN PILL BADGE ────────────────────────────────────────────
@@ -2938,6 +3020,13 @@ export default createZimGame({
 
       // Bridges first (behind cards)
       drawBridges();
+
+      // E2E TEST GEOMETRY:
+      // Each render creates new ZIM card objects, so discard bounds belonging to the
+      // previous render before drawCards() records the current live card positions.
+      leftCardGeometry = [];
+      rightCardGeometry = [];
+
       drawCards();
       drawBottomBar();
       safeUpdate();
@@ -4160,10 +4249,20 @@ export default createZimGame({
         promptTimeout = null;
       }
       clearScheduledTimeouts();
-      if (typeof window !== "undefined" && window.__meaningBridgeKeyCleanup) {
-        window.__meaningBridgeKeyCleanup();
-        window.__meaningBridgeKeyCleanup = null;
+
+      if (typeof window !== "undefined") {
+        if (window.__meaningBridgeKeyCleanup) {
+          window.__meaningBridgeKeyCleanup();
+          window.__meaningBridgeKeyCleanup = null;
+        }
+
+        // E2E TEST HOOK CLEANUP:
+        // Remove the development/E2E bridge when GameScene unmounts so another
+        // game cannot observe or invoke stale Meaning Bridge state.
+        delete window.__meaningBridgeZimDebug;
+        delete window.__meaningBridgeZimTestHooks;
       }
+
       stage.removeAllChildren();
       stage.update();
     };
